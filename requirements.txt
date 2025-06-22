@@ -1,0 +1,10 @@
+flask
+httpx<0.26
+moviepy==1.0.3
+imageio
+imageio-ffmpeg
+openai>=1.0.0
+python-dotenv
+requests
+Pillow
+tqdm

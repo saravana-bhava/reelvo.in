@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>Dashboard</title></head>
+<body>
+    <h2>Welcome {{ user }}</h2>
+    <form method="post" action="/generate">
+        <label>Select Theme:</label>
+        <select name="theme">
+            <option value="motivation">Motivation</option>
+            <option value="sad">Sad</option>
+            <option value="inspiration">Inspiration</option>
+        </select>
+        <button type="submit">Generate & Post</button>
+    </form>
+    {% if script %}
+        <h3>Generated Script:</h3>
+        <p>{{ script }}</p>
+    {% endif %}
+    {% if status %}
+        <h3>Status:</h3>
+        <p>{{ status|safe }}</p>
+    {% endif %}
+</body>
+</html>

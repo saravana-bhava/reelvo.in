@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Output video and media
+output/
+*.mp4
+*.avi
+*.mov
+*.png
+*.jpg
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Python environment files
+*.env
+.env
+.env.*
+
+# Jupyter/IPython (just in case)
+.ipynb_checkpoints/
+
+# pyproject build artifacts
+build/
+dist/
+*.egg-info/
