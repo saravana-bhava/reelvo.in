@@ -1,7 +1,8 @@
+# ------------------ app.py ------------------
 import os
 from flask import Flask, render_template, request, redirect, session
 from utils.generate_script import generate_script
-from utils.create_video import try_veed_ai, fallback_moviepy
+from utils.create_video import try_veed_ai, fallback_ffmpeg
 
 app = Flask(__name__)
 app.secret_key = "demo_secret"
@@ -28,7 +29,7 @@ def generate():
     if method == "veed":
         status = f"Video generated using VEED.ai ✅<br><a href='{video_url}' target='_blank'>Watch Video</a>"
     else:
-        video_path, method = fallback_moviepy(script)
+        video_path, method = fallback_ffmpeg(script)
         status = f"VEED failed. Fallback to local video ✅<br>Saved at: {video_path}"
 
     return render_template("dashboard.html", user=session.get("user"), script=script, status=status)

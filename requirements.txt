@@ -1,8 +1,6 @@
+# FFmpeg must be installed on the server
 flask
 httpx<0.26
-moviepy==1.0.3
-imageio
-imageio-ffmpeg
 openai>=1.0.0
 python-dotenv
 requests
