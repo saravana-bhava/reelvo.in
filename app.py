@@ -29,7 +29,8 @@ def generate():
     if method == "veed":
         status = f"Video generated using VEED.ai ✅<br><a href='{video_url}' target='_blank'>Watch Video</a>"
     else:
-        video_path, method = fallback_ffmpeg(script)
+        from utils.fallback_ffmpeg import fallback_ffmpeg_light
+        video_path, method = fallback_ffmpeg_light(script)
         status = f"VEED failed. Fallback to local video ✅<br>Saved at: {video_path}"
 
     return render_template("dashboard.html", user=session.get("user"), script=script, status=status)
