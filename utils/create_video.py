@@ -20,26 +20,21 @@ def try_veed_ai(script):
         print("[❌] VEED API error:", e)
         return None, None
 
-def fallback_ffmpeg(script, output_path="output/video.mp4"):
+def fallback_ffmpeg(script, output_path="output/final.mp4"):
     try:
-        print("[ℹ️] Generating fallback video with FFmpeg...")
+        print("[ℹ️] Using lightweight FFmpeg fallback...")
 
-        os.makedirs("output", exist_ok=True)
-        temp_txt_path = "output/text.txt"
-        with open(temp_txt_path, "w") as f:
-            f.write(script)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        output_path = f"output/reel_{datetime.now().strftime('%Y%m%d%H%M%S')}.mp4"
-        command = [
+        subprocess.run([
             "ffmpeg",
-            "-f", "lavfi",
-            "-i", "color=c=black:s=1080x1920:d=10",
-            "-vf", f"drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:textfile={temp_txt_path}:fontcolor=white:fontsize=60:x=(w-text_w)/2:y=(h-text_h)/2",
+            "-i", "fallback/base.mp4",
+            "-c", "copy",
             "-y", output_path
-        ]
+        ], check=True)
 
-        subprocess.run(command, check=True)
-        return output_path, "ffmpeg"
-    except Exception as e:
+        return output_path, "fallback"
+
+    except subprocess.CalledProcessError as e:
         print("[❌] FFmpeg fallback error:", e)
         return None, None
