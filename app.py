@@ -22,16 +22,17 @@ def dashboard():
 
 @app.route('/generate', methods=["POST"])
 def generate():
-    theme = request.form["theme"]
+    theme = request.form.get("theme", "default")  # dropdown should be name="theme"
     script = generate_script(theme)
 
+    # Try VEED first
     video_url, method = try_veed_ai(script)
+
     if method == "veed":
         status = f"Video generated using VEED.ai ✅<br><a href='{video_url}' target='_blank'>Watch Video</a>"
     else:
-        from utils.fallback_ffmpeg import fallback_ffmpeg_light
-        video_path, method = fallback_ffmpeg_light(script)
-        status = f"VEED failed. Fallback to local video ✅<br>Saved at: {video_path}"
+        video_path, method = fallback_ffmpeg(script, theme=theme)  # updated to pass theme
+        status = f"VEED failed. Fallback video used ✅<br>Saved at: {video_path}"
 
     return render_template("dashboard.html", user=session.get("user"), script=script, status=status)
 
