@@ -1,6 +1,5 @@
-
-from flask import Flask, render_template, request, redirect, session
 import os
+from flask import Flask, render_template, request, redirect, session
 from utils.generate_script import generate_script
 from utils.create_video import try_veed_ai, fallback_moviepy
 
@@ -24,10 +23,8 @@ def dashboard():
 def generate():
     theme = request.form["theme"]
     script = generate_script(theme)
-    
-    # Try VEED first
+
     video_url, method = try_veed_ai(script)
-    
     if method == "veed":
         status = f"Video generated using VEED.ai ✅<br><a href='{video_url}' target='_blank'>Watch Video</a>"
     else:
@@ -39,5 +36,7 @@ def generate():
 if __name__ == "__main__":
     if not os.path.exists("output"):
         os.makedirs("output")
+
+    # Bind to dynamic PORT for Render
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
