@@ -1,1 +1,1 @@
-# ai-video-drive-instagram
+# AI Instagram Reels Automation Platform (MVP)
