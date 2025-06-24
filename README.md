@@ -76,14 +76,13 @@ Or trigger generation from the dashboard with a selected theme.
 
 ---
 
-## 📄 License
-
-This project is under private development for internal MVP/demo use. For licensing, contact the author.
-
-
----
-
 ## 👤 Author
 
 **Saravana Bhava**  
 🌐 [https://sazm.in](https://sazm.in)
+
+---
+
+## 📄 License
+
+This project is under private development for internal MVP/demo use. For licensing, contact the author.

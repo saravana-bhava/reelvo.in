@@ -43,7 +43,7 @@
         }
         .logout-btn {
             background-color: #dc3545;
-            float: right;
+            margin-left: auto;
         }
         .logout-btn:hover {
             background-color: #c82333;
@@ -53,14 +53,33 @@
             padding: 10px;
             border-radius: 6px;
         }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .reel-list {
+            margin-top: 20px;
+        }
+        .reel-list a {
+            display: block;
+            color: #007bff;
+            text-decoration: none;
+            margin-bottom: 8px;
+        }
+        .reel-list a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="dashboard-box">
-        <form method="get" action="{{ url_for('logout') }}" style="text-align: right;">
-            <button class="logout-btn">Logout</button>
-        </form>
-        <h2>Welcome, {{ user }} 👋</h2>
+        <div class="top-bar">
+            <h2>Welcome, {{ user }} 👋</h2>
+            <form method="get" action="{{ url_for('logout') }}">
+                <button class="logout-btn">Logout</button>
+            </form>
+        </div>
 
         <form method="post" action="{{ url_for('generate') }}">
             <label>Select Niche/Topic:</label>
@@ -83,6 +102,15 @@
         {% if status %}
             <h3>Status:</h3>
             <p>{{ status|safe }}</p>
+        {% endif %}
+
+        {% if videos %}
+            <h3>📂 Your Reels:</h3>
+            <div class="reel-list">
+                {% for video in videos %}
+                    <a href="{{ url_for('serve_video', filename=video) }}" target="_blank">{{ video }}</a>
+                {% endfor %}
+            </div>
         {% endif %}
     </div>
 </body>

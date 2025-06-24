@@ -1,8 +1,9 @@
 # FFmpeg must be installed on the server
 flask
+gTTS
 httpx<0.26
 openai>=1.0.0
+Pillow
 python-dotenv
 requests
-Pillow
 tqdm
