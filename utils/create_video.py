@@ -1,10 +1,31 @@
 import os
 import subprocess
 from datetime import datetime
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# -------------------- VEED AI (mock/fake fallback) --------------------
+def try_veed_ai(script):
+    """
+    Simulates a VEED.ai API call.
+    Replace this with real integration if available.
+    """
+    print("[ℹ️] Attempting VEED.ai generation...")
+
+    try:
+        # Simulated failure (or implement your actual logic here)
+        raise Exception("VEED AI not available (simulated)")
+
+        # If successful:
+        # return "https://veed.io/generated_video.mp4", "veed"
+
+    except Exception as e:
+        print("[❌] VEED AI failed:", e)
+        return None, None
+
+# -------------------- Fallback FFmpeg Video Generator --------------------
 def fallback_ffmpeg(script, theme="default", output_path=None):
     try:
         print("[ℹ️] Using FFmpeg fallback...")
@@ -24,10 +45,14 @@ def fallback_ffmpeg(script, theme="default", output_path=None):
             with open("output/text.txt", "w") as f:
                 f.write(script.strip())
 
+            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            if not os.path.exists(font_path):
+                font_path = "assets/fonts/DejaVuSans-Bold.ttf"
+
             command = [
                 "ffmpeg",
                 "-i", base_video,
-                "-vf", "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:textfile=output/text.txt:fontcolor=white:fontsize=60:x=(w-text_w)/2:y=(h-text_h)/2",
+                "-vf", f"drawtext=fontfile={font_path}:textfile=output/text.txt:fontcolor=white:fontsize=60:x=(w-text_w)/2:y=(h-text_h)/2",
                 "-c:a", "copy",
                 "-y", output_path
             ]

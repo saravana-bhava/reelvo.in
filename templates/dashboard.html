@@ -1,25 +1,89 @@
-
 <!DOCTYPE html>
-<html>
-<head><title>Dashboard</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Reelvo.ai</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 60px;
+            margin: 0;
+        }
+        .dashboard-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 500px;
+        }
+        h2, h3 {
+            margin-top: 0;
+        }
+        select, button, input {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .logout-btn {
+            background-color: #dc3545;
+            float: right;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+        p {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
 <body>
-    <h2>Welcome {{ user }}</h2>
-    <form method="post" action="/generate">
-        <label>Select Niche/Topic:</label>
-        <select name="niche">
-            <option value="motivation">Motivation</option>
-            <option value="sad">Sad</option>
-            <option value="inspiration">Inspiration</option>
-        </select>
-        <button type="submit">Generate & Post</button>
-    </form>
-    {% if script %}
-        <h3>Generated Script:</h3>
-        <p>{{ script }}</p>
-    {% endif %}
-    {% if status %}
-        <h3>Status:</h3>
-        <p>{{ status|safe }}</p>
-    {% endif %}
+    <div class="dashboard-box">
+        <form method="get" action="/logout" style="text-align: right;">
+            <button class="logout-btn">Logout</button>
+        </form>
+        <h2>Welcome, {{ user }} 👋</h2>
+
+        <form method="post" action="/generate">
+            <label>Select Niche/Topic:</label>
+            <select name="theme" required>
+                <option value="">-- Choose a theme --</option>
+                <option value="motivation">Motivation</option>
+                <option value="sad">Sad</option>
+                <option value="inspiration">Inspiration</option>
+                <option value="success">Success</option>
+                <option value="life">Life</option>
+            </select>
+            <button type="submit">Generate & Post</button>
+        </form>
+
+        {% if script %}
+            <h3>Generated Script:</h3>
+            <p>{{ script }}</p>
+        {% endif %}
+
+        {% if status %}
+            <h3>Status:</h3>
+            <p>{{ status|safe }}</p>
+        {% endif %}
+    </div>
 </body>
 </html>

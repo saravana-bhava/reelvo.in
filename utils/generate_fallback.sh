@@ -3,11 +3,11 @@
 # Ensure fallback folder exists
 mkdir -p fallback
 
-# Font path (you can modify if needed)
 FONT_PATH="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 # List of [niche]=[background_color]
 declare -A niches=(
+  [default]="black"         # 👈 add this line
   [motivation]="black"
   [inspiration]="darkblue"
   [sad]="gray"
@@ -15,7 +15,6 @@ declare -A niches=(
   [finance]="darkgreen"
 )
 
-# Generate fallback videos
 for niche in "${!niches[@]}"; do
   color="${niches[$niche]}"
   echo "🎬 Generating: $niche (bg: $color)..."
