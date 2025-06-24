@@ -57,12 +57,12 @@
 </head>
 <body>
     <div class="dashboard-box">
-        <form method="get" action="/logout" style="text-align: right;">
+        <form method="get" action="{{ url_for('logout') }}" style="text-align: right;">
             <button class="logout-btn">Logout</button>
         </form>
         <h2>Welcome, {{ user }} 👋</h2>
 
-        <form method="post" action="/generate">
+        <form method="post" action="{{ url_for('generate') }}">
             <label>Select Niche/Topic:</label>
             <select name="theme" required>
                 <option value="">-- Choose a theme --</option>
