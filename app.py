@@ -8,8 +8,9 @@ from werkzeug.serving import run_simple
 
 load_dotenv()
 
+# Main Flask app
 flask_app = Flask(__name__)
-flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")  # Use env secret or fallback
+flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
 @flask_app.route('/')
 def index():
@@ -54,14 +55,18 @@ def generate():
 
     return render_template("dashboard.html", user=session.get("user"), script=script, status=status)
 
-# Mount at /reelvo.ai
+# Mount Flask app under subpath `/reelvo.ai`
 application = DispatcherMiddleware(lambda e, s: s(b'404 Not Found', []), {
     '/reelvo.ai': flask_app
 })
 
+# Expose as 'app' for Gunicorn / Render / Railway compatibility
+app = application
+
+# Run for local development
 if __name__ == "__main__":
     if not os.path.exists("output"):
         os.makedirs("output")
 
     port = int(os.environ.get("PORT", 5000))
-    run_simple("127.0.0.1", port, application, use_debugger=True, use_reloader=True)
+    run_simple("127.0.0.1", port, app, use_debugger=True, use_reloader=True)

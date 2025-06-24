@@ -2,6 +2,6 @@ services:
   - type: web
     name: reelvo-ai
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: ./start.sh
+    buildCommand: "./install.sh && pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
     autoDeploy: true
