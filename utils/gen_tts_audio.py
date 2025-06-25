@@ -13,8 +13,8 @@ def generate_tts_audio(category: str, text: str, output_path: str = None):
     print(f"[✅] TTS saved to {output_path}")
     return output_path
 
-def generate_tts_from_file(category: str):
-    text_path = f"output/{category}_text.txt"
+def generate_tts_from_file(category: str, output_dir: str = "output"):
+    text_path = os.path.join(output_dir, f"{category}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Text file not found: {text_path}")
 
@@ -24,7 +24,8 @@ def generate_tts_from_file(category: str):
     if not text:
         raise ValueError("[❌] Script text is empty.")
 
-    return generate_tts_audio(category, text)
+    output_path = os.path.join(output_dir, f"{category}.mp3")
+    return generate_tts_audio(category, text, output_path)
 
 # CLI usage
 if __name__ == "__main__":

@@ -46,3 +46,4 @@ dist/
 
 .htaccess
 docs/
+output/

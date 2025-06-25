@@ -108,7 +108,7 @@
             <h3>📂 Your Reels:</h3>
             <div class="reel-list">
                 {% for video in videos %}
-                    <a href="{{ url_for('serve_video', filename=video) }}" target="_blank">{{ video }}</a>
+                    <a href="{{ url_for('serve_video', username=user, filename=video) }}" target="_blank">{{ video }}</a>
                 {% endfor %}
             </div>
         {% endif %}
