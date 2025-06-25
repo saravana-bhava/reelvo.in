@@ -1,16 +1,106 @@
 # utils/gen_tts_audio.py
 
 import os
+import subprocess
 from gtts import gTTS
+
+# Optional: use ElevenLabs or Google Cloud TTS if available
+USE_ELEVENLABS = os.getenv("USE_ELEVENLABS", "false").lower() == "true"
+USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
+
+# ElevenLabs config
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "Rachel")
+
+# Google Cloud config
+GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
+
+def pad_or_trim_audio(input_path, output_path, duration=10):
+    """
+    Pad or trim audio to exactly 10 seconds using FFmpeg.
+    """
+    try:
+        subprocess.run([
+            "ffmpeg", "-y", "-i", input_path,
+            "-af", f"apad=pad_dur={duration}",  # pad if shorter
+            "-t", str(duration),                # cut if longer
+            "-ar", "44100", "-ac", "1", "-b:a", "192k",
+            output_path
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"[❌] FFmpeg padding failed: {e}")
 
 def generate_tts_audio(category: str, text: str, output_path: str = None):
     output_path = output_path or f"output/{category}.mp3"
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
     print(f"[🔊] Generating TTS for '{category}' → {output_path}")
-    tts = gTTS(text=text.strip(), lang='en')
-    tts.save(output_path)
-    print(f"[✅] TTS saved to {output_path}")
+
+    raw_path = output_path.replace(".mp3", "_raw.mp3")
+
+    if USE_ELEVENLABS and ELEVENLABS_API_KEY:
+        try:
+            import requests
+            print("[🧠] Using ElevenLabs TTS")
+
+            headers = {
+                "xi-api-key": ELEVENLABS_API_KEY,
+                "Content-Type": "application/json"
+            }
+            json_data = {
+                "text": text,
+                "voice_settings": {"stability": 0.75, "similarity_boost": 0.75},
+                "model_id": "eleven_multilingual_v2"
+            }
+
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+            response = requests.post(url, headers=headers, json=json_data)
+
+            if response.status_code == 200:
+                with open(raw_path, "wb") as f:
+                    f.write(response.content)
+                print(f"[✅] ElevenLabs audio saved to {raw_path}")
+            else:
+                print(f"[❌] ElevenLabs API error: {response.status_code} - {response.text}")
+        except Exception as e:
+            print(f"[❌] ElevenLabs TTS failed: {e}")
+
+    elif USE_GOOGLE_CLOUD:
+        try:
+            print("[🧠] Using Google Cloud TTS")
+            from google.cloud import texttospeech
+            client = texttospeech.TextToSpeechClient()
+
+            synthesis_input = texttospeech.SynthesisInput(text=text)
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="en-US",
+                name=GOOGLE_CLOUD_TTS_VOICE
+            )
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.MP3
+            )
+
+            response = client.synthesize_speech(
+                input=synthesis_input, voice=voice, audio_config=audio_config
+            )
+
+            with open(raw_path, "wb") as out:
+                out.write(response.audio_content)
+            print(f"[✅] Google Cloud TTS audio saved to {raw_path}")
+        except Exception as e:
+            print(f"[❌] Google Cloud TTS failed: {e}")
+
+    else:
+        try:
+            print("[🌍] Using gTTS fallback")
+            tts = gTTS(text=text.strip(), lang='en')
+            tts.save(raw_path)
+            print(f"[✅] gTTS audio saved to {raw_path}")
+        except Exception as e:
+            raise RuntimeError(f"[❌] gTTS failed: {e}")
+
+    # Final step: pad or trim to exactly 10 seconds
+    pad_or_trim_audio(raw_path, output_path)
+    print(f"[🎯] Audio padded to 10s → {output_path}")
     return output_path
 
 def generate_tts_from_file(category: str, output_dir: str = "output"):

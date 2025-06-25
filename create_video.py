@@ -11,10 +11,9 @@ load_dotenv()
 
 IMAGE_DIR = "assets/images"
 VIDEO_DIR = "assets/videos"
-
+WATERMARK_PATH = "assets/logo.png"
+VIDEO_DURATION = 10
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
-VIDEO_DURATION = 10  # seconds
-
 
 def create_video_for_category(category, username):
     print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
@@ -28,8 +27,8 @@ def create_video_for_category(category, username):
     srt_path = os.path.join(base_output, f"{category}.srt")
     output_path = os.path.join(base_output, f"{category}.mp4")
 
-    image_path = f"assets/images/{category}.png"
-    stock_video_path = f"assets/videos/{category}.mp4"
+    image_path = os.path.join(IMAGE_DIR, f"{category}.png")
+    stock_video_path = os.path.join(VIDEO_DIR, f"{category}.mp4")
 
     if not os.path.exists(text_path):
         print(f"[❌] Missing script text: {text_path}")
@@ -39,10 +38,6 @@ def create_video_for_category(category, username):
         script = f.read().strip()
 
     try:
-        from utils.gen_text_overlay import generate_text_overlay
-        from utils.gen_tts_audio import generate_tts_from_file
-        from utils.gen_subtitles import generate_srt_from_audio
-
         generate_text_overlay(script, text_image_path)
         generate_tts_from_file(category, base_output)
         generate_srt_from_audio(category, audio_path, srt_path)
@@ -50,53 +45,101 @@ def create_video_for_category(category, username):
         print(f"[❌] Asset generation failed: {e}")
         return None
 
-    use_video = os.path.exists(stock_video_path)
-    use_image = not use_video and os.path.exists(image_path)
-    use_text_overlay = not use_video and not use_image
-
     inputs = []
     filters = []
-    input_count = 0
+    input_index = 0
 
-    # Input 0: video or fallback
-    if use_video:
-        print(f"[🎥] Using stock video: {stock_video_path}")
+    # [0] Background
+    use_stock_video = os.path.exists(stock_video_path)
+    if use_stock_video:
         inputs += ["-i", stock_video_path]
+        print(f"[🎥] Using stock video: {stock_video_path}")
     else:
-        print(f"[🪄] Using black background fallback")
-        inputs += ["-f", "lavfi", "-t", "10", "-i", "color=c=black:s=1080x1920"]
+        inputs += ["-f", "lavfi", "-t", str(VIDEO_DURATION), "-i", "color=c=black:s=1080x1920"]
+        print(f"[🪄] Using fallback black background")
+    input_index += 1
 
-    # Input 1: overlay image
-    if use_image:
-        print(f"[🖼️] Using image overlay: {image_path}")
-        inputs += ["-loop", "1", "-i", image_path]
-        filters.append(f"[0:v][1:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,10)'[base]")
-        input_count = 2
-    elif use_text_overlay:
-        print(f"[🖋️] Using text overlay: {text_image_path}")
-        inputs += ["-loop", "1", "-i", text_image_path]
-        filters.append(f"[0:v][1:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,10)'[base]")
-        input_count = 2
-    else:
-        filters.append("[0:v]fade=t=in:st=0:d=1,fade=t=out:st=9:d=1[base]")
-        input_count = 1
+    # Overlay input only if not using stock video
+    overlay_used = False
+    if not use_stock_video:
+        if os.path.exists(image_path):
+            overlay_path = image_path
+            print(f"[🖼️] Using image overlay: {overlay_path}")
+        elif os.path.exists(text_image_path):
+            overlay_path = text_image_path
+            print(f"[🖋️] Using text overlay: {overlay_path}")
+        else:
+            print(f"[⚠️] No overlay image found.")
+            return None
+        inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", overlay_path]
+        overlay_used = True
+        overlay_index = input_index
+        input_index += 1
 
-    # Input 2: audio
+    # [audio] — move this earlier to prevent PNG index confusion
     inputs += ["-i", audio_path]
+    audio_input_index = input_index
+    input_index += 1
 
-    # Add subtitles using SRT file (overlay on 'base')
-    filters.append(f"[base]subtitles='{srt_path}':force_style='FontSize=28,PrimaryColour=&HFFFFFF&'[outv]")
+    # [watermark]
+    use_logo = os.path.exists(WATERMARK_PATH)
+    if use_logo:
+        inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
+        logo_index = input_index
+        print(f"[🔖] Using watermark: {WATERMARK_PATH}")
+        input_index += 1
+
+    # Fade background
+    filters.append(f"[0:v]fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION - 1}:d=1[bg]")
+
+    base_stream = "[bg]"
+
+    # Only overlay image/text if no stock video
+    if overlay_used:
+        filters.append(f"{base_stream}[{overlay_index}:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,{VIDEO_DURATION})'[mid]")
+        base_stream = "[mid]"
+
+    # Watermark (logo in bottom right)
+    if use_logo:
+        filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
+        base_stream = "[wm]"
+
+    # Gradient boxes (top & bottom)
+    filters.append(
+        f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
+        f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
+    )
+
+    # Subtitles
+    subtitle_style = (
+        "FontName=Arial,"
+        "FontSize=30,"                           # Slightly larger
+        "PrimaryColour=&H00FFFFFF&,"            # White
+        "OutlineColour=&H000000&,"              # Strong black outline
+        "BorderStyle=1,"                        # Outline
+        "Outline=3,"                            # Stronger outline
+        "Shadow=0,"
+        "MarginV=100,"                          # Moves it slightly higher for better readability
+        "Alignment=2"                           # Centered bottom
+    )
+    escaped_srt_path = srt_path.replace("'", r"'\''")
+    filters.append(
+        f"[boxed]subtitles='{escaped_srt_path}':force_style='{subtitle_style}'[outv]"
+    )
 
     cmd = [
         "ffmpeg", *inputs,
         "-filter_complex", ";".join(filters),
         "-map", "[outv]",
-        "-map", f"{input_count}:a",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
-        "-c:a", "aac", "-shortest",
+        "-map", f"{audio_input_index}:a",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
+        "-c:a", "aac", "-ar", "44100", "-b:a", "192k",
+        "-movflags", "+faststart",
         "-pix_fmt", "yuv420p",
         "-y", output_path
     ]
+
+    print(f"[📦] Running FFmpeg command:\n{' '.join(cmd)}")
 
     try:
         subprocess.run(cmd, check=True)
@@ -106,12 +149,10 @@ def create_video_for_category(category, username):
         print(f"[❌] FFmpeg failed: {e}")
         return None
 
-
 # CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:
-        category, username = sys.argv[1], sys.argv[2]
-        create_video_for_category(category, username)
+        create_video_for_category(sys.argv[1], sys.argv[2])
     else:
         print("Usage: python create_video.py <category> <username>")

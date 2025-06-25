@@ -17,6 +17,7 @@ moviepy
 numpy
 opencv-python
 Pillow
+pydub
 python-dotenv
 srt
 tqdm
