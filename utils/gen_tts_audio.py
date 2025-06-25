@@ -9,21 +9,15 @@ from dotenv import load_dotenv
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
-# Optional: use ElevenLabs or Google Cloud TTS if available
 USE_ELEVENLABS = os.getenv("USE_ELEVENLABS", "false").lower() == "true"
 USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
 
-# ElevenLabs config
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "9BWtsMINqrJLrRacOk9x")
 
-# Google Cloud config
 GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
 
 def pad_or_trim_audio(input_path, output_path, duration=10):
-    """
-    Pad or trim audio to exactly 10 seconds using FFmpeg.
-    """
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
@@ -40,7 +34,9 @@ def generate_tts_audio(category: str, text: str, output_path: str):
     print(f"[🔊] Generating TTS for '{category}' → {output_path}")
 
     raw_path = output_path.replace(".mp3", "_raw.mp3")
+    success = False
 
+    # Try ElevenLabs
     if USE_ELEVENLABS and ELEVENLABS_API_KEY:
         try:
             import requests
@@ -63,12 +59,14 @@ def generate_tts_audio(category: str, text: str, output_path: str):
                 with open(raw_path, "wb") as f:
                     f.write(response.content)
                 print(f"[✅] ElevenLabs audio saved to {raw_path}")
+                success = True
             else:
                 print(f"[❌] ElevenLabs API error: {response.status_code} - {response.text}")
         except Exception as e:
             print(f"[❌] ElevenLabs TTS failed: {e}")
 
-    elif USE_GOOGLE_CLOUD:
+    # Try Google Cloud TTS
+    if not success and USE_GOOGLE_CLOUD:
         try:
             print("[🧠] Using Google Cloud TTS")
             from google.cloud import texttospeech
@@ -76,7 +74,7 @@ def generate_tts_audio(category: str, text: str, output_path: str):
 
             synthesis_input = texttospeech.SynthesisInput(text=text)
             voice = texttospeech.VoiceSelectionParams(
-                language_code="en-US",
+                language_code="en-IN",
                 name=GOOGLE_CLOUD_TTS_VOICE
             )
             audio_config = texttospeech.AudioConfig(
@@ -90,21 +88,28 @@ def generate_tts_audio(category: str, text: str, output_path: str):
             with open(raw_path, "wb") as out:
                 out.write(response.audio_content)
             print(f"[✅] Google Cloud TTS audio saved to {raw_path}")
+            success = True
         except Exception as e:
             print(f"[❌] Google Cloud TTS failed: {e}")
 
-    else:
+    # Fallback to gTTS
+    if not success:
         try:
-            print("[🌍] Using gTTS fallback")
+            print("[🌍] Falling back to gTTS...")
             tts = gTTS(text=text.strip(), lang='en')
             tts.save(raw_path)
             print(f"[✅] gTTS audio saved to {raw_path}")
+            success = True
         except Exception as e:
             raise RuntimeError(f"[❌] gTTS failed: {e}")
 
-    pad_or_trim_audio(raw_path, output_path)
-    print(f"[🎯] Audio padded to 10s → {output_path}")
-    return output_path
+    # Pad/trim and finalize
+    if success:
+        pad_or_trim_audio(raw_path, output_path)
+        print(f"[🎯] Audio padded to 10s → {output_path}")
+        return output_path
+    else:
+        raise RuntimeError("[❌] All TTS methods failed.")
 
 def generate_tts_from_file(category: str, username: str, output_root: str = "output"):
     output_dir = os.path.join(output_root, username)
@@ -122,7 +127,6 @@ def generate_tts_from_file(category: str, username: str, output_root: str = "out
     output_path = os.path.join(output_dir, f"{category}.mp3")
     return generate_tts_audio(category, text, output_path)
 
-# CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 3:

@@ -6,13 +6,19 @@ import openai
 from openai import OpenAIError, RateLimitError
 from textwrap import dedent
 
-load_dotenv()
+# Ensure environment is loaded from root
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
+USE_OPENAI = os.getenv("USE_OPENAI", "true").lower() == "true"
 API_KEY = os.getenv("OPENAI_API_KEY")
-if not API_KEY:
-    raise EnvironmentError("[❌] Missing OPENAI_API_KEY in .env")
 
-client = openai.OpenAI(api_key=API_KEY)
+if USE_OPENAI:
+    if not API_KEY:
+        raise EnvironmentError("[❌] Missing OPENAI_API_KEY in .env")
+    client = openai.OpenAI(api_key=API_KEY)
+else:
+    client = None
 
 FALLBACKS = {
     "motivation": """Push past the pain.
@@ -42,6 +48,10 @@ Hold on. Light comes."""
 }
 
 def generate_script(theme: str) -> str:
+    if not USE_OPENAI:
+        print(f"⚠️ OpenAI disabled via USE_OPENAI=false. Using fallback for '{theme}'")
+        return FALLBACKS.get(theme.lower(), f"This is a fallback script for the theme '{theme}'.")
+
     prompt = (
         f"Write a short, powerful Instagram reel script on the theme: '{theme}'. "
         f"Format the output in 4-5 impactful lines, under 10 seconds for voice delivery."
@@ -72,7 +82,6 @@ def generate_script_for_user(theme: str, username: str) -> str:
 
     output_path = os.path.join(base_output, f"{theme}_text.txt")
 
-    # Use existing script if already generated
     if os.path.exists(output_path):
         print(f"[📝] Script already exists → {output_path}")
         return output_path
