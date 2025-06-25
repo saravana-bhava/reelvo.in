@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, session, url_for
+#from utils.fallback_ffmpeg import fallback_ffmpeg
 from utils.generate_script import generate_script
-from utils.create_video import try_veed_ai, fallback_ffmpeg
 from dotenv import load_dotenv
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.serving import run_simple
@@ -42,16 +42,13 @@ def generate():
     theme = request.form.get("theme", "default").lower()
     script = generate_script(theme)
 
-    video_url, method = try_veed_ai(script)
+    #video_path, method = fallback_ffmpeg(script, theme=theme)
+    #if video_path:
+        #status = f"Fallback video generated ✅<br>Saved at: {video_path}"
+    #else:
+        #status = "❌ FFmpeg fallback failed. Please check logs."
 
-    if method == "veed" and video_url:
-        status = f"Video generated using VEED.ai ✅<br><a href='{video_url}' target='_blank'>Watch Video</a>"
-    else:
-        video_path, method = fallback_ffmpeg(script, theme=theme)
-        if video_path:
-            status = f"VEED failed. Fallback video used ✅<br>Saved at: {video_path}"
-        else:
-            status = "❌ Both VEED and FFmpeg failed. Please check logs or fallback videos."
+    status = "Script Generated"
 
     return render_template("dashboard.html", user=session.get("user"), script=script, status=status)
 
