@@ -47,3 +47,5 @@ dist/
 .htaccess
 docs/
 output/
+secure/
+test/

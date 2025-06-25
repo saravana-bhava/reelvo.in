@@ -60,7 +60,7 @@ def create_video_for_category(category, username):
 
     try:
         generate_text_overlay(script, text_image_path)
-        generate_tts_from_file(category, base_output)
+        generate_tts_from_file(category, username)
         generate_srt_from_audio(category, audio_path, srt_path)
     except Exception as e:
         print(f"[❌] Asset generation failed: {e}")

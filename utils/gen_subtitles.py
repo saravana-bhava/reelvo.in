@@ -10,7 +10,7 @@ def split_into_sentences(text):
 
 def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
     print(f"[🧠] Transcribing audio for word-aligned sentences: {audio_path}")
-    model = whisper.load_model("base")
+    model = whisper.load_model("large")
     result = model.transcribe(audio_path, word_timestamps=True)
 
     words = []

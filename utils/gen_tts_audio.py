@@ -3,6 +3,11 @@
 import os
 import subprocess
 from gtts import gTTS
+from dotenv import load_dotenv
+
+# Explicitly load .env from project root
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 # Optional: use ElevenLabs or Google Cloud TTS if available
 USE_ELEVENLABS = os.getenv("USE_ELEVENLABS", "false").lower() == "true"
@@ -10,7 +15,7 @@ USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
 
 # ElevenLabs config
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "Rachel")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "9BWtsMINqrJLrRacOk9x")
 
 # Google Cloud config
 GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
@@ -22,16 +27,15 @@ def pad_or_trim_audio(input_path, output_path, duration=10):
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
-            "-af", f"apad=pad_dur={duration}",  # pad if shorter
-            "-t", str(duration),                # cut if longer
+            "-af", f"apad=pad_dur={duration}",
+            "-t", str(duration),
             "-ar", "44100", "-ac", "1", "-b:a", "192k",
             output_path
         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"[❌] FFmpeg padding failed: {e}")
 
-def generate_tts_audio(category: str, text: str, output_path: str = None):
-    output_path = output_path or f"output/{category}.mp3"
+def generate_tts_audio(category: str, text: str, output_path: str):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     print(f"[🔊] Generating TTS for '{category}' → {output_path}")
 
@@ -98,13 +102,14 @@ def generate_tts_audio(category: str, text: str, output_path: str = None):
         except Exception as e:
             raise RuntimeError(f"[❌] gTTS failed: {e}")
 
-    # Final step: pad or trim to exactly 10 seconds
     pad_or_trim_audio(raw_path, output_path)
     print(f"[🎯] Audio padded to 10s → {output_path}")
     return output_path
 
-def generate_tts_from_file(category: str, output_dir: str = "output"):
+def generate_tts_from_file(category: str, username: str, output_root: str = "output"):
+    output_dir = os.path.join(output_root, username)
     text_path = os.path.join(output_dir, f"{category}_text.txt")
+
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Text file not found: {text_path}")
 
@@ -120,7 +125,7 @@ def generate_tts_from_file(category: str, output_dir: str = "output"):
 # CLI usage
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python utils/gen_tts_audio.py <category>")
+    if len(sys.argv) != 3:
+        print("Usage: python utils/gen_tts_audio.py <category> <username>")
     else:
-        generate_tts_from_file(sys.argv[1])
+        generate_tts_from_file(sys.argv[1], sys.argv[2])
