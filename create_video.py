@@ -3,11 +3,13 @@
 import os
 import subprocess
 from dotenv import load_dotenv
+from datetime import timedelta
+import srt
+
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
 from utils.gen_subtitles import generate_srt_from_audio
-import srt
-from datetime import timedelta
+from utils.generate_script import generate_script_for_user  # 👈 NEW IMPORT
 
 load_dotenv()
 
@@ -33,14 +35,18 @@ def clip_srt_timing(srt_path, start=0.5, end=9.5):
     with open(srt_path, 'w', encoding='utf-8') as f:
         f.write(srt.compose(clipped))
 
-
 def create_video_for_category(category, username):
     print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
 
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
-    text_path = os.path.join(base_output, f"{category}_text.txt")
+    # 👇 Automatically generate script (OpenAI or fallback)
+    text_path = generate_script_for_user(category, username)
+    if not os.path.exists(text_path):
+        print(f"[❌] Failed to generate script for {category}")
+        return None
+
     audio_path = os.path.join(base_output, f"{category}.mp3")
     text_image_path = os.path.join(base_output, f"{category}_text.png")
     srt_path = os.path.join(base_output, f"{category}.srt")
@@ -48,10 +54,6 @@ def create_video_for_category(category, username):
 
     image_path = os.path.join(IMAGE_DIR, f"{category}.png")
     stock_video_path = os.path.join(VIDEO_DIR, f"{category}.mp4")
-
-    if not os.path.exists(text_path):
-        print(f"[❌] Missing script text: {text_path}")
-        return None
 
     with open(text_path, "r") as f:
         script = f.read().strip()
@@ -64,7 +66,6 @@ def create_video_for_category(category, username):
         print(f"[❌] Asset generation failed: {e}")
         return None
 
-    # Clip subtitle timing to avoid fade zones
     clip_srt_timing(srt_path, 0.5, 9.5)
 
     inputs = []
@@ -113,26 +114,25 @@ def create_video_for_category(category, username):
 
     # Fade background
     filters.append(f"[0:v]fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION - 1}:d=1[bg]")
-
     base_stream = "[bg]"
 
-    # Only overlay image/text if no stock video
+    # Image overlay
     if overlay_used:
         filters.append(f"{base_stream}[{overlay_index}:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,{VIDEO_DURATION})'[mid]")
         base_stream = "[mid]"
 
-    # Watermark (logo in bottom right)
+    # Watermark overlay
     if use_logo:
         filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
         base_stream = "[wm]"
 
-    # Gradient boxes (top & bottom)
+    # Gradient boxes (top/bottom)
     filters.append(
         f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
         f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
     )
 
-    # Subtitles with elevated position and styling
+    # Subtitles styling
     subtitle_style = (
         "FontName=Arial,"
         "FontSize=30,"

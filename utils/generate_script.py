@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import openai
 from openai import OpenAIError, RateLimitError
+from textwrap import dedent
 
 load_dotenv()
 
@@ -14,30 +15,30 @@ if not API_KEY:
 client = openai.OpenAI(api_key=API_KEY)
 
 FALLBACKS = {
-    "motivation": """Push past the pain—growth begins there.
-Results shout what effort whispers.
-One more step. One more rep. One more win.
-Grind in silence—shine in public.""",
+    "motivation": """Push past the pain.
+Effort whispers—results shout.
+One more step. One more rep.
+Grind silent. Shine loud.""",
 
-    "success": """This isn’t luck—it’s late nights and sacrifice.
-Dreams watered with hustle bloom success.
-You rise—not by chance, but by choice.
-Success is just the beginning.""",
+    "success": """This isn’t luck—it’s hustle.
+Dreams bloom with grit.
+You rise by choice.
+Success starts here.""",
 
-    "life": """Every breath writes your story.
-You’re not just living—you’re evolving.
-Even chaos is part of the masterpiece.
-Live fully. Bloom freely. You’re designed for this.""",
+    "life": """Every breath is a story.
+You're evolving daily.
+Even chaos creates beauty.
+Live. Bloom. Become.""",
 
-    "inspiration": """Every spark begins in silence.
-One thought can start a movement.
-Pick up the pen. Begin the change.
-The world shifts when you dare to try.""",
+    "inspiration": """A spark begins in stillness.
+One idea moves worlds.
+Pick up the pen.
+Dare to begin.""",
 
-    "sad": """Some days are heavier than others.
-It’s okay not to be okay right now.
-You’ve survived your worst.
-Hold on. The light is still coming."""
+    "sad": """Some days weigh more.
+It's okay to pause.
+You’ve survived storms.
+Hold on. Light comes."""
 }
 
 def generate_script(theme: str) -> str:
@@ -63,23 +64,30 @@ def generate_script(theme: str) -> str:
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
 
-    # Fallback logic
     return FALLBACKS.get(theme.lower(), f"This is a fallback script for the theme '{theme}'.")
 
-def save_script(theme: str, output_dir="output"):
-    text = generate_script(theme)
-    os.makedirs(output_dir, exist_ok=True)
+def generate_script_for_user(theme: str, username: str) -> str:
+    base_output = os.path.join("output", username)
+    os.makedirs(base_output, exist_ok=True)
 
-    output_path = os.path.join(output_dir, f"{theme}_text.txt")
+    output_path = os.path.join(base_output, f"{theme}_text.txt")
+
+    # Use existing script if already generated
+    if os.path.exists(output_path):
+        print(f"[📝] Script already exists → {output_path}")
+        return output_path
+
+    script = generate_script(theme)
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(text)
+        f.write(dedent(script).strip())
 
     print(f"[📄] Script saved → {output_path}")
     return output_path
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python utils/generate_script.py <theme>")
+    if len(sys.argv) != 3:
+        print("Usage: python utils/generate_script.py <theme> <username>")
     else:
-        save_script(sys.argv[1])
+        theme, username = sys.argv[1], sys.argv[2]
+        generate_script_for_user(theme, username)
