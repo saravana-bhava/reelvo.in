@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
 from utils.gen_subtitles import generate_srt_from_audio
+import srt
+from datetime import timedelta
 
 load_dotenv()
 
@@ -14,6 +16,23 @@ VIDEO_DIR = "assets/videos"
 WATERMARK_PATH = "assets/logo.png"
 VIDEO_DURATION = 10
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
+
+def clip_srt_timing(srt_path, start=0.5, end=9.5):
+    with open(srt_path, 'r', encoding='utf-8') as f:
+        subs = list(srt.parse(f.read()))
+
+    clipped = []
+    for sub in subs:
+        s = max(sub.start.total_seconds(), start)
+        e = min(sub.end.total_seconds(), end)
+        if s < e:
+            sub.start = timedelta(seconds=s)
+            sub.end = timedelta(seconds=e)
+            clipped.append(sub)
+
+    with open(srt_path, 'w', encoding='utf-8') as f:
+        f.write(srt.compose(clipped))
+
 
 def create_video_for_category(category, username):
     print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
@@ -44,6 +63,9 @@ def create_video_for_category(category, username):
     except Exception as e:
         print(f"[❌] Asset generation failed: {e}")
         return None
+
+    # Clip subtitle timing to avoid fade zones
+    clip_srt_timing(srt_path, 0.5, 9.5)
 
     inputs = []
     filters = []
@@ -76,7 +98,7 @@ def create_video_for_category(category, username):
         overlay_index = input_index
         input_index += 1
 
-    # [audio] — move this earlier to prevent PNG index confusion
+    # [audio]
     inputs += ["-i", audio_path]
     audio_input_index = input_index
     input_index += 1
@@ -110,17 +132,17 @@ def create_video_for_category(category, username):
         f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
     )
 
-    # Subtitles
+    # Subtitles with elevated position and styling
     subtitle_style = (
         "FontName=Arial,"
-        "FontSize=30,"                           # Slightly larger
-        "PrimaryColour=&H00FFFFFF&,"            # White
-        "OutlineColour=&H000000&,"              # Strong black outline
-        "BorderStyle=1,"                        # Outline
-        "Outline=3,"                            # Stronger outline
+        "FontSize=30,"
+        "PrimaryColour=&H00FFFFFF&,"
+        "OutlineColour=&H000000&,"
+        "BorderStyle=1,"
+        "Outline=2,"
         "Shadow=0,"
-        "MarginV=100,"                          # Moves it slightly higher for better readability
-        "Alignment=2"                           # Centered bottom
+        "MarginV=100,"
+        "Alignment=2"
     )
     escaped_srt_path = srt_path.replace("'", r"'\''")
     filters.append(
