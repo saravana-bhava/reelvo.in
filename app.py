@@ -8,7 +8,7 @@ from werkzeug.serving import run_simple
 from utils.generate_script import generate_script_for_user
 from create_video import create_video_for_category
 from utils.instagram import post_to_instagram
-from utils.google_drive import upload_to_google_drive  # ✅ Unified Google Drive uploader
+from utils.google_drive import upload_to_google_drive
 
 load_dotenv()
 
@@ -64,6 +64,7 @@ def generate():
         video_path = create_video_for_category(theme, username)
         status = f"✅ Reel generated for <b>{theme}</b>" if video_path else f"❌ Video generation failed for {theme}"
 
+        drive_url, drive_error = None, None
         if video_path:
             # ✅ Upload to Google Drive
             drive_url, drive_error = upload_to_google_drive(video_path, username)
@@ -76,7 +77,7 @@ def generate():
         if POST_TO_IG and video_path and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
             print("[📲] Auto-posting to Instagram...")
             caption = f"{theme.capitalize()} Reel by {username}"
-            post_result = post_to_instagram(video_path, caption, IG_ACCOUNT_ID, IG_ACCESS_TOKEN, username)
+            post_result = post_to_instagram(video_path, caption, IG_ACCOUNT_ID, IG_ACCESS_TOKEN, username, video_url=drive_url)
             print(f"[📲] Post Result: {post_result}")
             status += f"<br>{post_result}"
 

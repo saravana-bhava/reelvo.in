@@ -2,19 +2,17 @@ import time
 import requests
 from utils.google_drive import upload_to_google_drive
 
-def upload_to_temp_hosting(local_path, username="default"):
-    return upload_to_google_drive(local_path, username)
-
-def post_to_instagram(video_path, caption, ig_account_id, access_token, username="default"):
-    public_video_url, upload_error = upload_to_temp_hosting(video_path, username)
-
-    if not public_video_url or not public_video_url.startswith("http"):
-        return f"[❌] Failed to upload video to Google Drive: {upload_error}"
+def post_to_instagram(video_path, caption, ig_account_id, access_token, username="default", video_url=None):
+    # Use existing URL if passed, else upload
+    if not video_url:
+        video_url, upload_error = upload_to_google_drive(video_path, username)
+        if not video_url or not video_url.startswith("http"):
+            return f"[❌] Failed to upload video to Google Drive: {upload_error}"
 
     print(f"[📤] Uploading reel to Instagram container...")
     res = requests.post(f"https://graph.facebook.com/v19.0/{ig_account_id}/media", params={
         "media_type": "REELS",
-        "video_url": public_video_url,
+        "video_url": video_url,
         "caption": caption,
         "access_token": access_token,
         "share_to_feed": "true"
@@ -60,4 +58,3 @@ def post_to_instagram(video_path, caption, ig_account_id, access_token, username
         return f"[✅] Reel posted successfully: <a href='{permalink}' target='_blank'>{permalink}</a>"
     else:
         return f"[✅] Posted (ID: {post_id}), but failed to fetch permalink."
-
