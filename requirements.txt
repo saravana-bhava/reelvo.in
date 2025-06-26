@@ -1,35 +1,57 @@
+# ------------------------
 # Web framework
+# ------------------------
 flask
 
-# AI integration
+# ------------------------
+# AI integration (OpenAI)
+# ------------------------
 openai>=1.0.0
 
-# HTTP requests
-httpx<0.26
+# ------------------------
+# HTTP clients
+# ------------------------
 requests
+httpx<0.26
 
-# TTS
+# ------------------------
+# Text-to-Speech
+# ------------------------
 gTTS
 
-# Video + subtitle processing
+# ------------------------
+# Audio / Video processing
+# ------------------------
 ffmpeg-python
 moviepy
 numpy
 opencv-python
-Pillow
 pydub
-python-dotenv
-srt
-tqdm
+Pillow
 
-# Word-by-word subtitle generation with Whisper (includes torch)
+# ------------------------
+# Subtitles
+# ------------------------
+srt
+
+# ------------------------
+# Utilities
+# ------------------------
+tqdm
+python-dotenv
+
+# ------------------------
+# Whisper for subtitle alignment (includes torch)
+# ------------------------
 git+https://github.com/openai/whisper.git
 
-# ⚠️ Optional override: torch installation
-# Uncomment the appropriate line if Whisper doesn't pull in the right version:
+# ------------------------
+# Optional: Torch installation overrides
+# If Whisper fails to install torch correctly,
+# uncomment one of the options below based on your server environment.
 
-# For CPU-only systems (safer for most servers):
+# For CPU-only systems:
 # torch==2.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-# For CUDA systems (if you're using a GPU):
+# For GPU systems (CUDA):
 # torch==2.7.1

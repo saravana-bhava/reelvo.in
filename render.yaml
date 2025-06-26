@@ -2,6 +2,39 @@ services:
   - type: web
     name: reelvo-ai
     env: python
-    buildCommand: "./install.sh && pip install -r requirements.txt"
-    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
+
+    # ───────────────────────────────────────────────
+    # 🔧 Build setup
+    # ───────────────────────────────────────────────
+    buildCommand: |
+      ./install.sh
+      pip install -r requirements.txt
+
+    # ───────────────────────────────────────────────
+    # 🚀 Start command (Gunicorn for Flask)
+    # ───────────────────────────────────────────────
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+
+    # ───────────────────────────────────────────────
+    # ⚙️ Deploy settings
+    # ───────────────────────────────────────────────
     autoDeploy: true
+    envVars:
+      - key: ENV
+        value: production
+      - key: USE_OPENAI
+        value: false
+      - key: USE_ELEVENLABS
+        value: true
+      - key: USE_GOOGLE_CLOUD_TTS
+        value: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        value: 9BWtsMINqrJLrRacOk9x
+      - key: GOOGLE_CLOUD_TTS_VOICE
+        value: en-US-Wavenet-D
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /var/www/html/SazM/reelvo.ai/secure/credentials.json

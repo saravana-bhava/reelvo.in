@@ -1,17 +1,16 @@
 import os
 from flask import Flask, render_template, request, redirect, session, url_for, send_from_directory
-from utils.generate_script import generate_script
-from create_video import create_video_for_category
 from dotenv import load_dotenv
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.serving import run_simple
 
+from utils.generate_script import generate_script_for_user
+from create_video import create_video_for_category
+
 load_dotenv()
 
-# Main Flask app
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
-
 OUTPUT_BASE = "output"
 
 @flask_app.route('/')
@@ -35,12 +34,9 @@ def dashboard():
     if "user" not in session:
         return redirect(url_for("index"))
 
-    username = session.get("user")
+    username = session["user"]
     user_output_dir = os.path.join(OUTPUT_BASE, username)
-    videos = []
-
-    if os.path.exists(user_output_dir):
-        videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")]
+    videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
 
     return render_template("dashboard.html", user=username, videos=videos)
 
@@ -49,27 +45,23 @@ def generate():
     if "user" not in session:
         return redirect(url_for("index"))
 
-    username = session.get("user")
+    username = session["user"]
     theme = request.form.get("theme", "default").lower()
-    script = generate_script(theme)
-
-    user_output_dir = os.path.join(OUTPUT_BASE, username)
-    os.makedirs(user_output_dir, exist_ok=True)
-
-    text_file_path = os.path.join(user_output_dir, f"{theme}_text.txt")
-    with open(text_file_path, "w") as f:
-        f.write(script)
 
     try:
+        script_path = generate_script_for_user(theme, username)
+        with open(script_path, "r", encoding="utf-8") as f:
+            script = f.read().strip()
+
         video_path = create_video_for_category(theme, username)
-        if video_path:
-            status = f"✅ Reel generated for <b>{theme}</b>"
-        else:
-            status = f"❌ Video generation failed for {theme}"
+        status = f"✅ Reel generated for <b>{theme}</b>" if video_path else f"❌ Video generation failed for {theme}"
+
     except Exception as e:
+        script = ""
         status = f"❌ Error: {str(e)}"
 
-    videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")]
+    user_output_dir = os.path.join(OUTPUT_BASE, username)
+    videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
 
     return render_template("dashboard.html", user=username, script=script, status=status, videos=videos)
 
@@ -77,18 +69,16 @@ def generate():
 def serve_video(username, filename):
     return send_from_directory(os.path.join(OUTPUT_BASE, username), filename)
 
-# Mount Flask app under subpath `/reelvo.ai`
+# Mount app under subpath `/reelvo.ai`
 application = DispatcherMiddleware(lambda e, s: s(b'404 Not Found', []), {
     '/reelvo.ai': flask_app
 })
 
-# Expose as 'app' for Gunicorn / Render / Railway compatibility
+# For production deployment via Gunicorn, Railway, Render, etc.
 app = application
 
-# Run for local development
+# For local development
 if __name__ == "__main__":
-    if not os.path.exists("output"):
-        os.makedirs("output")
-
+    os.makedirs(OUTPUT_BASE, exist_ok=True)
     port = int(os.environ.get("PORT", 5000))
     run_simple("127.0.0.1", port, app, use_debugger=True, use_reloader=True)

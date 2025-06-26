@@ -6,7 +6,7 @@ import openai
 from openai import OpenAIError, RateLimitError
 from textwrap import dedent
 
-# Ensure environment is loaded from root
+# Load .env from project root
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
@@ -47,14 +47,16 @@ You’ve survived storms.
 Hold on. Light comes."""
 }
 
+
 def generate_script(theme: str) -> str:
+    theme = theme.lower()
     if not USE_OPENAI:
-        print(f"⚠️ OpenAI disabled via USE_OPENAI=false. Using fallback for '{theme}'")
-        return FALLBACKS.get(theme.lower(), f"This is a fallback script for the theme '{theme}'.")
+        print(f"⚠️ OpenAI disabled (USE_OPENAI=false). Using fallback for '{theme}'")
+        return FALLBACKS.get(theme, f"This is a fallback script for the theme '{theme}'.")
 
     prompt = (
         f"Write a short, powerful Instagram reel script on the theme: '{theme}'. "
-        f"Format the output in 4-5 impactful lines, under 10 seconds for voice delivery."
+        f"Format it into 4–5 impactful lines, under 10 seconds for voice delivery."
     )
 
     try:
@@ -63,18 +65,19 @@ def generate_script(theme: str) -> str:
             messages=[{ "role": "user", "content": prompt }],
             temperature=0.7
         )
-        text = response.choices[0].message.content.strip()
-        print(f"[✅] Script generated via OpenAI for '{theme}'")
-        return text
+        script = response.choices[0].message.content.strip()
+        print(f"[✅] OpenAI script generated for '{theme}'")
+        return script
 
     except RateLimitError:
-        print("⚠️ OpenAI Rate Limit hit. Using fallback.")
+        print("⚠️ OpenAI rate limit hit. Using fallback.")
     except OpenAIError as e:
-        print(f"❌ OpenAI error: {e}")
+        print(f"[❌] OpenAI error: {e}")
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"[❌] Unexpected error: {e}")
 
-    return FALLBACKS.get(theme.lower(), f"This is a fallback script for the theme '{theme}'.")
+    return FALLBACKS.get(theme, f"This is a fallback script for the theme '{theme}'.")
+
 
 def generate_script_for_user(theme: str, username: str) -> str:
     base_output = os.path.join("output", username)
@@ -93,6 +96,8 @@ def generate_script_for_user(theme: str, username: str) -> str:
     print(f"[📄] Script saved → {output_path}")
     return output_path
 
+
+# CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 3:

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Reelvo.ai</title>
     <style>
         body {
@@ -13,42 +14,69 @@
             height: 100vh;
             margin: 0;
         }
+
         .login-box {
             background: white;
-            padding: 30px;
+            padding: 30px 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            text-align: center;
-            width: 300px;
-        }
-        input[type="text"] {
             width: 90%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input[type="text"] {
+            width: 100%;
             padding: 10px;
             margin-bottom: 20px;
             border-radius: 6px;
             border: 1px solid #ccc;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
         }
+
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
         button {
-            padding: 10px 20px;
+            width: 100%;
+            padding: 10px;
             border: none;
             background: #007bff;
             color: white;
             border-radius: 6px;
+            font-size: 16px;
             cursor: pointer;
+            transition: background 0.3s ease;
         }
+
         button:hover {
             background: #0056b3;
+        }
+
+        @media (max-height: 500px) {
+            body {
+                align-items: flex-start;
+                padding-top: 40px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="login-box">
+    <main class="login-box" role="main" aria-label="Login form">
         <h2>Welcome to Reelvo.ai</h2>
         <form action="{{ url_for('login') }}" method="post">
-            <input type="text" name="username" placeholder="Enter your name" required>
-            <br>
+            <label for="username" class="sr-only">Username</label>
+            <input type="text" id="username" name="username" placeholder="Enter your name" autocomplete="name" required aria-required="true">
             <button type="submit">Login</button>
         </form>
-    </div>
+    </main>
 </body>
 </html>

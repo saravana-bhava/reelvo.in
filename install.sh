@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Exit on error
+# Exit immediately on error
 set -e
 
-# Update package list and install FFmpeg
-apt-get update && apt-get install -y ffmpeg
+echo "🔧 Installing system dependencies..."
+
+# Update package list and install ffmpeg (with minimal output)
+apt-get update -qq && apt-get install -y ffmpeg
+
+echo "✅ FFmpeg installed successfully."

@@ -9,7 +9,7 @@ import srt
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
 from utils.gen_subtitles import generate_srt_from_audio
-from utils.generate_script import generate_script_for_user  # 👈 NEW IMPORT
+from utils.generate_script import generate_script_for_user
 
 load_dotenv()
 
@@ -41,7 +41,7 @@ def create_video_for_category(category, username):
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
-    # 👇 Automatically generate script (OpenAI or fallback)
+    # Generate script if missing
     text_path = generate_script_for_user(category, username)
     if not os.path.exists(text_path):
         print(f"[❌] Failed to generate script for {category}")
@@ -68,23 +68,21 @@ def create_video_for_category(category, username):
 
     clip_srt_timing(srt_path, 0.5, 9.5)
 
-    inputs = []
-    filters = []
+    inputs, filters = [], []
     input_index = 0
 
-    # [0] Background
-    use_stock_video = os.path.exists(stock_video_path)
-    if use_stock_video:
+    # Background video or fallback color
+    if os.path.exists(stock_video_path):
         inputs += ["-i", stock_video_path]
         print(f"[🎥] Using stock video: {stock_video_path}")
     else:
         inputs += ["-f", "lavfi", "-t", str(VIDEO_DURATION), "-i", "color=c=black:s=1080x1920"]
-        print(f"[🪄] Using fallback black background")
+        print("[🪄] Using fallback black background")
     input_index += 1
 
-    # Overlay input only if not using stock video
+    # Overlay only if background is not a stock video
     overlay_used = False
-    if not use_stock_video:
+    if not os.path.exists(stock_video_path):
         if os.path.exists(image_path):
             overlay_path = image_path
             print(f"[🖼️] Using image overlay: {overlay_path}")
@@ -99,12 +97,12 @@ def create_video_for_category(category, username):
         overlay_index = input_index
         input_index += 1
 
-    # [audio]
+    # Audio
     inputs += ["-i", audio_path]
     audio_input_index = input_index
     input_index += 1
 
-    # [watermark]
+    # Watermark (optional)
     use_logo = os.path.exists(WATERMARK_PATH)
     if use_logo:
         inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
@@ -112,27 +110,29 @@ def create_video_for_category(category, username):
         print(f"[🔖] Using watermark: {WATERMARK_PATH}")
         input_index += 1
 
-    # Fade background
+    # FFmpeg filtergraph
     filters.append(f"[0:v]fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION - 1}:d=1[bg]")
     base_stream = "[bg]"
 
-    # Image overlay
     if overlay_used:
-        filters.append(f"{base_stream}[{overlay_index}:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,{VIDEO_DURATION})'[mid]")
+        filters.append(
+            f"{base_stream}[{overlay_index}:v]overlay=(W-w)/2:(H-h)/2:enable='between(t,0,{VIDEO_DURATION})'[mid]"
+        )
         base_stream = "[mid]"
 
-    # Watermark overlay
     if use_logo:
-        filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
+        filters.append(
+            f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]"
+        )
         base_stream = "[wm]"
 
-    # Gradient boxes (top/bottom)
+    # Draw top & bottom black boxes
     filters.append(
         f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
         f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
     )
 
-    # Subtitles styling
+    # Subtitles
     subtitle_style = (
         "FontName=Arial,"
         "FontSize=30,"
@@ -144,11 +144,11 @@ def create_video_for_category(category, username):
         "MarginV=100,"
         "Alignment=2"
     )
-    escaped_srt_path = srt_path.replace("'", r"'\''")
     filters.append(
-        f"[boxed]subtitles='{escaped_srt_path}':force_style='{subtitle_style}'[outv]"
+        f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]"
     )
 
+    # FFmpeg command
     cmd = [
         "ffmpeg", *inputs,
         "-filter_complex", ";".join(filters),
