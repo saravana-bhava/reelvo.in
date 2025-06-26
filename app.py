@@ -67,12 +67,10 @@ def generate():
         if video_path:
             # ✅ Upload to Google Drive
             drive_url, drive_error = upload_to_google_drive(video_path, username)
-            if drive_url:
+            if drive_url and drive_url.startswith("http"):
                 status += f"<br>📁 Uploaded to Drive: <a href='{drive_url}' target='_blank'>Open</a>"
-            elif drive_error:
-                status += f"<br>{drive_error}"
             else:
-                status += f"<br>[❌] Unknown upload error."
+                status += f"<br>{drive_error or '[❌] Unknown upload error.'}"
 
         # ✅ Optional: Auto-post to IG
         if POST_TO_IG and video_path and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
@@ -80,7 +78,7 @@ def generate():
             caption = f"{theme.capitalize()} Reel by {username}"
             post_result = post_to_instagram(video_path, caption, IG_ACCOUNT_ID, IG_ACCESS_TOKEN, username)
             print(f"[📲] Post Result: {post_result}")
-            status += "<br>" + post_result if isinstance(post_result, str) else f"<br>✅ Instagram Post ID: {post_result}"
+            status += f"<br>{post_result}"
 
     except Exception as e:
         script = ""
