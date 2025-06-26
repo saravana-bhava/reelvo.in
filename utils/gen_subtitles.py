@@ -2,7 +2,11 @@ import os
 import whisper
 import srt
 import re
+import warnings
 from datetime import timedelta
+
+# Suppress FP16 CPU warning from Whisper
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
 def split_into_sentences(text):
     # Basic split on punctuation
