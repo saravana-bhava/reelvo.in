@@ -134,8 +134,8 @@ def create_video_for_category(category, username):
 
     # Subtitles
     subtitle_style = (
-        "FontName=Arial,"
-        "FontSize=30,"
+        "FontName=DejaVuSans-Bold,"
+        "FontSize=25,"
         "PrimaryColour=&H00FFFFFF&,"
         "OutlineColour=&H000000&,"
         "BorderStyle=1,"

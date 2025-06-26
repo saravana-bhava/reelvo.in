@@ -11,7 +11,7 @@ from datetime import timedelta
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
 # Load Whisper model once
-MODEL = whisper.load_model("large")
+MODEL = whisper.load_model("small")
 
 def split_into_sentences(text):
     return re.split(r'(?<=[.!?])\s+', text.strip())
