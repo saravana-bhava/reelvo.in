@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, render_template, request, redirect, session, url_for, send_from_directory
 from dotenv import load_dotenv
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -6,12 +7,19 @@ from werkzeug.serving import run_simple
 
 from utils.generate_script import generate_script_for_user
 from create_video import create_video_for_category
+from utils.instagram import post_to_instagram
+from utils.google_drive import upload_to_google_drive  # ✅ Unified Google Drive uploader
 
 load_dotenv()
 
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 OUTPUT_BASE = "output"
+
+# Instagram config
+POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
+IG_ACCOUNT_ID = os.getenv("INSTAGRAM_BUSINESS_ID")
+IG_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
 
 @flask_app.route('/')
 def index():
@@ -55,6 +63,24 @@ def generate():
 
         video_path = create_video_for_category(theme, username)
         status = f"✅ Reel generated for <b>{theme}</b>" if video_path else f"❌ Video generation failed for {theme}"
+
+        if video_path:
+            # ✅ Upload to Google Drive
+            drive_url, drive_error = upload_to_google_drive(video_path, username)
+            if drive_url:
+                status += f"<br>📁 Uploaded to Drive: <a href='{drive_url}' target='_blank'>Open</a>"
+            elif drive_error:
+                status += f"<br>{drive_error}"
+            else:
+                status += f"<br>[❌] Unknown upload error."
+
+        # ✅ Optional: Auto-post to IG
+        if POST_TO_IG and video_path and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
+            print("[📲] Auto-posting to Instagram...")
+            caption = f"{theme.capitalize()} Reel by {username}"
+            post_result = post_to_instagram(video_path, caption, IG_ACCOUNT_ID, IG_ACCESS_TOKEN, username)
+            print(f"[📲] Post Result: {post_result}")
+            status += "<br>" + post_result if isinstance(post_result, str) else f"<br>✅ Instagram Post ID: {post_result}"
 
     except Exception as e:
         script = ""

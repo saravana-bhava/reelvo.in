@@ -47,6 +47,11 @@ python-dotenv
 git+https://github.com/openai/whisper.git
 
 # ------------------------
+# Google Drive API
+# ------------------------
+google-api-python-client
+
+# ------------------------
 # Optional: Torch installation overrides
 # If Whisper fails to install torch correctly,
 # uncomment one of the options below based on your server environment.
