@@ -54,3 +54,5 @@ test/
 *.spec     # If using PyInstaller for packaging
 
 .pytest_cache/
+
+docs/
