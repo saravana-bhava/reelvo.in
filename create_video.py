@@ -159,13 +159,13 @@ def create_video_for_category(category, username):
 
     subtitle_style = (
         "FontName=DejaVuSans-Bold,"
-        "FontSize=25,"
+        "FontSize=20,"
         "PrimaryColour=&H00FFFFFF&,"
         "OutlineColour=&H000000&,"
         "BorderStyle=1,"
-        "Outline=2,"
+        "Outline=1,"
         "Shadow=0,"
-        "MarginV=100,"
+        "MarginV=250,"
         "Alignment=2"
     )
     filters.append(f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
