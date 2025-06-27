@@ -18,7 +18,7 @@ load_dotenv()
 IMAGE_DIR = "assets/images"
 VIDEO_DIR = "assets/videos"
 WATERMARK_PATH = "assets/logo.png"
-VIDEO_DURATION = 30  # 🎯 30-second reels
+VIDEO_DURATION = 30
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
@@ -42,11 +42,9 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
 
 def create_video_for_category(category, username):
     print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
-
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
-    # Generate script
     text_path = generate_script_for_user(category, username)
     if not os.path.exists(text_path):
         print(f"[❌] Failed to generate script for {category}")
@@ -58,23 +56,27 @@ def create_video_for_category(category, username):
     output_path = os.path.join(base_output, f"{category}.mp4")
 
     image_path = os.path.join(IMAGE_DIR, f"{category}.png")
-    stock_video_path = os.path.join("temp", f"{category}_pixabay.mp4")
+    stock_video_path = os.path.join("temp", f"{category}_stock.mp4")
+    fallback_local_video = os.path.join(VIDEO_DIR, f"{category}.mp4")
 
-    # Attempt stock video download
-    if not os.path.exists(stock_video_path):
-        downloaded = False
+    # Step 1: Try Pexels
+    downloaded = False
+    if USE_PEXELS:
+        downloaded = try_pexels_fallback(category, stock_video_path)
 
-        if USE_PIXABAY:
-            downloaded = fetch_pixabay_video(category, stock_video_path)
+    # Step 2: Try Pixabay if Pexels failed
+    if not downloaded and USE_PIXABAY:
+        downloaded = fetch_pixabay_video(category, stock_video_path)
 
-        if not downloaded and USE_PEXELS:
-            print(f"[📉] Pixabay failed, trying Pexels for '{category}'...")
-            downloaded = try_pexels_fallback(category, stock_video_path)
-
-        if not downloaded:
+    # Step 3: Local fallback if both failed
+    if not downloaded:
+        if os.path.exists(fallback_local_video):
+            print(f"[🧩] Falling back to local video: {fallback_local_video}")
+            stock_video_path = fallback_local_video
+        else:
+            print("[⚠️] No stock video found. Using black background.")
             stock_video_path = None
 
-    # Read script content
     with open(text_path, "r") as f:
         script = f.read().strip()
 
@@ -100,7 +102,7 @@ def create_video_for_category(category, username):
         print("[🪄] Using fallback black background")
     input_index += 1
 
-    # Overlay image if no stock video
+    # Overlay if black bg used
     overlay_used = False
     if not stock_video_path or not os.path.exists(stock_video_path):
         if os.path.exists(image_path):
@@ -130,7 +132,7 @@ def create_video_for_category(category, username):
         print(f"[🔖] Using watermark: {WATERMARK_PATH}")
         input_index += 1
 
-    # Filters: base background
+    # Filters
     filters.append(
         f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
         f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
@@ -150,13 +152,11 @@ def create_video_for_category(category, username):
         )
         base_stream = "[wm]"
 
-    # Cinematic black boxes
     filters.append(
         f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
         f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
     )
 
-    # Subtitles
     subtitle_style = (
         "FontName=DejaVuSans-Bold,"
         "FontSize=25,"
@@ -170,7 +170,6 @@ def create_video_for_category(category, username):
     )
     filters.append(f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
 
-    # FFmpeg command
     cmd = [
         "ffmpeg", *inputs,
         "-filter_complex", ";".join(filters),
@@ -195,7 +194,6 @@ def create_video_for_category(category, username):
         print(f"[❌] FFmpeg failed: {e}")
         return None
 
-# CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:
