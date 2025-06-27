@@ -11,6 +11,7 @@ from utils.gen_tts_audio import generate_tts_from_file
 from utils.gen_subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
+from utils.pexels_video import try_pexels_fallback
 
 load_dotenv()
 
@@ -19,6 +20,9 @@ VIDEO_DIR = "assets/videos"
 WATERMARK_PATH = "assets/logo.png"
 VIDEO_DURATION = 30  # 🎯 30-second reels
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
+
+USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
+USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
@@ -37,12 +41,12 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
         f.write(srt.compose(clipped))
 
 def create_video_for_category(category, username):
-    print(f"\n🎮 Generating reel for: {category.upper()} | User: {username}")
+    print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
 
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
-    # Generate script if missing
+    # Generate script
     text_path = generate_script_for_user(category, username)
     if not os.path.exists(text_path):
         print(f"[❌] Failed to generate script for {category}")
@@ -55,11 +59,22 @@ def create_video_for_category(category, username):
 
     image_path = os.path.join(IMAGE_DIR, f"{category}.png")
     stock_video_path = os.path.join("temp", f"{category}_pixabay.mp4")
+
+    # Attempt stock video download
     if not os.path.exists(stock_video_path):
-        downloaded = fetch_pixabay_video(category, stock_video_path)
+        downloaded = False
+
+        if USE_PIXABAY:
+            downloaded = fetch_pixabay_video(category, stock_video_path)
+
+        if not downloaded and USE_PEXELS:
+            print(f"[📉] Pixabay failed, trying Pexels for '{category}'...")
+            downloaded = try_pexels_fallback(category, stock_video_path)
+
         if not downloaded:
             stock_video_path = None
 
+    # Read script content
     with open(text_path, "r") as f:
         script = f.read().strip()
 
@@ -76,7 +91,7 @@ def create_video_for_category(category, username):
     inputs, filters = [], []
     input_index = 0
 
-    # Background video or fallback color
+    # Background video or fallback
     if stock_video_path and os.path.exists(stock_video_path):
         inputs += ["-i", stock_video_path]
         print(f"[🎥] Using stock video: {stock_video_path}")
@@ -85,7 +100,7 @@ def create_video_for_category(category, username):
         print("[🪄] Using fallback black background")
     input_index += 1
 
-    # Overlay only if background is not a stock video
+    # Overlay image if no stock video
     overlay_used = False
     if not stock_video_path or not os.path.exists(stock_video_path):
         if os.path.exists(image_path):
@@ -93,7 +108,7 @@ def create_video_for_category(category, username):
             print(f"[🖼️] Using image overlay: {overlay_path}")
         elif os.path.exists(text_image_path):
             overlay_path = text_image_path
-            print(f"[🕋️] Using text overlay: {overlay_path}")
+            print(f"[🖋️] Using text overlay: {overlay_path}")
         else:
             print(f"[⚠️] No overlay image found.")
             return None
@@ -107,7 +122,7 @@ def create_video_for_category(category, username):
     audio_input_index = input_index
     input_index += 1
 
-    # Watermark (optional)
+    # Watermark
     use_logo = os.path.exists(WATERMARK_PATH)
     if use_logo:
         inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
@@ -115,7 +130,7 @@ def create_video_for_category(category, username):
         print(f"[🔖] Using watermark: {WATERMARK_PATH}")
         input_index += 1
 
-    # ✅ Smooth fade in/out based on 30s
+    # Filters: base background
     filters.append(
         f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
         f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
@@ -135,13 +150,13 @@ def create_video_for_category(category, username):
         )
         base_stream = "[wm]"
 
-    # ✅ Top/Bottom Cinematic Black Boxes
+    # Cinematic black boxes
     filters.append(
         f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
         f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
     )
 
-    # ✅ Subtitles with styling
+    # Subtitles
     subtitle_style = (
         "FontName=DejaVuSans-Bold,"
         "FontSize=25,"
