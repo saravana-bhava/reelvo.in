@@ -16,10 +16,10 @@ load_dotenv()
 IMAGE_DIR = "assets/images"
 VIDEO_DIR = "assets/videos"
 WATERMARK_PATH = "assets/logo.png"
-VIDEO_DURATION = 10
+VIDEO_DURATION = 30  # 🎯 30-second reels
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 
-def clip_srt_timing(srt_path, start=0.5, end=9.5):
+def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
         subs = list(srt.parse(f.read()))
 
@@ -66,7 +66,7 @@ def create_video_for_category(category, username):
         print(f"[❌] Asset generation failed: {e}")
         return None
 
-    clip_srt_timing(srt_path, 0.5, 9.5)
+    clip_srt_timing(srt_path, 0.5, 29.5)
 
     inputs, filters = [], []
     input_index = 0
@@ -110,8 +110,12 @@ def create_video_for_category(category, username):
         print(f"[🔖] Using watermark: {WATERMARK_PATH}")
         input_index += 1
 
-    # FFmpeg filtergraph
-    filters.append(f"[0:v]fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION - 1}:d=1[bg]")
+    # ✅ Smooth fade in/out based on 30s
+    filters.append(
+        f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
+        f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
+        f"fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION-1}:d=1[bg]"
+    )
     base_stream = "[bg]"
 
     if overlay_used:
@@ -126,13 +130,13 @@ def create_video_for_category(category, username):
         )
         base_stream = "[wm]"
 
-    # Draw top & bottom black boxes
+    # ✅ Top/Bottom Cinematic Black Boxes
     filters.append(
         f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
         f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
     )
 
-    # Subtitles
+    # ✅ Subtitles with styling
     subtitle_style = (
         "FontName=DejaVuSans-Bold,"
         "FontSize=25,"
@@ -144,9 +148,7 @@ def create_video_for_category(category, username):
         "MarginV=100,"
         "Alignment=2"
     )
-    filters.append(
-        f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]"
-    )
+    filters.append(f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
 
     # FFmpeg command
     cmd = [
@@ -154,10 +156,12 @@ def create_video_for_category(category, username):
         "-filter_complex", ";".join(filters),
         "-map", "[outv]",
         "-map", f"{audio_input_index}:a",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
-        "-c:a", "aac", "-ar", "44100", "-b:a", "192k",
+        "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+        "-b:v", "10M", "-minrate", "8M", "-maxrate", "12M", "-bufsize", "12M",
+        "-c:a", "aac", "-ar", "44100", "-b:a", "256k", "-ac", "2",
         "-movflags", "+faststart",
         "-pix_fmt", "yuv420p",
+        "-r", "30",
         "-y", output_path
     ]
 

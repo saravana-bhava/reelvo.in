@@ -21,30 +21,54 @@ else:
     client = None
 
 FALLBACKS = {
-    "motivation": """Push past the pain.
-Effort whispers—results shout.
-One more step. One more rep.
-Grind silent. Shine loud.""",
+    "motivation": """Every champion was once a beginner who refused to quit.
+You don’t need to have it all figured out—just start.
+Your future self is built by what you do today, not someday.
+Fall down? Get back up stronger.
+Doubt yourself? Do it anyway.
+Because growth doesn’t come from comfort—it comes from courage.
+So stop waiting.
+Start now.
+You’ve got this.""",
 
-    "success": """This isn’t luck—it’s hustle.
-Dreams bloom with grit.
-You rise by choice.
-Success starts here.""",
+    "success": """They only see the success… not the sleepless nights.
+Not the tears you wiped alone.
+Not the days you doubted yourself but kept going anyway.
+You’ve been broken, overlooked, and underestimated.
+But you kept rising.
+Quietly. Relentlessly.
+Success isn’t always loud—it’s the strength to keep moving when no one’s clapping.
+This victory?
+It’s built on pain, perseverance… and silent battles no one knew you fought.""",
 
-    "life": """Every breath is a story.
-You're evolving daily.
-Even chaos creates beauty.
-Live. Bloom. Become.""",
+    "life": """Life doesn’t always go the way we hoped.
+People leave. Promises fade.
+And sometimes, it feels like the weight is too much to carry.
+You laugh in public, cry in silence, and keep pretending you're fine.
+But behind every smile is a story no one sees.
+And behind every scar is a lesson life forced you to learn.
+It’s okay to feel broken.
+It’s okay to slow down.
+Just remember—this chapter isn't the end.""",
 
-    "inspiration": """A spark begins in stillness.
-One idea moves worlds.
-Pick up the pen.
-Dare to begin.""",
+    "inspiration": """You were not born to blend in—you were made to shine.
+Every dream inside you was planted for a reason.
+Even if the path is unclear, take the step.
+Even if no one believes in you, believe in yourself.
+Because one spark of courage can light a fire of purpose.
+Keep going.
+Keep dreaming.
+Your story is just beginning, and the world is waiting for your light.""",
 
-    "sad": """Some days weigh more.
-It's okay to pause.
-You’ve survived storms.
-Hold on. Light comes."""
+    "sad": """Some days feel heavier than others.
+You smile in front of everyone, but inside… it aches.
+People say, 'It’ll pass'—but they don’t see the storm within.
+You replay memories, wonder what went wrong, and quietly break.
+But even in the silence, you’re healing.
+Even through the tears, you’re growing.
+It’s okay to feel lost.
+It’s okay to not be okay.
+Just don’t give up—brighter days are still ahead."""
 }
 
 
@@ -56,7 +80,7 @@ def generate_script(theme: str) -> str:
 
     prompt = (
         f"Write a short, powerful Instagram reel script on the theme: '{theme}'. "
-        f"Format it into 4–5 impactful lines, under 10 seconds for voice delivery."
+        f"Format it into 4–5 impactful lines, under 30 seconds for voice delivery."
     )
 
     try:

@@ -17,7 +17,7 @@ ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "9BWtsMINqrJLrRacOk9x")
 GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
 
 
-def pad_or_trim_audio(input_path, output_path, duration=10):
+def pad_or_trim_audio(input_path, output_path, duration=30):
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
@@ -106,7 +106,7 @@ def generate_tts_audio(category: str, text: str, output_path: str):
     # Finalize
     if success:
         pad_or_trim_audio(raw_path, output_path)
-        print(f"[🎯] Audio padded to 10s → {output_path}")
+        print(f"[🎯] Audio padded to 30s → {output_path}")
         return output_path
     else:
         raise RuntimeError("[❌] All TTS methods failed.")
