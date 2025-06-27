@@ -10,6 +10,7 @@ from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
 from utils.gen_subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
+from utils.pixabay_video import fetch_pixabay_video
 
 load_dotenv()
 
@@ -36,7 +37,7 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
         f.write(srt.compose(clipped))
 
 def create_video_for_category(category, username):
-    print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
+    print(f"\n🎮 Generating reel for: {category.upper()} | User: {username}")
 
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
@@ -53,7 +54,11 @@ def create_video_for_category(category, username):
     output_path = os.path.join(base_output, f"{category}.mp4")
 
     image_path = os.path.join(IMAGE_DIR, f"{category}.png")
-    stock_video_path = os.path.join(VIDEO_DIR, f"{category}.mp4")
+    stock_video_path = os.path.join("temp", f"{category}_pixabay.mp4")
+    if not os.path.exists(stock_video_path):
+        downloaded = fetch_pixabay_video(category, stock_video_path)
+        if not downloaded:
+            stock_video_path = None
 
     with open(text_path, "r") as f:
         script = f.read().strip()
@@ -72,7 +77,7 @@ def create_video_for_category(category, username):
     input_index = 0
 
     # Background video or fallback color
-    if os.path.exists(stock_video_path):
+    if stock_video_path and os.path.exists(stock_video_path):
         inputs += ["-i", stock_video_path]
         print(f"[🎥] Using stock video: {stock_video_path}")
     else:
@@ -82,13 +87,13 @@ def create_video_for_category(category, username):
 
     # Overlay only if background is not a stock video
     overlay_used = False
-    if not os.path.exists(stock_video_path):
+    if not stock_video_path or not os.path.exists(stock_video_path):
         if os.path.exists(image_path):
             overlay_path = image_path
             print(f"[🖼️] Using image overlay: {overlay_path}")
         elif os.path.exists(text_image_path):
             overlay_path = text_image_path
-            print(f"[🖋️] Using text overlay: {overlay_path}")
+            print(f"[🕋️] Using text overlay: {overlay_path}")
         else:
             print(f"[⚠️] No overlay image found.")
             return None
