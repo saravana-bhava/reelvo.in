@@ -18,7 +18,7 @@ def try_pexels_fallback(category, output_path, used_urls=None, min_duration=5, m
     if used_urls is None:
         used_urls = set()
 
-    print(f"[🔁] Falling back to Pexels for '{category}'...")
+    print(f"[🔁] Searching Pexels for '{category}'...")
 
     try:
         response = requests.get(

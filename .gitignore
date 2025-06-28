@@ -57,5 +57,6 @@ test/
 
 .pytest_cache/
 
+cache/
 docs/
 temp/

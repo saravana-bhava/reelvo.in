@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import hashlib
 from gtts import gTTS
 from dotenv import load_dotenv
 
@@ -11,6 +12,7 @@ load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 USE_ELEVENLABS = os.getenv("USE_ELEVENLABS", "false").lower() == "true"
 USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
+DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "9BWtsMINqrJLrRacOk9x")
@@ -69,26 +71,44 @@ def generate_tts_audio(category: str, text: str, output_path: str):
     if not success and USE_GOOGLE_CLOUD:
         try:
             print("[🧠] Trying Google Cloud TTS...")
-            from google.cloud import texttospeech
-            client = texttospeech.TextToSpeechClient()
 
-            synthesis_input = texttospeech.SynthesisInput(text=text)
-            voice = texttospeech.VoiceSelectionParams(
-                language_code="en-US",
-                name=GOOGLE_CLOUD_TTS_VOICE
-            )
-            audio_config = texttospeech.AudioConfig(
-                audio_encoding=texttospeech.AudioEncoding.MP3
-            )
+            # Generate cache key
+            cache_key = hashlib.md5(f"{text}|{GOOGLE_CLOUD_TTS_VOICE}".encode("utf-8")).hexdigest()
+            cache_dir = os.path.join(ROOT_DIR, "cache", "tts")
+            os.makedirs(cache_dir, exist_ok=True)
+            cached_path = os.path.join(cache_dir, f"{cache_key}.mp3")
 
-            response = client.synthesize_speech(
-                input=synthesis_input, voice=voice, audio_config=audio_config
-            )
+            if not DISABLE_CACHE and os.path.exists(cached_path):
+                print(f"[📦] Using cached TTS audio → {cached_path}")
+                subprocess.run(["cp", cached_path, raw_path], check=True)
+                success = True
+            else:
+                from google.cloud import texttospeech
+                client = texttospeech.TextToSpeechClient()
 
-            with open(raw_path, "wb") as out:
-                out.write(response.audio_content)
-            print(f"[✅] Google Cloud TTS audio saved → {raw_path}")
-            success = True
+                synthesis_input = texttospeech.SynthesisInput(text=text)
+                voice = texttospeech.VoiceSelectionParams(
+                    language_code="en-US",
+                    name=GOOGLE_CLOUD_TTS_VOICE
+                )
+                audio_config = texttospeech.AudioConfig(
+                    audio_encoding=texttospeech.AudioEncoding.MP3
+                )
+
+                response = client.synthesize_speech(
+                    input=synthesis_input, voice=voice, audio_config=audio_config
+                )
+
+                with open(raw_path, "wb") as out:
+                    out.write(response.audio_content)
+
+                if not DISABLE_CACHE:
+                    with open(cached_path, "wb") as cache_out:
+                        cache_out.write(response.audio_content)
+                    print(f"[💾] Cached TTS audio → {cached_path}")
+
+                print(f"[✅] Google Cloud TTS audio saved → {raw_path}")
+                success = True
         except Exception as e:
             print(f"[❌] Google Cloud TTS failed: {e}")
 

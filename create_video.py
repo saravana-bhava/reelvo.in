@@ -33,7 +33,6 @@ CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 
-
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
         subs = list(srt.parse(f.read()))
@@ -49,7 +48,6 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
 
     with open(srt_path, 'w', encoding='utf-8') as f:
         f.write(srt.compose(clipped))
-
 
 def fetch_multiple_clips(category, count=5):
     downloaded_clips = []
@@ -75,7 +73,6 @@ def fetch_multiple_clips(category, count=5):
                     downloaded_clips.append(clip_path)
 
     return downloaded_clips
-
 
 def concatenate_clips(clips, output_path):
     logger.info("[🔁] Re-encoding clips for safe concatenation...")
@@ -105,7 +102,6 @@ def concatenate_clips(clips, output_path):
         output_path
     ], check=True)
     return output_path
-
 
 def create_video_for_category(category, username):
     logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
@@ -167,24 +163,18 @@ def create_video_for_category(category, username):
         filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
         base_stream = "[wm]"
 
-    filters.append(
-        f"{base_stream}drawbox=x=0:y=0:w=iw:h=200:color=black@0.4:t=fill,"
-        f"drawbox=x=0:y=ih-200:w=iw:h=200:color=black@0.4:t=fill[boxed]"
-    )
-
     subtitle_style = (
-        "FontName=DejaVuSans-Bold,"
-        "FontSize=16,"
-        "PrimaryColour=&H00FFFFFF&,"
-        "OutlineColour=&H000000&,"
-        "BorderStyle=1,"
-        "Outline=2,"
-        "Shadow=0,"
-        "MarginV=50,"
-        "Alignment=2"
+        "Alignment=2,"  # Bottom center
+        "Fontname=DejaVuSans-Bold,"
+        "Fontsize=16,"  # Smaller size for readability
+        "PrimaryColour=&H00FFFFFF,"  # White
+        "OutlineColour=&H80000000,"  # Semi-transparent black border
+        "BorderStyle=3,"  # Opaque box
+        "Outline=2,"  # Thin border
+        "MarginV=100"  # Push above bottom bar
     )
 
-    filters.append(f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
+    filters.append(f"{base_stream}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
 
     cmd = [
         "ffmpeg", *inputs,
