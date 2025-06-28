@@ -165,7 +165,7 @@ def create_video_for_category(category, username):
         "BorderStyle=1,"
         "Outline=1,"
         "Shadow=0,"
-        "MarginV=250,"
+        "MarginV=50,"
         "Alignment=2"
     )
     filters.append(f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")

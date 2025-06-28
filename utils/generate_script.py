@@ -22,53 +22,60 @@ else:
 
 FALLBACKS = {
     "motivation": """Every champion was once a beginner who refused to quit.
-You don’t need to have it all figured out—just start.
-Your future self is built by what you do today, not someday.
+You don’t need to have all the answers—just take the first step.
+Your future isn’t built by luck, it’s built by what you do today.
 Fall down? Get back up stronger.
 Doubt yourself? Do it anyway.
-Because growth doesn’t come from comfort—it comes from courage.
+Growth never comes from comfort—it comes from courage.
 So stop waiting.
-Start now.
-You’ve got this.""",
+Take that leap.
+You’ve got this.
+And one day, you’ll thank yourself for not giving up when it was hardest to keep going.""",
 
-    "success": """They only see the success… not the sleepless nights.
-Not the tears you wiped alone.
-Not the days you doubted yourself but kept going anyway.
-You’ve been broken, overlooked, and underestimated.
-But you kept rising.
-Quietly. Relentlessly.
-Success isn’t always loud—it’s the strength to keep moving when no one’s clapping.
+    "success": """People only see the success.
+They don’t see the nights you couldn’t sleep, or the times you questioned everything.
+The tears no one saw. The moments you almost quit.
+But you didn’t.
+You rose, quietly, again and again.
+Success isn’t trophies or applause—it’s resilience.
+It’s showing up when no one’s watching.
+It’s fighting silent battles and still finding strength.
 This victory?
-It’s built on pain, perseverance… and silent battles no one knew you fought.""",
+It’s built on sacrifice, persistence, and believing in yourself long before anyone else did.""",
 
-    "life": """Life doesn’t always go the way we hoped.
-People leave. Promises fade.
-And sometimes, it feels like the weight is too much to carry.
-You laugh in public, cry in silence, and keep pretending you're fine.
-But behind every smile is a story no one sees.
-And behind every scar is a lesson life forced you to learn.
-It’s okay to feel broken.
-It’s okay to slow down.
-Just remember—this chapter isn't the end.""",
+    "life": """Life can be messy.
+Things don’t always go as planned. People leave. Promises break.
+You laugh around others and cry alone, wondering if anyone really sees you.
+But even in the chaos, there’s growth.
+Even in pain, there’s power.
+Every scar carries a story, and every tear waters something new.
+You’re not behind. You’re not broken.
+You’re becoming.
+So breathe. Pause.
+And trust that this chapter is shaping a version of you that’s stronger than ever before.""",
 
-    "inspiration": """You were not born to blend in—you were made to shine.
-Every dream inside you was planted for a reason.
-Even if the path is unclear, take the step.
-Even if no one believes in you, believe in yourself.
-Because one spark of courage can light a fire of purpose.
+    "inspiration": """You weren’t made to blend in—you were born to shine.
+The dream inside you exists for a reason.
+Even if the path is foggy, take that step.
+Even if no one claps, keep creating.
+Because one act of bravery can ignite a lifetime of purpose.
+You have a voice. A vision. A light the world hasn’t seen yet.
 Keep going.
 Keep dreaming.
-Your story is just beginning, and the world is waiting for your light.""",
+You’re closer than you think, and your story is just beginning.
+Let the world feel your spark.""",
 
-    "sad": """Some days feel heavier than others.
-You smile in front of everyone, but inside… it aches.
-People say, 'It’ll pass'—but they don’t see the storm within.
-You replay memories, wonder what went wrong, and quietly break.
-But even in the silence, you’re healing.
-Even through the tears, you’re growing.
-It’s okay to feel lost.
-It’s okay to not be okay.
-Just don’t give up—brighter days are still ahead."""
+    "sad": """Some days just hurt more than others.
+You smile in front of everyone, but your heart aches in silence.
+You wonder if anyone notices.
+You replay memories. You miss people who left.
+You carry pain no one sees.
+But even in the quiet, healing happens.
+Even when you feel lost, you’re still moving forward.
+It’s okay to feel tired. It’s okay to cry.
+But don’t give up.
+There’s light beyond this tunnel.
+Brighter days are coming—hold on just a little longer."""
 }
 
 

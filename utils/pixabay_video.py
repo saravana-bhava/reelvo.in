@@ -1,8 +1,7 @@
-# utils/pixabay_video.py
-
 import os
 import requests
 from dotenv import load_dotenv
+from utils.video_utils import download_video
 
 load_dotenv()
 
@@ -36,16 +35,15 @@ def fetch_pixabay_video(theme, output_path="temp/bg.mp4"):
                 video = result.get("videos", {}).get(quality)
                 if video and video["width"] == 1080 and video["height"] == 1920:
                     url = video["url"]
-                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                    print(f"[⬇️] Downloading from: {url}")
-                    video_data = requests.get(url, stream=True)
-                    with open(output_path, "wb") as f:
-                        for chunk in video_data.iter_content(1024 * 1024):
-                            f.write(chunk)
-                    print(f"[✅] Pixabay video saved → {output_path}")
-                    return output_path
+                    print(f"[📼] Found 1080x1920 video at: {url}")
+                    return download_video(
+                        url,
+                        output_path,
+                        min_duration=30,
+                        max_duration=30
+                    )
 
-        print("[⚠️] No 1080x1920 video found on Pixabay.")
+        print("[⚠️] No 1080x1920 video ≥30s found on Pixabay.")
         return None
 
     except Exception as e:

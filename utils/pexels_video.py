@@ -1,5 +1,3 @@
-# utils/pexels_video.py
-
 import os
 import requests
 from dotenv import load_dotenv
@@ -46,7 +44,12 @@ def try_pexels_fallback(category, output_path, max_results=10):
         for file in video.get("video_files", []):
             if file["width"] == 1080 and file["height"] == 1920:
                 print(f"[📼] Pexels video found: {file['link']}")
-                return download_video(file["link"], output_path)
+                return download_video(
+                    file["link"],
+                    output_path,
+                    min_duration=30,
+                    max_duration=30
+                )
 
-    print("[⚠️] No 1080x1920 video found on Pexels.")
+    print("[⚠️] No 1080x1920 video ≥30s found on Pexels.")
     return False

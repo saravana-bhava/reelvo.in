@@ -39,7 +39,7 @@ def trim_video(input_path, output_path, max_duration=30):
         print(f"[❌] Failed to trim video: {e}")
         return False
 
-def download_video(url, output_path, max_duration=30):
+def download_video(url, output_path, min_duration=30, max_duration=30):
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         temp_path = output_path + ".tmp"
@@ -57,15 +57,20 @@ def download_video(url, output_path, max_duration=30):
             os.rename(temp_path, output_path)
             return output_path
 
+        if duration < min_duration:
+            print(f"[⏹️] Skipping video: too short ({duration:.2f}s < {min_duration}s)")
+            os.remove(temp_path)
+            return None
+
         if duration > max_duration:
             print(f"[⏱️] Video is {duration:.2f}s, trimming to {max_duration}s...")
             success = trim_video(temp_path, output_path, max_duration)
             os.remove(temp_path)
             return output_path if success else None
-        else:
-            os.rename(temp_path, output_path)
-            print(f"[✅] Video OK ({duration:.2f}s) → {output_path}")
-            return output_path
+
+        os.rename(temp_path, output_path)
+        print(f"[✅] Video OK ({duration:.2f}s) → {output_path}")
+        return output_path
     except Exception as e:
         print(f"[❌] Failed to download video: {e}")
         return None
