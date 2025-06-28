@@ -1,7 +1,7 @@
 # utils/pixabay_video.py
 
 """
-Fetches a vertical video clip (1080x1920, 8–12s) from Pixabay based on a keyword.
+Fetches a vertical video clip (1080x1920, 5–60s) from Pixabay based on a keyword.
 Avoids reused URLs and ensures video quality meets Instagram Reel specs.
 """
 
@@ -22,8 +22,8 @@ def fetch_pixabay_video(
     theme: str,
     output_path: str,
     used_urls: Optional[Set[str]] = None,
-    min_duration: int = 8,
-    max_duration: int = 12
+    min_duration: int = 5,
+    max_duration: int = 60
 ) -> Optional[str]:
     """
     Searches Pixabay for a portrait (1080x1920) video matching the theme.
@@ -39,7 +39,8 @@ def fetch_pixabay_video(
     if not PIXABAY_API_KEY:
         raise EnvironmentError("[❌] Missing PIXABAY_API_KEY in .env")
 
-    used_urls = used_urls or set()
+    if used_urls is None:
+        used_urls = set()
 
     print(f"[🌐] Searching Pixabay for '{theme}' vertical videos...")
 
@@ -51,7 +52,7 @@ def fetch_pixabay_video(
                 "q": theme,
                 "video_type": "film",
                 "orientation": "vertical",
-                "per_page": 20
+                "per_page": 30
             },
             timeout=10
         )
@@ -77,10 +78,11 @@ def fetch_pixabay_video(
 
                 if url and url not in used_urls and width == 1080 and height == 1920:
                     print(f"[🎞️] Candidate found: {url} ({duration}s, {quality})")
-                    if download_video(url, output_path, min_duration, max_duration):
-                        used_urls.add(url)
+
+                    success = download_video(url, output_path, min_duration, max_duration)
+                    if success:
                         print(f"[✅] Video saved → {output_path}")
-                        return url
+                        return url  # Return to caller to track in used_urls
                     else:
                         print("[⚠️] Download failed, continuing...")
 

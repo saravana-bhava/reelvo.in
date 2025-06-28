@@ -63,19 +63,25 @@ def fetch_multiple_clips(category, count=5):
 
     for i in range(count):
         clip_path = os.path.join(TEMP_DIR, f"{category}_clip{i+1}.mp4")
+        found = False
         for source in sources:
             if source == try_pexels_fallback and USE_PEXELS:
-                if try_pexels_fallback(category, clip_path, used_urls=used_urls):
+                url = try_pexels_fallback(category, clip_path, used_urls=used_urls)
+                if url:
+                    used_urls.add(url)
                     downloaded_clips.append(clip_path)
+                    found = True
                     break
             elif source == fetch_pixabay_video and USE_PIXABAY:
-                if fetch_pixabay_video(category, clip_path, used_urls=used_urls):
+                url = fetch_pixabay_video(category, clip_path, used_urls=used_urls)
+                if url:
+                    used_urls.add(url)
                     downloaded_clips.append(clip_path)
+                    found = True
                     break
-        else:
-            if os.path.exists(fallback_local):
-                if download_video(fallback_local, clip_path, min_duration=5, max_duration=6):
-                    downloaded_clips.append(clip_path)
+        if not found and os.path.exists(fallback_local):
+            if download_video(fallback_local, clip_path, min_duration=5, max_duration=6):
+                downloaded_clips.append(clip_path)
 
     return downloaded_clips
 

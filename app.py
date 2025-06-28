@@ -39,6 +39,7 @@ if flask_app.secret_key == "demo_secret":
 # Constants
 OUTPUT_BASE = "output"
 POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
+UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
 IG_ACCOUNT_ID = os.getenv("INSTAGRAM_BUSINESS_ID")
 IG_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
 
@@ -100,14 +101,18 @@ def generate():
             update_progress(task_id, "🎬 Generating video...", 30)
             video_path = create_video_for_category(theme, username, task_id=task_id)
 
+            drive_url = ""
             if video_path:
-                update_progress(task_id, "📁 Uploading to Drive...", 80)
-                drive_url, drive_error = upload_to_google_drive(video_path, username, task_id=task_id)
+                if UPLOAD_TO_DRIVE:
+                    update_progress(task_id, "📁 Uploading to Drive...", 80)
+                    drive_url, drive_error = upload_to_google_drive(video_path, username, task_id=task_id)
 
-                if drive_url and drive_url.startswith("http"):
-                    finish_progress(task_id, f"✅ Generated and uploaded <a href='{drive_url}' target='_blank'>video</a>")
+                    if drive_url and drive_url.startswith("http"):
+                        finish_progress(task_id, f"✅ Generated and uploaded <a href='{drive_url}' target='_blank'>video</a>")
+                    else:
+                        finish_progress(task_id, f"✅ Generated but upload failed: {drive_error}", 100)
                 else:
-                    finish_progress(task_id, f"✅ Generated but upload failed: {drive_error}", 100)
+                    finish_progress(task_id, "✅ Generated reel (not uploaded to Drive)", 100)
 
                 if POST_TO_IG and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
                     logger.info("[📲] Auto-posting to Instagram...")

@@ -2,7 +2,7 @@
 
 """
 Handles video downloading, caching, trimming, and duration validation.
-Supports Instagram Reels standards: portrait 1080x1920, duration 8–12s per clip.
+Supports Instagram Reels standards: portrait 1080x1920, duration 5–6s per clip.
 """
 
 import os
