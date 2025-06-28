@@ -12,23 +12,23 @@ openai>=1.0.0
 # HTTP clients
 # ------------------------
 requests
-httpx<0.26
+httpx<0.26  # Prevent breaking change in async handling
 
 # ------------------------
 # Text-to-Speech
 # ------------------------
-google-cloud-texttospeech
+google-cloud-texttospeech>=2.27.0
 gTTS
 
 # ------------------------
 # Audio / Video processing
 # ------------------------
 ffmpeg-python
-moviepy
+moviepy==1.0.3
 numpy
 opencv-python
 pydub
-Pillow
+Pillow>=9.0.0
 
 # ------------------------
 # Subtitles
@@ -50,6 +50,8 @@ git+https://github.com/openai/whisper.git
 # Google Drive API
 # ------------------------
 google-api-python-client
+google-auth
+google-auth-oauthlib
 
 # ------------------------
 # Optional: Torch installation overrides
@@ -57,7 +59,7 @@ google-api-python-client
 # uncomment one of the options below based on your server environment.
 
 # For CPU-only systems:
-# torch==2.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+# torch==2.2.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 # For GPU systems (CUDA):
-# torch==2.7.1
+# torch==2.2.1  # Install manually if needed

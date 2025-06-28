@@ -1,88 +1,114 @@
 # AI Instagram Reels Automation Platform (MVP)
 
-A streamlined content automation tool for creators — users pick a niche → AI generates a script → a reel is auto-created → uploaded to Google Drive → and posted to Instagram.
+A streamlined AI-powered platform that helps creators generate Instagram Reels automatically.  
+Users select a niche, AI generates a script, TTS generates audio, FFmpeg builds the video, and the result is uploaded to Google Drive and optionally posted to Instagram.
 
-## ✨ Features
+------------------------------
 
-- 🔐 Simple login interface (no signup required)
-- 🎯 Niche selection (Motivation, Sad, Inspiration, Success, Life)
-- 🧠 AI script generation via OpenAI API (with fallback)
-- 🎬 Video creation using VEED API or FFmpeg fallback
-- 📁 Output video saved to `/output` directory
-- ☁️ Uploads to Google Drive (configurable)
-- 📱 Auto-post to Instagram Reels (via Graph API)
-- 🔁 Scheduler-ready (via cron or BullMQ)
-- 🌐 Works under subpath (e.g. `/reelvo.ai`) via DispatcherMiddleware
+FEATURES
 
-## 🚀 Tech Stack
+- Simple login interface (no signup required)
+- Niche selection (Motivation, Sad, Inspiration, Success, Life)
+- AI script generation (OpenAI with fallback)
+- Text-to-Speech via ElevenLabs / Google TTS / gTTS
+- Video generation using FFmpeg or VEED fallback
+- Subtitle overlay (SRT from TTS)
+- Videos saved to /output/<username>/
+- Uploads to Google Drive (optional)
+- Auto-post to Instagram Reels (via Graph API)
+- Scheduler-ready (cron/BullMQ)
+- Subpath-ready via DispatcherMiddleware (/reelvo.ai)
 
-- **Backend**: Python + Flask
-- **Frontend**: HTML + CSS (templated)
-- **Video**: VEED.io API + FFmpeg fallback
-- **AI**: OpenAI GPT
-- **Storage**: Google Drive API
-- **Deployable On**:
-  - [x] Render (recommended)
-  - [x] Railway
+------------------------------
 
-## 📁 Folder Structure
+TECH STACK
 
-```
+Backend: Python + Flask  
+Video Engine: FFmpeg + Pexels/Pixabay clips  
+TTS: ElevenLabs / Google Cloud TTS / gTTS  
+AI Script: OpenAI GPT  
+Storage: Local + Google Drive  
+Frontend: HTML + Bootstrap dashboard  
+Deployment: Render / Railway / Docker
+
+------------------------------
+
+FOLDER STRUCTURE
+
 .
-├── app.py                 # Main Flask app (mounted at /reelvo.ai)
-├── install.sh             # Installs ffmpeg
-├── start.sh               # Starts gunicorn + installs ffmpeg
-├── requirements.txt       # Python dependencies
+├── app.py                 # Flask app mounted at /reelvo.ai
+├── install.sh             # FFmpeg installer
+├── start.sh               # Launch with Gunicorn or Flask
+├── requirements.txt       # All dependencies
 ├── render.yaml            # Render deployment config
-├── .vercel.json           # Vercel config (not recommended)
-├── templates/             # HTML templates (login + dashboard)
-├── utils/                 # Script and video generation tools
-├── fallback/              # Pre-generated fallback videos
-├── output/                # Generated videos go here
-└── docs/                  # Project notes, NDA, briefs
-```
+├── templates/             # Login and dashboard HTML
+├── utils/                 # Script/TTS/Subtitle generators
+├── output/                # Output videos (organized by user)
+├── fallback/              # Default fallback video assets
+└── secure/                # OAuth credentials, if any
 
-## 🛠 Local Development
+------------------------------
 
-```bash
-# Set up environment
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+LOCAL DEVELOPMENT
 
-# Install ffmpeg if needed
-sudo apt-get install -y ffmpeg
+git clone https://github.com/your-org/reelvo-ai.git  
+cd reelvo-ai  
+python3 -m venv venv && source venv/bin/activate  
+pip install -r requirements.txt  
+sudo apt-get install -y ffmpeg  
+ENV=development ./start.sh  
 
-# Run the app
-python app.py
-```
+Then visit: http://localhost:5000/reelvo.ai
 
-Then visit: [http://localhost:5000/reelvo.ai](http://localhost:5000/reelvo.ai)
+------------------------------
 
-## 🧪 Testing FFmpeg Fallback
+MANUAL TESTING
 
-You can manually run:
+python utils/fallback_ffmpeg.py  
+python run_all.py demo  
+python run_pipeline.py motivation demo
 
-```bash
-python utils/fallback_ffmpeg.py
-```
+------------------------------
 
-Or trigger generation from the dashboard with a selected theme.
+DEPLOYMENT ON RENDER
 
-## ☁️ Deploying to Render
+1. Push repo to GitHub
+2. Connect to https://render.com
+3. Render auto-detects render.yaml
+4. Add secrets via the Render dashboard
+5. Deploy
 
-1. Push to GitHub
-2. Connect your repo on [Render.com](https://render.com)
-3. Use `render.yaml` (auto detected)
+------------------------------
 
----
+ENVIRONMENT VARIABLES (.env)
 
-## 👤 Author
+FLASK_SECRET_KEY=your_flask_key  
+USE_OPENAI=false  
+USE_ELEVENLABS=true  
+USE_GOOGLE_CLOUD_TTS=false  
+OPENAI_API_KEY=sk-...  
+ELEVENLABS_API_KEY=...  
+ELEVENLABS_VOICE_ID=9BWtsMINqrJLrRacOk9x  
+GOOGLE_CLOUD_TTS_VOICE=en-US-Wavenet-D  
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json  
+FB_APP_ID=...  
+FB_APP_SECRET=...  
+FB_PAGE_ACCESS_TOKEN=...  
+INSTAGRAM_BUSINESS_ID=...  
+DEFAULT_USERNAME=demo  
+SLEEP_BETWEEN_RUNS=2
 
-**Saravana Bhava**  
-🌐 [https://sazm.in](https://sazm.in)
+------------------------------
 
----
+AUTHOR
 
-## 📄 License
+Saravana Bhava  
+https://sazm.in  
+mail@sazm.in
 
-This project is under private development for internal MVP/demo use. For licensing, contact the author.
+------------------------------
+
+LICENSE
+
+This project is under private development for internal MVP/demo use only.  
+To request access or licensing, please contact the author directly.

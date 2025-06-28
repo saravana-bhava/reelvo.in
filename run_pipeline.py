@@ -1,18 +1,26 @@
 # run_pipeline.py
 
 import sys
+import logging
 from create_video import create_video_for_category
 
-def run_pipeline(category: str, username: str = "demo"):
-    print(f"\n⚙️ Starting pipeline for: {category.upper()} | User: {username}")
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("run_pipeline")
+
+def run_pipeline(category: str, username: str = "demo") -> str | None:
+    logger.info(f"⚙️ Starting pipeline for: {category.upper()} | User: {username}")
     try:
         result = create_video_for_category(category, username)
         if result:
-            print(f"[✅] Reel generated → {result}")
+            logger.info(f"[✅] Reel generated → {result}")
         else:
-            print(f"[❌] Video generation failed for {category}")
+            logger.warning(f"[❌] Video generation failed for {category}")
+        return result
     except Exception as e:
-        print(f"[❌] Pipeline failed: {e}")
+        logger.exception(f"[❌] Pipeline failed: {e}")
+        return None
+
 
 if __name__ == "__main__":
     if len(sys.argv) not in [2, 3]:

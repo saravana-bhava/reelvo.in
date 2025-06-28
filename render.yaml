@@ -8,10 +8,11 @@ services:
     # ───────────────────────────────────────────────
     buildCommand: |
       ./install.sh
+      pip install --upgrade pip
       pip install -r requirements.txt
 
     # ───────────────────────────────────────────────
-    # 🚀 Start command (Gunicorn for Flask)
+    # 🚀 Start command (Gunicorn for Flask app: DispatcherMiddleware)
     # ───────────────────────────────────────────────
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
 
@@ -19,22 +20,35 @@ services:
     # ⚙️ Deploy settings
     # ───────────────────────────────────────────────
     autoDeploy: true
+    plan: free  # or standard/pro depending on your Render usage
+
+    # ───────────────────────────────────────────────
+    # 🔐 Environment variables
+    # ───────────────────────────────────────────────
     envVars:
       - key: ENV
         value: production
+
+      # Feature toggles
       - key: USE_OPENAI
         value: false
       - key: USE_ELEVENLABS
         value: true
       - key: USE_GOOGLE_CLOUD_TTS
         value: false
+
+      # External API keys (set via Render dashboard)
       - key: OPENAI_API_KEY
         sync: false
       - key: ELEVENLABS_API_KEY
         sync: false
+
+      # TTS-specific configs
       - key: ELEVENLABS_VOICE_ID
         value: 9BWtsMINqrJLrRacOk9x
       - key: GOOGLE_CLOUD_TTS_VOICE
         value: en-US-Wavenet-D
+
+      # Service credentials (must be mounted manually if local)
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: /var/www/html/SazM/reelvo.ai/secure/credentials.json

@@ -2,9 +2,10 @@
 
 import os
 import subprocess
-from dotenv import load_dotenv
+import logging
 from datetime import timedelta
 import srt
+from dotenv import load_dotenv
 
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
@@ -16,6 +17,11 @@ from utils.video_utils import download_video, get_video_duration
 
 load_dotenv()
 
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("create_video")
+
+# Constants
 IMAGE_DIR = "assets/images"
 VIDEO_DIR = "assets/videos"
 TEMP_DIR = "temp"
@@ -26,6 +32,7 @@ CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
+
 
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
@@ -42,6 +49,7 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
 
     with open(srt_path, 'w', encoding='utf-8') as f:
         f.write(srt.compose(clipped))
+
 
 def fetch_multiple_clips(category, count=5):
     downloaded_clips = []
@@ -68,8 +76,9 @@ def fetch_multiple_clips(category, count=5):
 
     return downloaded_clips
 
+
 def concatenate_clips(clips, output_path):
-    print("[🔁] Re-encoding clips for safe concat...")
+    logger.info("[🔁] Re-encoding clips for safe concatenation...")
     reencoded_clips = []
     for i, clip in enumerate(clips):
         fixed = os.path.join(TEMP_DIR, f"fixed_clip{i+1}.mp4")
@@ -97,15 +106,18 @@ def concatenate_clips(clips, output_path):
     ], check=True)
     return output_path
 
+
 def create_video_for_category(category, username):
-    print(f"\n🎬 Generating reel for: {category.upper()} | User: {username}")
+    logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
+    os.makedirs("output", exist_ok=True)
+    os.makedirs(TEMP_DIR, exist_ok=True)
+
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
-    os.makedirs(TEMP_DIR, exist_ok=True)
 
     text_path = generate_script_for_user(category, username)
     if not os.path.exists(text_path):
-        print(f"[❌] Failed to generate script for {category}")
+        logger.error(f"[❌] Failed to generate script for {category}")
         return None
 
     audio_path = os.path.join(base_output, f"{category}.mp3")
@@ -113,22 +125,22 @@ def create_video_for_category(category, username):
     srt_path = os.path.join(base_output, f"{category}.srt")
     final_output_path = os.path.join(base_output, f"{category}.mp4")
 
-    with open(text_path, "r") as f:
+    with open(text_path, "r", encoding="utf-8") as f:
         script = f.read().strip()
 
     try:
         generate_text_overlay(script, text_image_path)
-        audio_path = generate_tts_from_file(category, username)  # ✅ capture correct path
+        audio_path = generate_tts_from_file(category, username)
         generate_srt_from_audio(category, audio_path, srt_path)
     except Exception as e:
-        print(f"[❌] Asset generation failed: {e}")
+        logger.exception("[❌] Asset generation failed")
         return None
 
     clip_srt_timing(srt_path, 0.5, 29.5)
 
     clips = fetch_multiple_clips(category, CLIP_COUNT)
     if not clips:
-        print("[❌] No background clips found.")
+        logger.error("[❌] No background clips found.")
         return None
 
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
@@ -137,12 +149,11 @@ def create_video_for_category(category, username):
     inputs = ["-i", combined_video_path, "-i", audio_path]
     input_index = 2
 
+    logo_index = None
     if os.path.exists(WATERMARK_PATH):
         inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
         logo_index = input_index
         input_index += 1
-    else:
-        logo_index = None
 
     filters = [
         f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
@@ -189,19 +200,21 @@ def create_video_for_category(category, username):
         "-y", final_output_path
     ]
 
-    print(f"[📦] Running FFmpeg command:\n{' '.join(cmd)}")
+    logger.info(f"[📦] Running FFmpeg command:\n{' '.join(cmd)}")
 
     try:
         subprocess.run(cmd, check=True)
-        print(f"[✅] Final reel generated: {final_output_path}")
+        logger.info(f"[✅] Final reel generated: {final_output_path}")
         return final_output_path
     except subprocess.CalledProcessError as e:
-        print(f"[❌] FFmpeg failed: {e}")
+        logger.exception("[❌] FFmpeg failed")
         return None
+
 
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:
-        create_video_for_category(sys.argv[1], sys.argv[2])
+        category, username = sys.argv[1], sys.argv[2]
+        create_video_for_category(category, username)
     else:
         print("Usage: python create_video.py <category> <username>")
