@@ -25,6 +25,8 @@ logger = logging.getLogger("reelvo")
 
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
+if flask_app.secret_key == "demo_secret":
+    logger.warning("⚠️ Using default Flask secret key — not safe for production.")
 
 OUTPUT_BASE = "output"
 POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
@@ -69,7 +71,6 @@ def generate():
     username = secure_filename(session["user"])
     theme = request.form.get("theme", "default").lower()
     task_id = str(uuid.uuid4())
-
     start_progress(task_id)
 
     def generate_thread():
@@ -80,8 +81,8 @@ def generate():
             with open(script_path, "r", encoding="utf-8") as f:
                 script = f.read().strip()
 
-            update_progress(task_id, "🔊 Generating TTS...", 30)
-            video_path = create_video_for_category(theme, username)
+            update_progress(task_id, "🎬 Generating video...", 30)
+            video_path = create_video_for_category(theme, username, task_id=task_id)
 
             if video_path:
                 update_progress(task_id, "📁 Uploading to Drive...", 80)
@@ -109,7 +110,7 @@ def generate():
                 finish_progress(task_id, "❌ Video generation failed", -1)
 
         except Exception as e:
-            logger.exception("Error during generation")
+            logger.exception("Error during generation thread")
             finish_progress(task_id, f"❌ Error: {str(e)}", -1)
 
     Thread(target=generate_thread).start()
@@ -130,7 +131,7 @@ def serve_video(username, filename):
     if not os.path.exists(full_path):
         abort(404)
 
-    return send_from_directory(path, safe_file)
+    return send_from_directory(path, safe_file, mimetype="video/mp4")
 
 application = DispatcherMiddleware(lambda e, s: s(b'404 Not Found', []), {
     '/reelvo.ai': flask_app
@@ -141,5 +142,5 @@ app = application
 if __name__ == "__main__":
     os.makedirs(OUTPUT_BASE, exist_ok=True)
     port = int(os.environ.get("PORT", 5000))
-    logger.info(f"Starting development server on http://127.0.0.1:{port}")
+    logger.info(f"🚀 Starting development server on http://127.0.0.1:{port}/reelvo.ai")
     run_simple("127.0.0.1", port, app, use_debugger=True, use_reloader=True)

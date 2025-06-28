@@ -2,11 +2,12 @@
 
 import time
 
+# In-memory task status store
 progress_status = {}
 
 def start_progress(task_id):
     progress_status[task_id] = {
-        "status": "Starting...",
+        "status": "🚀 Starting...",
         "percent": 0,
         "start_time": time.time()
     }
@@ -28,6 +29,6 @@ def finish_progress(task_id, status, percent=100):
 
 def get_progress(task_id):
     return progress_status.get(task_id, {
-        "status": "Not found",
+        "status": "❌ Task not found.",
         "percent": -1
     })

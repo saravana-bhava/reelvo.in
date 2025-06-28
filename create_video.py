@@ -14,7 +14,7 @@ from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import try_pexels_fallback
 from utils.video_utils import download_video, get_video_duration
-from progress import progress_status
+from progress import start_progress, update_progress, finish_progress
 
 load_dotenv()
 
@@ -112,6 +112,9 @@ def create_video_for_category(category, username, task_id=None):
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
+    if task_id:
+        start_progress(task_id)
+
     text_path = generate_script_for_user(category, username)
     if not os.path.exists(text_path):
         logger.error(f"[❌] Failed to generate script for {category}")
@@ -127,15 +130,15 @@ def create_video_for_category(category, username, task_id=None):
 
     try:
         if task_id:
-            progress_status[task_id] = {"status": "🖼️ Generating overlay...", "percent": 35}
+            update_progress(task_id, "🖼️ Generating overlay...", 35)
         generate_text_overlay(script, text_image_path)
 
         if task_id:
-            progress_status[task_id] = {"status": "🔊 Generating TTS audio...", "percent": 40}
-        audio_path = generate_tts_from_file(category, username, task_id=task_id)
+            update_progress(task_id, "🔊 Generating TTS...", 40)
+        audio_path = generate_tts_from_file(category, username)
 
         if task_id:
-            progress_status[task_id] = {"status": "📝 Generating subtitles...", "percent": 50}
+            update_progress(task_id, "📝 Generating subtitles...", 50)
         generate_srt_from_audio(category, audio_path, srt_path)
 
     except Exception as e:
@@ -145,14 +148,14 @@ def create_video_for_category(category, username, task_id=None):
     clip_srt_timing(srt_path, 0.5, 29.5)
 
     if task_id:
-        progress_status[task_id] = {"status": "🎞️ Fetching video clips...", "percent": 60}
+        update_progress(task_id, "🎞️ Fetching video clips...", 60)
     clips = fetch_multiple_clips(category, CLIP_COUNT)
     if not clips:
         logger.error("[❌] No background clips found.")
         return None
 
     if task_id:
-        progress_status[task_id] = {"status": "🎬 Concatenating clips...", "percent": 70}
+        update_progress(task_id, "🎬 Concatenating clips...", 70)
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
@@ -178,7 +181,7 @@ def create_video_for_category(category, username, task_id=None):
         base_stream = "[wm]"
 
     subtitle_style = (
-        "Alignment=2,"  # Bottom center
+        "Alignment=2,"
         "Fontname=DejaVuSans-Bold,"
         "Fontsize=16,"
         "PrimaryColour=&H00FFFFFF,"
@@ -208,6 +211,8 @@ def create_video_for_category(category, username, task_id=None):
 
     try:
         subprocess.run(cmd, check=True)
+        if task_id:
+            finish_progress(task_id, "✅ Video generated!")
         logger.info(f"[✅] Final reel generated: {final_output_path}")
         return final_output_path
     except subprocess.CalledProcessError as e:

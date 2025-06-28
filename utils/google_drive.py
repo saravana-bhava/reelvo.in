@@ -1,18 +1,25 @@
+# utils/google_drive.py
+
 import os
 import mimetypes
+from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Constants
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 GDRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID")
 GDRIVE_CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "secure/credentials.json")
+
+# Optional progress support
+try:
+    from progress import update_progress
+except ImportError:
+    def update_progress(task_id, status, percent): pass
 
 def get_drive_service():
     creds = service_account.Credentials.from_service_account_file(
@@ -22,7 +29,10 @@ def get_drive_service():
     return build("drive", "v3", credentials=creds)
 
 def get_or_create_user_folder(service, username):
-    """Returns Drive folder ID for user. Creates one if not found."""
+    """
+    Checks if a folder named <username> exists under parent. Creates it if not.
+    Returns folder ID.
+    """
     if not GDRIVE_FOLDER_ID:
         raise ValueError("[❌] GOOGLE_DRIVE_PARENT_FOLDER_ID is not set in .env")
 
@@ -44,12 +54,19 @@ def get_or_create_user_folder(service, username):
     folder = service.files().create(body=folder_metadata, fields="id").execute()
     return folder["id"]
 
-def upload_to_google_drive(local_path, username):
+def upload_to_google_drive(local_path, username, task_id=None):
+    """
+    Uploads a file to Google Drive under the user's folder.
+    Returns (public_download_url, error_message)
+    """
     try:
         if not os.path.exists(local_path):
             return None, "[❌] Local file missing."
 
+        update_progress(task_id, "📁 Connecting to Google Drive...", 80)
         service = get_drive_service()
+
+        update_progress(task_id, "📂 Preparing user folder...", 82)
         user_folder_id = get_or_create_user_folder(service, username)
 
         file_metadata = {
@@ -60,6 +77,7 @@ def upload_to_google_drive(local_path, username):
         mime_type = mimetypes.guess_type(local_path)[0] or "video/mp4"
         media = MediaFileUpload(local_path, resumable=True, mimetype=mime_type)
 
+        update_progress(task_id, "⏫ Uploading video to Drive...", 85)
         uploaded = service.files().create(
             body=file_metadata,
             media_body=media,
@@ -74,6 +92,8 @@ def upload_to_google_drive(local_path, username):
 
         file_id = uploaded["id"]
         public_url = f"https://drive.google.com/uc?id={file_id}&export=download"
+
+        update_progress(task_id, "✅ Upload complete", 90)
         return public_url, None
 
     except Exception as e:

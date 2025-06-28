@@ -6,7 +6,7 @@ import openai
 from openai import OpenAIError, RateLimitError
 from textwrap import dedent
 
-# Load .env from project root
+# Load .env
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
@@ -19,6 +19,13 @@ if USE_OPENAI:
     client = openai.OpenAI(api_key=API_KEY)
 else:
     client = None
+
+# Optional: progress hook
+try:
+    from progress import update_progress
+except ImportError:
+    def update_progress(task_id, status, percent):
+        pass
 
 FALLBACKS = {
     "motivation": """Every champion started as a beginner who refused to quit.
@@ -69,10 +76,14 @@ And that is enough.
 Don’t give up. You’re closer than you think to the light.""",
 }
 
-def generate_script(theme: str) -> str:
+
+def generate_script(theme: str, task_id=None) -> str:
     theme = theme.lower()
+    update_progress(task_id, "🧠 Generating script...", 10)
+
     if not USE_OPENAI:
-        print(f"⚠️ OpenAI disabled (USE_OPENAI=false). Using fallback for '{theme}'")
+        print(f"⚠️ OpenAI disabled. Using fallback for '{theme}'")
+        update_progress(task_id, "📝 Using fallback script", 12)
         return FALLBACKS.get(theme, f"This is a fallback script for the theme '{theme}'.")
 
     prompt = (
@@ -88,6 +99,7 @@ def generate_script(theme: str) -> str:
         )
         script = response.choices[0].message.content.strip()
         print(f"[✅] OpenAI script generated for '{theme}'")
+        update_progress(task_id, "✅ Script generated", 15)
         return script
 
     except RateLimitError:
@@ -97,20 +109,20 @@ def generate_script(theme: str) -> str:
     except Exception as e:
         print(f"[❌] Unexpected error: {e}")
 
+    update_progress(task_id, "⚠️ Using fallback script", 12)
     return FALLBACKS.get(theme, f"This is a fallback script for the theme '{theme}'.")
 
 
-def generate_script_for_user(theme: str, username: str) -> str:
-    base_output = os.path.join("output", username)
-    os.makedirs(base_output, exist_ok=True)
+def generate_script_for_user(theme: str, username: str, output_root: str = "output", task_id=None) -> str:
+    output_dir = os.path.join(output_root, username)
+    os.makedirs(output_dir, exist_ok=True)
 
-    output_path = os.path.join(base_output, f"{theme}_text.txt")
-
+    output_path = os.path.join(output_dir, f"{theme}_text.txt")
     if os.path.exists(output_path):
         print(f"[📝] Script already exists → {output_path}")
         return output_path
 
-    script = generate_script(theme)
+    script = generate_script(theme, task_id)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
 

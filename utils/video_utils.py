@@ -11,6 +11,7 @@ load_dotenv()
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
 
 def get_video_duration(filepath):
+    """Returns duration (float seconds) of video using ffprobe."""
     try:
         result = subprocess.run(
             [
@@ -30,6 +31,7 @@ def get_video_duration(filepath):
         return None
 
 def trim_video(input_path, output_path, max_duration=30):
+    """Trims video to max_duration seconds using ffmpeg."""
     try:
         subprocess.run(
             [
@@ -48,27 +50,33 @@ def trim_video(input_path, output_path, max_duration=30):
         return False
 
 def download_video(url, output_path, min_duration=5, max_duration=6, return_url=False):
+    """
+    Downloads a video from URL to output_path.
+    - Uses cache if enabled.
+    - Checks duration.
+    - Trims if too long.
+    - Skips if too short.
+    """
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # Setup cache
+        # Caching
         cache_dir = os.path.join("cache", "videos")
         os.makedirs(cache_dir, exist_ok=True)
         hashed_name = hashlib.md5(url.encode()).hexdigest()
         cached_path = os.path.join(cache_dir, f"{hashed_name}.mp4")
 
-        # Use cached version if available and allowed
         if not DISABLE_CACHE and os.path.exists(cached_path):
             print(f"[📦] Using cached video for URL: {url}")
             duration = get_video_duration(cached_path)
-            if duration is not None and duration >= min_duration:
+            if duration and duration >= min_duration:
                 subprocess.run(["cp", cached_path, output_path], check=True)
                 return (output_path, url) if return_url else output_path
             else:
-                print("[⚠️] Cached video invalid or too short. Re-downloading...")
+                print("[⚠️] Cached video too short or unreadable. Re-downloading...")
                 os.remove(cached_path)
 
-        # Download new video
+        # Download fresh
         print(f"[⬇️] Downloading video from: {url}")
         temp_path = output_path + ".tmp"
         with requests.get(url, stream=True, timeout=15) as r:

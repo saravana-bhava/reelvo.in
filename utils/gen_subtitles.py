@@ -1,15 +1,24 @@
 # utils/gen_subtitles.py
 
 import os
-import whisper
 import srt
+import whisper
 import warnings
 from datetime import timedelta
 
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+
 MODEL = whisper.load_model("small")
 
-def generate_srt_from_audio(category: str, audio_path: str, output_path: str, words_per_line=6):
+# Optional progress support
+try:
+    from progress import update_progress
+except ImportError:
+    def update_progress(task_id, status, percent):
+        pass
+
+def generate_srt_from_audio(category: str, audio_path: str, output_path: str, words_per_line=6, task_id=None):
+    update_progress(task_id, "📝 Generating subtitles...", 50)
     print(f"[🧠] Transcribing audio for subtitles (Whisper): {audio_path}")
 
     try:
@@ -29,7 +38,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
     min_duration = 1.5
     max_duration = 4.0
     min_gap = 0.1
-    last_end_time = 0.5  # Start from 0.5s for nice fade-in alignment
+    last_end_time = 0.5  # Start from 0.5s for fade-in sync
 
     i = 0
     while i < len(words):
@@ -41,14 +50,13 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         start = max(chunk[0]["start"], last_end_time + min_gap)
         end = chunk[-1]["end"]
 
-        # Adjust end if too short
+        # Clamp subtitle duration
         duration = end - start
         if duration < min_duration:
             end = start + min_duration
         elif duration > max_duration:
             end = start + max_duration
 
-        # Avoid extending beyond audio
         end = min(end, 29.5)
 
         subtitles.append(srt.Subtitle(
@@ -62,7 +70,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         index += 1
         i += words_per_line
 
-    # Fill the silence at the end
+    # Pad the ending with a trailing subtitle
     if subtitles and subtitles[-1].end.total_seconds() < 29.5:
         subtitles.append(srt.Subtitle(
             index=index,
@@ -72,13 +80,12 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         ))
         print(f"[➕] Appended trailing subtitle (...) from {subtitles[-1].start.total_seconds():.2f}s to 29.5s")
 
-    # Save SRT
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
 
     print(f"[✅] Generated SRT for '{category}' → {output_path}")
-
+    update_progress(task_id, "✅ Subtitles ready", 55)
 
 # CLI usage
 if __name__ == "__main__":

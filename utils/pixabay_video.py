@@ -5,12 +5,13 @@ import requests
 from dotenv import load_dotenv
 from utils.video_utils import download_video
 
+# Load environment variables
 load_dotenv()
 
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
 
-def fetch_pixabay_video(theme, output_path, used_urls=None, min_duration=5, max_duration=6):
+def fetch_pixabay_video(theme, output_path, used_urls=None, min_duration=8, max_duration=12):
     if not PIXABAY_API_KEY:
         raise EnvironmentError("[❌] Missing PIXABAY_API_KEY in .env")
 
@@ -22,7 +23,7 @@ def fetch_pixabay_video(theme, output_path, used_urls=None, min_duration=5, max_
         "q": theme,
         "video_type": "film",
         "orientation": "vertical",
-        "per_page": 10
+        "per_page": 20  # Increased for more options
     }
 
     print(f"[🌐] Searching Pixabay for '{theme}' videos...")
@@ -36,19 +37,26 @@ def fetch_pixabay_video(theme, output_path, used_urls=None, min_duration=5, max_
             return None
 
         for result in results:
+            duration = result.get("duration", 0)
+            if not (min_duration <= duration <= max_duration):
+                continue
+
             for quality in ["large", "medium", "small", "tiny"]:
                 video = result.get("videos", {}).get(quality)
-                if video and video["width"] == 1080 and video["height"] == 1920:
-                    url = video["url"]
-                    if url in used_urls:
-                        continue
-                    print(f"[📼] Found 1080x1920 video at: {url}")
+                if not video:
+                    continue
+
+                width, height = video.get("width"), video.get("height")
+                url = video.get("url")
+
+                if width == 1080 and height == 1920 and url and url not in used_urls:
+                    print(f"[📼] Pixabay 1080x1920 found: {url} (duration: {duration}s)")
                     success = download_video(url, output_path, min_duration, max_duration)
                     if success:
                         used_urls.add(url)
                         return url
 
-        print("[⚠️] No unused 1080x1920 video ≥8s found on Pixabay.")
+        print("[⚠️] No suitable unused 1080x1920 video (8–12s) found on Pixabay.")
         return None
 
     except Exception as e:

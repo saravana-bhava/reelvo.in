@@ -3,7 +3,15 @@
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-def generate_text_overlay(text, output_path, width=1080, height=1920, font_size=60, font_path=None):
+# Optional: import progress handler
+try:
+    from progress import update_progress
+except ImportError:
+    def update_progress(task_id, status, percent):
+        pass
+
+def generate_text_overlay(text, output_path, width=1080, height=1920, font_size=60, font_path=None, task_id=None):
+    update_progress(task_id, "🖋️ Generating text overlay...", 35)
     print(f"[🖋️] Generating text overlay image → {output_path}")
 
     # Default font fallback
@@ -59,6 +67,7 @@ def generate_text_overlay(text, output_path, width=1080, height=1920, font_size=
     # Save as RGB JPEG for FFmpeg compatibility
     image.convert("RGB").save(output_path)
     print(f"[✅] Overlay image saved → {output_path}")
+    update_progress(task_id, "🖼️ Text overlay ready", 38)
 
 # CLI usage
 if __name__ == "__main__":
