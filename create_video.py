@@ -22,7 +22,7 @@ VIDEO_DIR = "assets/videos"
 TEMP_DIR = "temp"
 WATERMARK_PATH = "assets/logo.png"
 VIDEO_DURATION = 30
-CLIP_COUNT = 3  # 3 clips of ~10s to form 30s
+CLIP_COUNT = 5  # 5 clips of ~6s to form 30s
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
@@ -44,8 +44,9 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'w', encoding='utf-8') as f:
         f.write(srt.compose(clipped))
 
-def fetch_multiple_clips(category, count=3):
+def fetch_multiple_clips(category, count=5):
     downloaded_clips = []
+    used_urls = set()
     sources = [try_pexels_fallback, fetch_pixabay_video]
     fallback_local = os.path.join(VIDEO_DIR, f"{category}.mp4")
 
@@ -53,16 +54,16 @@ def fetch_multiple_clips(category, count=3):
         clip_path = os.path.join(TEMP_DIR, f"{category}_clip{i+1}.mp4")
         for source in sources:
             if source == try_pexels_fallback and USE_PEXELS:
-                if try_pexels_fallback(category, clip_path):
+                if try_pexels_fallback(category, clip_path, used_urls=used_urls):
                     downloaded_clips.append(clip_path)
                     break
             elif source == fetch_pixabay_video and USE_PIXABAY:
-                if fetch_pixabay_video(category, clip_path):
+                if fetch_pixabay_video(category, clip_path, used_urls=used_urls):
                     downloaded_clips.append(clip_path)
                     break
         else:
             if os.path.exists(fallback_local):
-                downloaded = download_video(fallback_local, clip_path, min_duration=8, max_duration=12)
+                downloaded = download_video(fallback_local, clip_path, min_duration=5, max_duration=7)
                 if downloaded:
                     downloaded_clips.append(clip_path)
 

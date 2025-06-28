@@ -8,14 +8,15 @@ from utils.video_utils import download_video
 load_dotenv()
 
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
-HEADERS_PEXELS = {
-    "Authorization": PEXELS_API_KEY
-}
+HEADERS_PEXELS = { "Authorization": PEXELS_API_KEY }
 
-def try_pexels_fallback(category, output_path, min_duration=8, max_duration=12):
+def try_pexels_fallback(category, output_path, used_urls=None, min_duration=8, max_duration=12):
     if not PEXELS_API_KEY:
         print("[❌] Pexels fallback requested but PEXELS_API_KEY is missing.")
-        return False
+        return None
+
+    if used_urls is None:
+        used_urls = set()
 
     print(f"[🔁] Falling back to Pexels for '{category}'...")
 
@@ -26,31 +27,28 @@ def try_pexels_fallback(category, output_path, min_duration=8, max_duration=12):
             params={
                 "query": category,
                 "orientation": "portrait",
-                "per_page": 10
+                "per_page": 15
             },
             timeout=10
         )
+        response.raise_for_status()
     except Exception as e:
         print(f"[❌] Pexels API error: {e}")
-        return False
+        return None
 
-    if response.status_code != 200:
-        print(f"[❌] Pexels API error: {response.status_code} - {response.text}")
-        return False
-
-    data = response.json()
-    videos = data.get("videos", [])
-
+    videos = response.json().get("videos", [])
     for video in videos:
         for file in video.get("video_files", []):
             if file["width"] == 1080 and file["height"] == 1920:
-                print(f"[📼] Pexels video found: {file['link']}")
-                return download_video(
-                    file["link"],
-                    output_path,
-                    min_duration=min_duration,
-                    max_duration=max_duration
-                )
+                url = file["link"]
+                if url in used_urls:
+                    continue
 
-    print("[⚠️] No suitable 1080x1920 video ≥8s found on Pexels.")
-    return False
+                print(f"[📼] Pexels video found: {url}")
+                success = download_video(url, output_path, min_duration, max_duration)
+                if success:
+                    used_urls.add(url)
+                    return url
+
+    print("[⚠️] No suitable unused 1080x1920 video ≥8s found on Pexels.")
+    return None

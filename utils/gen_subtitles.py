@@ -56,7 +56,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
                 break
             word_idx += 1
 
-        # If exact match fails, fallback to approximate match
+        # Fallback to fuzzy match
         if not matched_words:
             for i in range(len(words) - match_len):
                 chunk = words[i:i + match_len]
@@ -80,6 +80,18 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
         ))
         index += 1
         word_idx += match_len
+
+    # Add filler "..." subtitle if there's silent time left
+    if subtitles:
+        last_end = subtitles[-1].end.total_seconds()
+        if last_end < 29.0:
+            subtitles.append(srt.Subtitle(
+                index=index,
+                start=timedelta(seconds=last_end + 0.2),
+                end=timedelta(seconds=29.5),
+                content="..."
+            ))
+            print(f"[➕] Appended trailing subtitle (...) from {last_end+0.2:.2f}s to 29.5s")
 
     # Save subtitles
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
