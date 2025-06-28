@@ -41,7 +41,7 @@ def trim_video(input_path, output_path, max_duration=30):
         print(f"[❌] Failed to trim video: {e}")
         return False
 
-def download_video(url, output_path, min_duration=8, max_duration=12, return_url=False):
+def download_video(url, output_path, min_duration=5, max_duration=6, return_url=False):
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         temp_path = output_path + ".tmp"

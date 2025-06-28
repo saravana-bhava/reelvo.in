@@ -63,7 +63,7 @@ def fetch_multiple_clips(category, count=5):
                     break
         else:
             if os.path.exists(fallback_local):
-                downloaded = download_video(fallback_local, clip_path, min_duration=5, max_duration=7)
+                downloaded = download_video(fallback_local, clip_path, min_duration=5, max_duration=6)
                 if downloaded:
                     downloaded_clips.append(clip_path)
 

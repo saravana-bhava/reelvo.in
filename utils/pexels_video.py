@@ -10,7 +10,7 @@ load_dotenv()
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 HEADERS_PEXELS = { "Authorization": PEXELS_API_KEY }
 
-def try_pexels_fallback(category, output_path, used_urls=None, min_duration=8, max_duration=12):
+def try_pexels_fallback(category, output_path, used_urls=None, min_duration=5, max_duration=6):
     if not PEXELS_API_KEY:
         print("[❌] Pexels fallback requested but PEXELS_API_KEY is missing.")
         return None

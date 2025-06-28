@@ -10,7 +10,7 @@ load_dotenv()
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
 
-def fetch_pixabay_video(theme, output_path, used_urls=None, min_duration=8, max_duration=12):
+def fetch_pixabay_video(theme, output_path, used_urls=None, min_duration=5, max_duration=6):
     if not PIXABAY_API_KEY:
         raise EnvironmentError("[❌] Missing PIXABAY_API_KEY in .env")
 
