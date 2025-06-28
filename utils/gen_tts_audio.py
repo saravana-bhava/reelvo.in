@@ -1,23 +1,31 @@
 # utils/gen_tts_audio.py
 
+"""
+Generates TTS audio using ElevenLabs, Google Cloud TTS, or gTTS (fallback).
+Pads all audio to exactly 30s for reel duration.
+"""
+
 import os
 import subprocess
 import hashlib
 from gtts import gTTS
 from dotenv import load_dotenv
 
-# Load .env
+# Load environment variables
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
+# Feature flags
 USE_ELEVENLABS = os.getenv("USE_ELEVENLABS", "false").lower() == "true"
 USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
+
+# API Keys
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "9BWtsMINqrJLrRacOk9x")
 GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
 
-# Optional: shared progress_status
+# Optional progress integration
 try:
     from app import progress_status
 except ImportError:
@@ -27,7 +35,7 @@ def update_progress(task_id, status, percent):
     if task_id and task_id in progress_status:
         progress_status[task_id] = {"status": status, "percent": percent}
 
-def pad_or_trim_audio(input_path, output_path, duration=30):
+def pad_or_trim_audio(input_path: str, output_path: str, duration: int = 30):
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
@@ -39,7 +47,7 @@ def pad_or_trim_audio(input_path, output_path, duration=30):
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"[❌] FFmpeg padding failed: {e}")
 
-def generate_tts_audio(category: str, text: str, output_path: str, task_id=None):
+def generate_tts_audio(category: str, text: str, output_path: str, task_id=None) -> str:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     print(f"[🔊] Generating TTS for '{category}' → {output_path}")
     update_progress(task_id, "🔊 Generating TTS...", 35)
@@ -74,14 +82,14 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
         except Exception as e:
             print(f"[❌] ElevenLabs error: {e}")
 
-    # Try Google Cloud
+    # Try Google Cloud TTS
     if not success and USE_GOOGLE_CLOUD:
         try:
             from google.cloud import texttospeech
-            print("[🧠] Trying Google TTS...")
+            print("[🧠] Trying Google Cloud TTS...")
             update_progress(task_id, "🔊 Using Google Cloud TTS...", 39)
 
-            cache_key = hashlib.md5(f"{text}|{GOOGLE_CLOUD_TTS_VOICE}".encode("utf-8")).hexdigest()
+            cache_key = hashlib.md5(f"{text}|{GOOGLE_CLOUD_TTS_VOICE}".encode()).hexdigest()
             cache_dir = os.path.join(ROOT_DIR, "cache", "tts")
             os.makedirs(cache_dir, exist_ok=True)
             cached_path = os.path.join(cache_dir, f"{cache_key}.mp3")
@@ -111,14 +119,14 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
                 print("[✅] Google TTS audio saved.")
                 success = True
         except Exception as e:
-            print(f"[❌] Google Cloud TTS error: {e}")
+            print(f"[❌] Google TTS error: {e}")
 
     # Fallback: gTTS
     if not success:
         try:
             print("[🌍] Using gTTS fallback...")
             update_progress(task_id, "🔊 Using gTTS fallback...", 40)
-            tts = gTTS(text=text.strip(), lang='en')
+            tts = gTTS(text=text.strip(), lang="en")
             tts.save(raw_path)
             print("[✅] gTTS audio saved.")
             success = True
@@ -134,18 +142,25 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
     else:
         raise RuntimeError("[❌] All TTS methods failed.")
 
-def generate_tts_from_file(category: str, username: str, output_root: str = "output", task_id=None):
+def generate_tts_from_file(category: str, username: str, output_root: str = "output", task_id=None) -> str:
+    """
+    Generate TTS using script file saved at: output/{username}/{category}_text.txt
+    """
     output_dir = os.path.join(output_root, username)
     text_path = os.path.join(output_dir, f"{category}_text.txt")
     if not os.path.exists(text_path):
-        raise FileNotFoundError(f"[❌] Text file not found: {text_path}")
+        raise FileNotFoundError(f"[❌] Script text file not found: {text_path}")
+
     with open(text_path, "r", encoding="utf-8") as f:
         text = f.read().strip()
     if not text:
         raise ValueError("[❌] Script text is empty.")
+
     output_path = os.path.join(output_dir, f"{category}.mp3")
     return generate_tts_audio(category, text, output_path, task_id)
 
+
+# CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:

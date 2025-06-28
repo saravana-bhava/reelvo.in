@@ -1,13 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Reelvo.ai</title>
     <style>
+        :root {
+            --bg-light: #f0f2f5;
+            --bg-dark: #121212;
+            --card-light: #fff;
+            --card-dark: #1e1e1e;
+            --text-light: #333;
+            --text-dark: #eee;
+            --border: #ccc;
+            --accent: #007bff;
+            --accent-dark: #0056b3;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: var(--bg-dark);
+            }
+
+            .login-box {
+                background: var(--card-dark);
+                color: var(--text-dark);
+            }
+
+            input[type="text"] {
+                background: #2a2a2a;
+                color: white;
+                border-color: #444;
+            }
+
+            input[type="text"]::placeholder {
+                color: #aaa;
+            }
+        }
+
         body {
             font-family: Arial, sans-serif;
-            background: #f0f2f5;
+            background: var(--bg-light);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,7 +49,7 @@
         }
 
         .login-box {
-            background: white;
+            background: var(--card-light);
             padding: 30px 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -27,7 +60,7 @@
 
         .login-box h2 {
             margin-bottom: 20px;
-            color: #333;
+            color: var(--text-light);
         }
 
         input[type="text"] {
@@ -35,13 +68,13 @@
             padding: 10px;
             margin-bottom: 20px;
             border-radius: 6px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border);
             font-size: 16px;
             transition: border-color 0.3s ease;
         }
 
         input[type="text"]:focus {
-            border-color: #007bff;
+            border-color: var(--accent);
             outline: none;
         }
 
@@ -49,7 +82,7 @@
             width: 100%;
             padding: 10px;
             border: none;
-            background: #007bff;
+            background: var(--accent);
             color: white;
             border-radius: 6px;
             font-size: 16px;
@@ -58,7 +91,16 @@
         }
 
         button:hover {
-            background: #0056b3;
+            background: var(--accent-dark);
+        }
+
+        .sr-only {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            top: auto;
+            overflow: hidden;
         }
 
         @media (max-height: 500px) {
@@ -70,13 +112,21 @@
     </style>
 </head>
 <body>
-    <main class="login-box" role="main" aria-label="Login form">
-        <h2>Welcome to Reelvo.ai</h2>
-        <form action="{{ url_for('login') }}" method="post">
-            <label for="username" class="sr-only">Username</label>
-            <input type="text" id="username" name="username" placeholder="Enter your name" autocomplete="name" required aria-required="true">
-            <button type="submit">Login</button>
-        </form>
-    </main>
+<main class="login-box" role="main" aria-label="Login form">
+    <h2>Welcome to Reelvo.ai</h2>
+    <form action="{{ url_for('login') }}" method="post">
+        <label for="username" class="sr-only">Username</label>
+        <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Enter your name"
+                autocomplete="name"
+                required
+                aria-required="true"
+        />
+        <button type="submit">Login</button>
+    </form>
+</main>
 </body>
 </html>

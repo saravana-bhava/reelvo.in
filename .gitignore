@@ -1,5 +1,3 @@
-# .gitignore
-
 # Python bytecode
 __pycache__/
 *.py[cod]
@@ -29,11 +27,17 @@ output/
 *.mov
 *.png
 *.jpg
+*.jpeg
+*.webm
+*.srt
+*.jsonl
+*.marks.json
 
 # Build artifacts
 build/
 dist/
 *.egg-info/
+*.spec     # PyInstaller
 
 # Logs and temporary files
 *.log
@@ -47,16 +51,32 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
-# Apache config (local only)
+# Apache / Nginx config
 .htaccess
 
-# Test utilities (not for production)
+# Test utilities
 test/
+tests/
+__tests__/
 
-*.spec     # If using PyInstaller for packaging
-
+# Python testing
 .pytest_cache/
 
+# Caching
 cache/
-docs/
 temp/
+docs/
+
+# FFmpeg temp/intermediate files
+*.ffmpeg.*
+*.part
+*.ts
+*.mkv
+
+# Node / frontend (if React frontend involved)
+node_modules/
+.next/
+*.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

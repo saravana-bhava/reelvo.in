@@ -1,23 +1,43 @@
 # utils/gen_subtitles.py
 
+"""
+Subtitle generator using OpenAI Whisper for audio-based transcription.
+
+If Google Cloud TTS SSML <mark> data is unavailable, this script
+generates a fallback .srt subtitle file from raw audio.
+"""
+
 import os
 import srt
 import whisper
 import warnings
 from datetime import timedelta
 
+# Silence known warning
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
+# Load Whisper model once
 MODEL = whisper.load_model("small")
 
-# Optional progress support
+# Optional progress bar integration
 try:
     from progress import update_progress
 except ImportError:
     def update_progress(task_id, status, percent):
         pass
 
-def generate_srt_from_audio(category: str, audio_path: str, output_path: str, words_per_line=6, task_id=None):
+
+def generate_srt_from_audio(category: str, audio_path: str, output_path: str, words_per_line: int = 6, task_id: str | None = None):
+    """
+    Generate SRT subtitle file using Whisper from a given audio clip.
+
+    Args:
+        category (str): Category name (used in logs).
+        audio_path (str): Path to the .mp3/.wav file.
+        output_path (str): Target path for .srt file.
+        words_per_line (int): How many words per subtitle line.
+        task_id (str | None): Task ID for UI progress updates.
+    """
     update_progress(task_id, "📝 Generating subtitles...", 50)
     print(f"[🧠] Transcribing audio for subtitles (Whisper): {audio_path}")
 
@@ -38,7 +58,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
     min_duration = 1.5
     max_duration = 4.0
     min_gap = 0.1
-    last_end_time = 0.5  # Start from 0.5s for fade-in sync
+    last_end_time = 0.5  # Start offset for fade-in sync
 
     i = 0
     while i < len(words):
@@ -50,7 +70,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         start = max(chunk[0]["start"], last_end_time + min_gap)
         end = chunk[-1]["end"]
 
-        # Clamp subtitle duration
+        # Clamp duration
         duration = end - start
         if duration < min_duration:
             end = start + min_duration
@@ -70,7 +90,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         index += 1
         i += words_per_line
 
-    # Pad the ending with a trailing subtitle
+    # Add trailing subtitle if time remaining
     if subtitles and subtitles[-1].end.total_seconds() < 29.5:
         subtitles.append(srt.Subtitle(
             index=index,
@@ -86,6 +106,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
 
     print(f"[✅] Generated SRT for '{category}' → {output_path}")
     update_progress(task_id, "✅ Subtitles ready", 55)
+
 
 # CLI usage
 if __name__ == "__main__":

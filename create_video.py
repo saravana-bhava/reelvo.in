@@ -16,6 +16,7 @@ from utils.pexels_video import try_pexels_fallback
 from utils.video_utils import download_video, get_video_duration
 from progress import start_progress, update_progress, finish_progress
 
+# Load env
 load_dotenv()
 
 # Logging
@@ -34,6 +35,8 @@ CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 
+
+# --- Helper: Trim SRT to fit video duration ---
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
         subs = list(srt.parse(f.read()))
@@ -50,6 +53,8 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'w', encoding='utf-8') as f:
         f.write(srt.compose(clipped))
 
+
+# --- Helper: Fetch multiple clips for a category ---
 def fetch_multiple_clips(category, count=5):
     downloaded_clips = []
     used_urls = set()
@@ -69,15 +74,17 @@ def fetch_multiple_clips(category, count=5):
                     break
         else:
             if os.path.exists(fallback_local):
-                downloaded = download_video(fallback_local, clip_path, min_duration=5, max_duration=6)
-                if downloaded:
+                if download_video(fallback_local, clip_path, min_duration=5, max_duration=6):
                     downloaded_clips.append(clip_path)
 
     return downloaded_clips
 
+
+# --- Helper: Concatenate clips safely ---
 def concatenate_clips(clips, output_path):
     logger.info("[🔁] Re-encoding clips for safe concatenation...")
     reencoded_clips = []
+
     for i, clip in enumerate(clips):
         fixed = os.path.join(TEMP_DIR, f"fixed_clip{i+1}.mp4")
         subprocess.run([
@@ -102,10 +109,14 @@ def concatenate_clips(clips, output_path):
         "-movflags", "+faststart",
         output_path
     ], check=True)
+
     return output_path
 
+
+# --- Main: Generate final video ---
 def create_video_for_category(category, username, task_id=None):
     logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
+
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
 
@@ -140,12 +151,11 @@ def create_video_for_category(category, username, task_id=None):
         if task_id:
             update_progress(task_id, "📝 Generating subtitles...", 50)
         generate_srt_from_audio(category, audio_path, srt_path)
+        clip_srt_timing(srt_path, 0.5, 29.5)
 
     except Exception as e:
         logger.exception("[❌] Asset generation failed")
         return None
-
-    clip_srt_timing(srt_path, 0.5, 29.5)
 
     if task_id:
         update_progress(task_id, "🎞️ Fetching video clips...", 60)
@@ -159,10 +169,11 @@ def create_video_for_category(category, username, task_id=None):
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
+    # --- Compose Final FFmpeg Command ---
     inputs = ["-i", combined_video_path, "-i", audio_path]
     input_index = 2
-
     logo_index = None
+
     if os.path.exists(WATERMARK_PATH):
         inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
         logo_index = input_index
@@ -173,7 +184,6 @@ def create_video_for_category(category, username, task_id=None):
         f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
         f"fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION-1}:d=1[bg]"
     ]
-
     base_stream = "[bg]"
 
     if logo_index is not None:
@@ -190,7 +200,6 @@ def create_video_for_category(category, username, task_id=None):
         "Outline=2,"
         "MarginV=100"
     )
-
     filters.append(f"{base_stream}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
 
     cmd = [
@@ -215,11 +224,12 @@ def create_video_for_category(category, username, task_id=None):
             finish_progress(task_id, "✅ Video generated!")
         logger.info(f"[✅] Final reel generated: {final_output_path}")
         return final_output_path
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         logger.exception("[❌] FFmpeg failed")
         return None
 
 
+# --- CLI Test Entry Point ---
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:

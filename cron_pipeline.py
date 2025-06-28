@@ -10,26 +10,31 @@ from run_pipeline import run_pipeline
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cron_pipeline")
 
-# Config
+# Constants
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "demo")
-SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "5"))
+SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "5"))  # seconds
+
 
 def run_all_categories_for_user(username):
     logger.info(f"🌀 Starting CRON reel generation for user: {username}")
+
     for category in CATEGORIES:
         try:
             logger.info(f"🕒 [CRON] Generating reel for: {category}")
             output_path = run_pipeline(category, username)
+
             if output_path:
                 logger.info(f"[✅] Finished: {output_path}")
             else:
-                logger.warning(f"[⚠️] Generation failed for {category}")
-            time.sleep(SLEEP_BETWEEN)
-        except Exception as e:
-            logger.exception(f"[❌] Failed for category '{category}': {e}")
+                logger.warning(f"[⚠️] Generation failed for category: {category}")
 
-    logger.info("✅ Cron job finished.\n")
+            time.sleep(SLEEP_BETWEEN)
+
+        except Exception as e:
+            logger.exception(f"[❌] Error generating category '{category}': {e}")
+
+    logger.info("✅ CRON reel generation completed.\n")
 
 
 if __name__ == "__main__":

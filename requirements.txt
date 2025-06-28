@@ -1,3 +1,7 @@
+# ========================
+# reelvo.ai Requirements
+# ========================
+
 # ------------------------
 # Web framework
 # ------------------------
@@ -55,11 +59,10 @@ google-auth-oauthlib
 
 # ------------------------
 # Optional: Torch installation overrides
-# If Whisper fails to install torch correctly,
-# uncomment one of the options below based on your server environment.
+# Uncomment if Whisper fails to install torch
 
 # For CPU-only systems:
 # torch==2.2.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-# For GPU systems (CUDA):
+# For GPU systems:
 # torch==2.2.1  # Install manually if needed

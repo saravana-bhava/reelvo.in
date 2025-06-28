@@ -1,20 +1,42 @@
 # utils/instagram.py
 
+"""
+Automated posting of Instagram Reels via Graph API.
+Handles:
+- Optional Google Drive upload
+- Reel container creation
+- Polling for media readiness
+- Publishing and permalink fetch
+"""
+
 import time
 import requests
 from utils.google_drive import upload_to_google_drive
 
-# Optional progress support
+# Optional progress status tracker
 try:
     from progress import update_progress
 except ImportError:
     def update_progress(task_id, status, percent): pass
 
-def post_to_instagram(video_path, caption, ig_account_id, access_token, username="default", video_url=None, task_id=None):
+
+def post_to_instagram(
+    video_path: str,
+    caption: str,
+    ig_account_id: str,
+    access_token: str,
+    username: str = "default",
+    video_url: str = None,
+    task_id: str = None
+) -> str:
+    """
+    Uploads and posts an Instagram Reel using the Graph API.
+    Returns a success/failure message with permalink or error.
+    """
     try:
         update_progress(task_id, "📤 Preparing Instagram upload...", 91)
 
-        # Upload to Drive if URL not provided
+        # Upload to Google Drive if URL not already available
         if not video_url:
             update_progress(task_id, "📁 Uploading to Google Drive...", 92)
             video_url, upload_error = upload_to_google_drive(video_path, username, task_id)
@@ -34,13 +56,16 @@ def post_to_instagram(video_path, caption, ig_account_id, access_token, username
         )
 
         if container_res.status_code != 200:
-            return f"[❌] Container upload failed: {container_res.text}"
+            return f"[❌] Container upload failed ({container_res.status_code}): {container_res.text}"
 
         container_id = container_res.json().get("id")
-        update_progress(task_id, "⏳ Waiting for processing...", 95)
+        if not container_id:
+            return "[❌] No container ID returned by Graph API."
 
-        # Wait until Instagram processes the reel
-        for i in range(10):
+        update_progress(task_id, "⏳ Waiting for media processing...", 95)
+
+        # Poll for status
+        for _ in range(12):  # Max ~60 seconds
             time.sleep(5)
             status_res = requests.get(
                 f"https://graph.facebook.com/v19.0/{container_id}",
@@ -50,12 +75,17 @@ def post_to_instagram(video_path, caption, ig_account_id, access_token, username
                 }
             )
 
-            if status_res.status_code == 200 and status_res.json().get("status_code") == "FINISHED":
-                update_progress(task_id, "✅ Media ready. Publishing...", 96)
-                break
+            if status_res.status_code == 200:
+                status = status_res.json().get("status_code")
+                if status == "FINISHED":
+                    update_progress(task_id, "✅ Media ready. Publishing...", 96)
+                    break
+            else:
+                return f"[❌] Failed to poll status ({status_res.status_code}): {status_res.text}"
         else:
-            return "[❌] Media not ready after waiting."
+            return "[❌] Media not ready after 60 seconds of polling."
 
+        # Publish the reel
         publish_res = requests.post(
             f"https://graph.facebook.com/v19.0/{ig_account_id}/media_publish",
             params={
@@ -65,11 +95,13 @@ def post_to_instagram(video_path, caption, ig_account_id, access_token, username
         )
 
         if publish_res.status_code != 200:
-            return f"[❌] Publishing failed: {publish_res.text}"
+            return f"[❌] Publishing failed ({publish_res.status_code}): {publish_res.text}"
 
         post_id = publish_res.json().get("id")
+        if not post_id:
+            return "[❌] Publishing succeeded but no post ID returned."
 
-        # Fetch permalink
+        # Retrieve permalink
         permalink_res = requests.get(
             f"https://graph.facebook.com/v19.0/{post_id}",
             params={
@@ -80,10 +112,13 @@ def post_to_instagram(video_path, caption, ig_account_id, access_token, username
 
         if permalink_res.status_code == 200:
             permalink = permalink_res.json().get("permalink")
-            update_progress(task_id, "🎉 Reel published!", 100)
-            return f"[✅] Reel posted: <a href='{permalink}' target='_blank'>{permalink}</a>"
+            if permalink:
+                update_progress(task_id, "🎉 Reel published!", 100)
+                return f"[✅] Reel posted: <a href='{permalink}' target='_blank'>{permalink}</a>"
+            else:
+                return "[✅] Reel posted but no permalink returned."
 
-        return f"[✅] Posted (ID: {post_id}), but permalink fetch failed."
+        return f"[✅] Reel posted (ID: {post_id}), but failed to fetch permalink."
 
     except Exception as e:
-        return f"[❌] Unexpected error: {e}"
+        return f"[❌] Unexpected exception during Instagram upload: {str(e)}"
