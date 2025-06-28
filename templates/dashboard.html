@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Dashboard - Reelvo.ai</title>
     <style>
         body {
@@ -36,7 +36,8 @@
             font-size: 22px;
         }
 
-        select, button {
+        select,
+        button {
             padding: 10px;
             font-size: 16px;
             margin-top: 10px;
@@ -112,8 +113,12 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 500px) {
@@ -121,6 +126,7 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+
             .logout-btn {
                 margin-top: 10px;
             }
@@ -137,7 +143,8 @@
                 color: #f0f0f0;
             }
 
-            select, button {
+            select,
+            button {
                 background-color: #2c2c2c;
                 color: #f0f0f0;
                 border: 1px solid #555;
@@ -224,7 +231,11 @@
         const pollProgress = async () => {
             const res = await fetch(`/reelvo.ai/progress/${taskId}`);
             const prog = await res.json();
-            statusText.innerHTML = prog.status;
+            statusText.innerHTML = `
+        <strong>Status:</strong> ${prog.status}
+        <br><strong>Progress:</strong> ${prog.percent}%
+        <br><strong>Elapsed:</strong> ${prog.elapsed || 0}s
+      `;
 
             if (prog.percent >= 100 || prog.percent === -1) {
                 generateBtn.disabled = false;

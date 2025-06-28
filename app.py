@@ -102,7 +102,7 @@ def generate():
 
             if video_path:
                 update_progress(task_id, "📁 Uploading to Drive...", 80)
-                drive_url, drive_error = upload_to_google_drive(video_path, username)
+                drive_url, drive_error = upload_to_google_drive(video_path, username, task_id=task_id)
 
                 if drive_url and drive_url.startswith("http"):
                     finish_progress(task_id, f"✅ Generated and uploaded <a href='{drive_url}' target='_blank'>video</a>")
@@ -118,7 +118,8 @@ def generate():
                         ig_account_id=IG_ACCOUNT_ID,
                         access_token=IG_ACCESS_TOKEN,
                         username=username,
-                        video_url=drive_url
+                        video_url=drive_url,
+                        task_id=task_id
                     )
                     logger.info(f"[📲] Post Result: {post_result}")
                     progress_status[task_id]["status"] += f"<br>{post_result}"
@@ -135,7 +136,13 @@ def generate():
 
 @flask_app.route("/progress/<task_id>")
 def get_progress_route(task_id):
-    return jsonify(get_progress(task_id))
+    prog = get_progress(task_id)
+    start_time = progress_status.get(task_id, {}).get("start_time", None)
+    if start_time:
+        prog["elapsed"] = int(time.time() - start_time)
+    else:
+        prog["elapsed"] = 0
+    return jsonify(prog)
 
 
 @flask_app.route('/videos/<username>/<filename>')

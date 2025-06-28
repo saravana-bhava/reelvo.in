@@ -1,114 +1,139 @@
-# AI Instagram Reels Automation Platform (MVP)
+# 🎬 AI Instagram Reels Automation Platform (MVP)
 
-A streamlined AI-powered platform that helps creators generate Instagram Reels automatically.  
-Users select a niche, AI generates a script, TTS generates audio, FFmpeg builds the video, and the result is uploaded to Google Drive and optionally posted to Instagram.
+A streamlined AI-powered platform that helps creators **automatically generate Instagram Reels**.  
+Users choose a niche, AI writes a script, TTS converts it to voice, FFmpeg builds a vertical video, and the output is uploaded to Google Drive — optionally auto-posted to Instagram.
 
-------------------------------
+---
 
-FEATURES
+## 🚀 FEATURES
 
-- Simple login interface (no signup required)
-- Niche selection (Motivation, Sad, Inspiration, Success, Life)
-- AI script generation (OpenAI with fallback)
-- Text-to-Speech via ElevenLabs / Google TTS / gTTS
-- Video generation using FFmpeg or VEED fallback
-- Subtitle overlay (SRT from TTS)
-- Videos saved to /output/<username>/
-- Uploads to Google Drive (optional)
-- Auto-post to Instagram Reels (via Graph API)
-- Scheduler-ready (cron/BullMQ)
-- Subpath-ready via DispatcherMiddleware (/reelvo.ai)
+- 🔐 Simple login interface (no signup required)
+- 🎯 Niche selection: *Motivation*, *Sad*, *Inspiration*, *Success*, *Life*
+- 🧠 Script generation using OpenAI GPT (with fallback support)
+- 🗣️ Text-to-Speech via **ElevenLabs**, **Google TTS**, or **gTTS**
+- 🎞️ Video generation using **FFmpeg** (with optional VEED fallback)
+- 🎬 Subtitles (auto-generated from TTS and overlaid via SRT)
+- 💾 Videos saved to `/output/<username>/`
+- ☁️ Upload to Google Drive (public sharable link)
+- 📲 Auto-post to Instagram Reels (Graph API integration)
+- ⏱️ Scheduler-ready (via cron or BullMQ-compatible)
+- 🛣️ Subpath-ready: served under `/reelvo.ai` via `DispatcherMiddleware`
 
-------------------------------
+---
 
-TECH STACK
+## 🛠 TECH STACK
 
-Backend: Python + Flask  
-Video Engine: FFmpeg + Pexels/Pixabay clips  
-TTS: ElevenLabs / Google Cloud TTS / gTTS  
-AI Script: OpenAI GPT  
-Storage: Local + Google Drive  
-Frontend: HTML + Bootstrap dashboard  
-Deployment: Render / Railway / Docker
+**Backend:** Python + Flask  
+**Video Engine:** FFmpeg + Pexels / Pixabay stock clips  
+**TTS:** ElevenLabs / Google Cloud TTS / gTTS  
+**AI Scripts:** OpenAI GPT  
+**Storage:** Local + Google Drive  
+**Frontend:** Plain HTML + CSS (Bootstrap-inspired)  
+**Deployment:** Render / Railway / Docker-ready
 
-------------------------------
+---
 
-FOLDER STRUCTURE
+## 📁 FOLDER STRUCTURE
 
+```
 .
-├── app.py                 # Flask app mounted at /reelvo.ai
-├── install.sh             # FFmpeg installer
-├── start.sh               # Launch with Gunicorn or Flask
-├── requirements.txt       # All dependencies
+├── app.py                 # Flask app, mounted at /reelvo.ai
+├── install.sh             # FFmpeg installer script
+├── start.sh               # Run with Flask/Gunicorn
+├── requirements.txt       # Dependencies list
 ├── render.yaml            # Render deployment config
-├── templates/             # Login and dashboard HTML
-├── utils/                 # Script/TTS/Subtitle generators
-├── output/                # Output videos (organized by user)
-├── fallback/              # Default fallback video assets
-└── secure/                # OAuth credentials, if any
+├── templates/             # HTML templates (login, dashboard)
+├── utils/                 # All TTS, subtitle, script tools
+├── output/                # Output videos per user
+├── fallback/              # Default/fallback video clips
+└── secure/                # OAuth credentials (.gitignored)
+```
 
-------------------------------
+---
 
-LOCAL DEVELOPMENT
+## ⚙️ LOCAL DEVELOPMENT
 
-git clone https://github.com/your-org/reelvo-ai.git  
-cd reelvo-ai  
-python3 -m venv venv && source venv/bin/activate  
-pip install -r requirements.txt  
-sudo apt-get install -y ffmpeg  
-ENV=development ./start.sh  
+```bash
+git clone https://github.com/your-org/reelvo-ai.git
+cd reelvo-ai
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+sudo apt-get install -y ffmpeg
+ENV=development ./start.sh
+```
 
-Then visit: http://localhost:5000/reelvo.ai
+Then visit: [http://localhost:5000/reelvo.ai](http://localhost:5000/reelvo.ai)
 
-------------------------------
+---
 
-MANUAL TESTING
+## 🧪 MANUAL TESTING
 
-python utils/fallback_ffmpeg.py  
-python run_all.py demo  
-python run_pipeline.py motivation demo
+```bash
+python utils/fallback_ffmpeg.py          # Generate fallback reel
+python run_pipeline.py motivation demo   # Run end-to-end for 'motivation' theme
+python run_all.py demo                   # Regenerate all reels for demo user
+```
 
-------------------------------
+---
 
-DEPLOYMENT ON RENDER
+## 🚢 DEPLOYMENT (RENDER.COM)
 
 1. Push repo to GitHub
-2. Connect to https://render.com
-3. Render auto-detects render.yaml
-4. Add secrets via the Render dashboard
-5. Deploy
+2. Connect to [https://render.com](https://render.com)
+3. Render will detect `render.yaml` automatically
+4. Add `.env` variables via dashboard
+5. Click **Deploy**
 
-------------------------------
+---
 
-ENVIRONMENT VARIABLES (.env)
+## 🔐 ENVIRONMENT VARIABLES (`.env`)
 
-FLASK_SECRET_KEY=your_flask_key  
-USE_OPENAI=false  
-USE_ELEVENLABS=true  
-USE_GOOGLE_CLOUD_TTS=false  
-OPENAI_API_KEY=sk-...  
-ELEVENLABS_API_KEY=...  
-ELEVENLABS_VOICE_ID=9BWtsMINqrJLrRacOk9x  
-GOOGLE_CLOUD_TTS_VOICE=en-US-Wavenet-D  
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json  
-FB_APP_ID=...  
-FB_APP_SECRET=...  
-FB_PAGE_ACCESS_TOKEN=...  
-INSTAGRAM_BUSINESS_ID=...  
-DEFAULT_USERNAME=demo  
+```env
+# Core
+FLASK_SECRET_KEY=your_flask_secret_key
+DEFAULT_USERNAME=demo
+
+# OpenAI
+USE_OPENAI=true
+OPENAI_API_KEY=sk-...
+
+# ElevenLabs TTS
+USE_ELEVENLABS=true
+ELEVENLABS_API_KEY=...
+ELEVENLABS_VOICE_ID=9BWtsMINqrJLrRacOk9x
+
+# Google Cloud TTS
+USE_GOOGLE_CLOUD_TTS=false
+GOOGLE_CLOUD_TTS_VOICE=en-US-Wavenet-D
+GOOGLE_APPLICATION_CREDENTIALS=secure/credentials.json
+
+# Instagram (Graph API)
+FB_APP_ID=...
+FB_APP_SECRET=...
+FB_PAGE_ACCESS_TOKEN=...
+INSTAGRAM_BUSINESS_ID=...
+
+# Google Drive
+GOOGLE_DRIVE_PARENT_FOLDER_ID=...
+GOOGLE_APPLICATION_CREDENTIALS=secure/credentials.json
+
+# Misc
 SLEEP_BETWEEN_RUNS=2
+```
 
-------------------------------
+---
 
-AUTHOR
+## 👨‍💻 AUTHOR
 
-Saravana Bhava  
-https://sazm.in  
-mail@sazm.in
+**Saravana Bhava**  
+🌐 [https://sazm.in](https://sazm.in)  
+📬 mail@sazm.in
 
-------------------------------
+---
 
-LICENSE
+## 📄 LICENSE
 
-This project is under private development for internal MVP/demo use only.  
-To request access or licensing, please contact the author directly.
+This project is under **private internal development** for MVP/demo use only.  
+For licensing or access, please contact the author directly.
+
+---
