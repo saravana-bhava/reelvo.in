@@ -3,20 +3,13 @@
 import os
 import whisper
 import srt
-import re
 import warnings
 from datetime import timedelta
 
-# Suppress Whisper's FP16 warning on CPU
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
-
-# Load Whisper model once
 MODEL = whisper.load_model("small")
 
-def split_into_sentences(text):
-    return re.split(r'(?<=[.!?])\s+', text.strip())
-
-def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
+def generate_srt_from_audio(category: str, audio_path: str, output_path: str, words_per_line=6):
     print(f"[🧠] Transcribing audio for subtitles (Whisper): {audio_path}")
 
     try:
@@ -31,72 +24,46 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
     if not words:
         raise ValueError("[❌] No words found in transcription.")
 
-    full_text = result.get("text", "")
-    sentences = split_into_sentences(full_text)
-
     subtitles = []
     index = 1
-    word_idx = 0
 
-    for sentence in sentences:
-        sentence = sentence.strip()
-        if not sentence:
+    for i in range(0, len(words), words_per_line):
+        chunk = words[i:i + words_per_line]
+        if not chunk:
             continue
 
-        sentence_words = sentence.split()
-        match_len = len(sentence_words)
-        matched_words = []
+        text = " ".join(w["word"].strip() for w in chunk)
+        start = chunk[0]["start"]
+        end = chunk[-1]["end"]
 
-        # Try exact match
-        while word_idx + match_len <= len(words):
-            chunk = words[word_idx:word_idx + match_len]
-            chunk_text = " ".join(w["word"].strip() for w in chunk)
-            if chunk_text.replace("’", "'") == sentence.replace("’", "'"):
-                matched_words = chunk
-                break
-            word_idx += 1
-
-        # Fallback to fuzzy match
-        if not matched_words:
-            for i in range(len(words) - match_len):
-                chunk = words[i:i + match_len]
-                chunk_text = " ".join(w["word"].strip().lower() for w in chunk)
-                if sentence.lower() in chunk_text:
-                    matched_words = chunk
-                    break
-
-        if not matched_words:
-            print(f"[⚠️] Could not align sentence: '{sentence}'")
-            continue
-
-        start = matched_words[0]["start"]
-        end = matched_words[-1]["end"] + (0.4 if sentence.endswith((".", "!", "?")) else 0)
+        # Add a tiny buffer
+        end += 0.2 if not text.endswith(".") else 0.4
 
         subtitles.append(srt.Subtitle(
             index=index,
             start=timedelta(seconds=start),
             end=timedelta(seconds=end),
-            content=sentence
+            content=text
         ))
         index += 1
-        word_idx += match_len
 
-    # Add filler "..." subtitle if there's silent time left
-    if subtitles and subtitles[-1].end.total_seconds() < 29.0:
+    # Fill remaining time if silence at the end
+    last_end = subtitles[-1].end.total_seconds()
+    if last_end < 29.0:
         subtitles.append(srt.Subtitle(
             index=index,
-            start=subtitles[-1].end + timedelta(seconds=0.2),
+            start=timedelta(seconds=last_end + 0.2),
             end=timedelta(seconds=29.5),
             content="..."
         ))
-        print(f"[➕] Appended trailing subtitle (...) from {subtitles[-1].start.total_seconds():.2f}s to 29.5s")
+        print(f"[➕] Appended trailing subtitle (...) from {last_end + 0.2:.2f}s to 29.5s")
 
-    # Save subtitles
+    # Save SRT
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
 
-    print(f"[✅] Generated SRT for '{category}' via Whisper → {output_path}")
+    print(f"[✅] Generated SRT for '{category}' → {output_path}")
 
 # CLI usage
 if __name__ == "__main__":

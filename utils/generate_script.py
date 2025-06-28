@@ -21,46 +21,47 @@ else:
     client = None
 
 FALLBACKS = {
-    "motivation": """Every champion starts as a beginner.
-You don’t need the full path—just take the first step.
-Fall down? Get back up stronger.
-Doubt yourself? Do it anyway.
-Growth comes from courage, not comfort.
-Start now.
-You’ve got this.
-One day, you’ll thank yourself for not quitting.""",
+    "motivation": """Every champion started as a beginner who refused to quit.
+You don’t need the full map—just the courage to take the first step.
+You’ll fall. You’ll doubt yourself. But you’ll rise again.
+Growth never comes from staying comfortable.
+It comes from pushing through fear and showing up daily.
+You’ve got this. Keep going, no matter how slow.
+One day, you’ll thank yourself for choosing not to quit when it was hardest to stay.""",
 
-    "success": """People see the win, not the struggle.
-They don’t see the nights you cried or nearly gave up.
-But you kept going.
-That’s success—showing up, staying strong, rising in silence.
-This victory?
-It’s built on pain, sacrifice, and belief in yourself.""",
+    "success": """People only see the win—they miss what it cost.
+They don’t see the late nights, the doubts, the quiet tears.
+They don’t hear the voice that said, “Give up,” and the strength that said, “Try again.”
+Success isn’t applause—it’s persistence when no one claps.
+It’s rising again and again without recognition.
+This victory? It’s built on sacrifice, belief, and becoming your own hero first.""",
 
-    "life": """Life is messy.
-Plans break. People leave.
-You cry alone, smile in crowds.
-But in pain, there’s power.
-Every scar tells a story.
-You’re not behind—you’re becoming.
-Pause. Breathe.
-This chapter is shaping someone stronger than ever before.""",
+    "life": """Life doesn’t always follow your plans.
+Sometimes it breaks you, reshapes you, rebuilds you.
+You laugh with friends, then cry alone—wondering if anyone truly sees you.
+But every tear waters something new. Every scar tells a story of survival.
+You’re not falling behind. You’re unfolding, evolving, becoming.
+So breathe. Be still.
+This chapter is not the end—it’s the beginning of someone stronger than ever.""",
 
-    "inspiration": """You were born to shine.
-The dream inside you matters.
-Even if no one sees it—create.
-Even if it’s scary—begin.
-You have a voice the world hasn’t heard yet.
-One spark can light up everything.
-Keep going. Your story is just beginning.""",
+    "inspiration": """You weren’t born to blend in—you were born to stand out.
+The dream inside you was placed there on purpose.
+Even if it’s scary, even if no one believes—start anyway.
+Keep creating. Keep believing. The world needs your light.
+You’re not too late. You’re not too small.
+You are powerful, and you are needed.
+Let your voice rise. Let your spark grow.
+Your story is just beginning—and it’s worth telling.""",
 
-    "sad": """Some days just hurt.
-You smile outside but ache inside.
-You miss people. You feel unseen.
-But even in silence, healing happens.
-It’s okay to cry. It’s okay to feel.
-Just don’t give up.
-Better days are coming—hold on a little longer."""
+    "sad": """Some days feel heavier than others.
+You smile around people, but ache in silence.
+You miss what was. You grieve what never came.
+And that’s okay. It’s human to feel deeply.
+But even in your quiet pain, healing is working.
+You’re not broken—you’re processing.
+You’re still here. Still breathing.
+Don’t give up yet.
+Light always returns, even after the longest dark.""",
 }
 
 
