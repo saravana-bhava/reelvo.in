@@ -132,7 +132,7 @@ def create_video_for_category(category, username, task_id=None):
 
         if task_id:
             progress_status[task_id] = {"status": "🔊 Generating TTS audio...", "percent": 40}
-        audio_path = generate_tts_from_file(category, username)
+        audio_path = generate_tts_from_file(category, username, task_id=task_id)
 
         if task_id:
             progress_status[task_id] = {"status": "📝 Generating subtitles...", "percent": 50}
