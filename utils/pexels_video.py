@@ -1,3 +1,5 @@
+# utils/pexels_video.py
+
 import os
 import requests
 from dotenv import load_dotenv
@@ -6,12 +8,11 @@ from utils.video_utils import download_video
 load_dotenv()
 
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
-
 HEADERS_PEXELS = {
     "Authorization": PEXELS_API_KEY
 }
 
-def try_pexels_fallback(category, output_path, max_results=10):
+def try_pexels_fallback(category, output_path, min_duration=8, max_duration=12):
     if not PEXELS_API_KEY:
         print("[❌] Pexels fallback requested but PEXELS_API_KEY is missing.")
         return False
@@ -25,7 +26,7 @@ def try_pexels_fallback(category, output_path, max_results=10):
             params={
                 "query": category,
                 "orientation": "portrait",
-                "per_page": max_results
+                "per_page": 10
             },
             timeout=10
         )
@@ -47,9 +48,9 @@ def try_pexels_fallback(category, output_path, max_results=10):
                 return download_video(
                     file["link"],
                     output_path,
-                    min_duration=30,
-                    max_duration=30
+                    min_duration=min_duration,
+                    max_duration=max_duration
                 )
 
-    print("[⚠️] No 1080x1920 video ≥30s found on Pexels.")
+    print("[⚠️] No suitable 1080x1920 video ≥8s found on Pexels.")
     return False

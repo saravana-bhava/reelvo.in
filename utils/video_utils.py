@@ -1,3 +1,5 @@
+# utils/video_utils.py
+
 import os
 import subprocess
 import requests
@@ -39,7 +41,7 @@ def trim_video(input_path, output_path, max_duration=30):
         print(f"[❌] Failed to trim video: {e}")
         return False
 
-def download_video(url, output_path, min_duration=30, max_duration=30):
+def download_video(url, output_path, min_duration=8, max_duration=12):
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         temp_path = output_path + ".tmp"

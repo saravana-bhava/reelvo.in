@@ -1,3 +1,5 @@
+# utils/pixabay_video.py
+
 import os
 import requests
 from dotenv import load_dotenv
@@ -8,7 +10,7 @@ load_dotenv()
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
 
-def fetch_pixabay_video(theme, output_path="temp/bg.mp4"):
+def fetch_pixabay_video(theme, output_path="temp/bg.mp4", min_duration=8, max_duration=12):
     if not PIXABAY_API_KEY:
         raise EnvironmentError("[❌] Missing PIXABAY_API_KEY in .env")
 
@@ -39,11 +41,11 @@ def fetch_pixabay_video(theme, output_path="temp/bg.mp4"):
                     return download_video(
                         url,
                         output_path,
-                        min_duration=30,
-                        max_duration=30
+                        min_duration=min_duration,
+                        max_duration=max_duration
                     )
 
-        print("[⚠️] No 1080x1920 video ≥30s found on Pixabay.")
+        print("[⚠️] No 1080x1920 video ≥8s found on Pixabay.")
         return None
 
     except Exception as e:
