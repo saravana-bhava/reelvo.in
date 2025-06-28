@@ -22,48 +22,52 @@ else:
 
 FALLBACKS = {
     "motivation": """Every champion started as a beginner who refused to quit.
-You don’t need the full map—just the courage to take the first step.
+You don’t need the full map—just the courage to begin.
 You’ll fall. You’ll doubt yourself. But you’ll rise again.
-Growth never comes from staying comfortable.
-It comes from pushing through fear and showing up daily.
-You’ve got this. Keep going, no matter how slow.
-One day, you’ll thank yourself for choosing not to quit when it was hardest to stay.""",
+Growth doesn’t come from comfort—it comes from courage.
+It comes from showing up when it’s hard, not when it’s easy.
+Even on slow days, keep going. You’ve got this.
+The path is hard, but the progress is real.
+One day, you’ll thank yourself—for not quitting when it was hardest to stay.""",
 
-    "success": """People only see the win—they miss what it cost.
-They don’t see the late nights, the doubts, the quiet tears.
-They don’t hear the voice that said, “Give up,” and the strength that said, “Try again.”
-Success isn’t applause—it’s persistence when no one claps.
-It’s rising again and again without recognition.
-This victory? It’s built on sacrifice, belief, and becoming your own hero first.""",
+    "success": """People only see the win—they don’t see what it cost.
+They don’t see the sleepless nights, the setbacks, the silent tears.
+They don’t hear the voice that said, “Quit,” and the one that whispered, “Keep going.”
+Success isn’t applause—it’s persistence when no one’s clapping.
+It’s getting back up—again and again—without validation.
+This victory? It’s built on effort, sacrifice, and belief.
+It’s yours because you earned it. You kept showing up.
+That’s what success really looks like.""",
 
-    "life": """Life doesn’t always follow your plans.
-Sometimes it breaks you, reshapes you, rebuilds you.
-You laugh with friends, then cry alone—wondering if anyone truly sees you.
-But every tear waters something new. Every scar tells a story of survival.
-You’re not falling behind. You’re unfolding, evolving, becoming.
-So breathe. Be still.
-This chapter is not the end—it’s the beginning of someone stronger than ever.""",
+    "life": """Life doesn’t always go as planned.
+It breaks you, reshapes you, and teaches you to rebuild.
+You laugh with others, then cry alone—wondering if you matter.
+But every tear waters strength. Every scar is proof you’re healing.
+You’re not behind—you’re in bloom.
+Progress isn’t always loud. Becoming takes time.
+You’re not lost—you’re growing.
+Breathe. Trust this season.
+This chapter is not the end. It’s your becoming.""",
 
-    "inspiration": """You weren’t born to blend in—you were born to stand out.
-The dream inside you was placed there on purpose.
-Even if it’s scary, even if no one believes—start anyway.
-Keep creating. Keep believing. The world needs your light.
-You’re not too late. You’re not too small.
-You are powerful, and you are needed.
-Let your voice rise. Let your spark grow.
-Your story is just beginning—and it’s worth telling.""",
+    "inspiration": """You weren’t born to blend in—you were made to stand out.
+That dream in your heart exists for a reason.
+Even if no one believes in it yet—start anyway.
+Keep building. Keep creating. Someone out there needs your light.
+You’re not too small. You’re not too late.
+You are capable, you are worthy, and you are needed.
+Speak your truth. Share your gift.
+The story you carry—it’s just getting started.""",
 
-    "sad": """Some days feel heavier than others.
-You smile around people, but ache in silence.
-You miss what was. You grieve what never came.
-And that’s okay. It’s human to feel deeply.
-But even in your quiet pain, healing is working.
-You’re not broken—you’re processing.
-You’re still here. Still breathing.
-Don’t give up yet.
-Light always returns, even after the longest dark.""",
+    "sad": """Some days just hurt more than others.
+You smile for the world, but ache in silence.
+You miss what was. You wonder what could’ve been.
+And that’s okay. You’re allowed to feel this deeply.
+Even in pain, your heart is healing.
+You are not weak—you are human.
+You’re still here. Still breathing. Still trying.
+And that is enough.
+Don’t give up. You’re closer than you think to the light.""",
 }
-
 
 def generate_script(theme: str) -> str:
     theme = theme.lower()

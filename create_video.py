@@ -14,6 +14,7 @@ from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import try_pexels_fallback
 from utils.video_utils import download_video, get_video_duration
+from progress import progress_status
 
 load_dotenv()
 
@@ -103,7 +104,7 @@ def concatenate_clips(clips, output_path):
     ], check=True)
     return output_path
 
-def create_video_for_category(category, username):
+def create_video_for_category(category, username, task_id=None):
     logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
@@ -125,20 +126,33 @@ def create_video_for_category(category, username):
         script = f.read().strip()
 
     try:
+        if task_id:
+            progress_status[task_id] = {"status": "🖼️ Generating overlay...", "percent": 35}
         generate_text_overlay(script, text_image_path)
+
+        if task_id:
+            progress_status[task_id] = {"status": "🔊 Generating TTS audio...", "percent": 40}
         audio_path = generate_tts_from_file(category, username)
+
+        if task_id:
+            progress_status[task_id] = {"status": "📝 Generating subtitles...", "percent": 50}
         generate_srt_from_audio(category, audio_path, srt_path)
+
     except Exception as e:
         logger.exception("[❌] Asset generation failed")
         return None
 
     clip_srt_timing(srt_path, 0.5, 29.5)
 
+    if task_id:
+        progress_status[task_id] = {"status": "🎞️ Fetching video clips...", "percent": 60}
     clips = fetch_multiple_clips(category, CLIP_COUNT)
     if not clips:
         logger.error("[❌] No background clips found.")
         return None
 
+    if task_id:
+        progress_status[task_id] = {"status": "🎬 Concatenating clips...", "percent": 70}
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
@@ -166,12 +180,12 @@ def create_video_for_category(category, username):
     subtitle_style = (
         "Alignment=2,"  # Bottom center
         "Fontname=DejaVuSans-Bold,"
-        "Fontsize=16,"  # Smaller size for readability
-        "PrimaryColour=&H00FFFFFF,"  # White
-        "OutlineColour=&H80000000,"  # Semi-transparent black border
-        "BorderStyle=3,"  # Opaque box
-        "Outline=2,"  # Thin border
-        "MarginV=100"  # Push above bottom bar
+        "Fontsize=16,"
+        "PrimaryColour=&H00FFFFFF,"
+        "OutlineColour=&H80000000,"
+        "BorderStyle=3,"
+        "Outline=2,"
+        "MarginV=100"
     )
 
     filters.append(f"{base_stream}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")

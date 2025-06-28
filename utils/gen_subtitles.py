@@ -26,18 +26,30 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
 
     subtitles = []
     index = 1
+    min_duration = 1.5
+    max_duration = 4.0
+    min_gap = 0.1
+    last_end_time = 0.5  # Start from 0.5s for nice fade-in alignment
 
-    for i in range(0, len(words), words_per_line):
+    i = 0
+    while i < len(words):
         chunk = words[i:i + words_per_line]
         if not chunk:
-            continue
+            break
 
         text = " ".join(w["word"].strip() for w in chunk)
-        start = chunk[0]["start"]
+        start = max(chunk[0]["start"], last_end_time + min_gap)
         end = chunk[-1]["end"]
 
-        # Add a tiny buffer
-        end += 0.2 if not text.endswith(".") else 0.4
+        # Adjust end if too short
+        duration = end - start
+        if duration < min_duration:
+            end = start + min_duration
+        elif duration > max_duration:
+            end = start + max_duration
+
+        # Avoid extending beyond audio
+        end = min(end, 29.5)
 
         subtitles.append(srt.Subtitle(
             index=index,
@@ -45,18 +57,20 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
             end=timedelta(seconds=end),
             content=text
         ))
-        index += 1
 
-    # Fill remaining time if silence at the end
-    last_end = subtitles[-1].end.total_seconds()
-    if last_end < 29.0:
+        last_end_time = end
+        index += 1
+        i += words_per_line
+
+    # Fill the silence at the end
+    if subtitles and subtitles[-1].end.total_seconds() < 29.5:
         subtitles.append(srt.Subtitle(
             index=index,
-            start=timedelta(seconds=last_end + 0.2),
+            start=timedelta(seconds=subtitles[-1].end.total_seconds() + 0.2),
             end=timedelta(seconds=29.5),
             content="..."
         ))
-        print(f"[➕] Appended trailing subtitle (...) from {last_end + 0.2:.2f}s to 29.5s")
+        print(f"[➕] Appended trailing subtitle (...) from {subtitles[-1].start.total_seconds():.2f}s to 29.5s")
 
     # Save SRT
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -64,6 +78,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         f.write(srt.compose(subtitles))
 
     print(f"[✅] Generated SRT for '{category}' → {output_path}")
+
 
 # CLI usage
 if __name__ == "__main__":

@@ -3,7 +3,9 @@
 import os
 import time
 import logging
-from flask import Flask, render_template, request, redirect, session, url_for, send_from_directory, abort
+import uuid
+from threading import Thread
+from flask import Flask, render_template, request, redirect, session, url_for, send_from_directory, abort, jsonify
 from dotenv import load_dotenv
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.serving import run_simple
@@ -13,31 +15,27 @@ from utils.generate_script import generate_script_for_user
 from create_video import create_video_for_category
 from utils.instagram import post_to_instagram
 from utils.google_drive import upload_to_google_drive
+from progress import progress_status, start_progress, update_progress, finish_progress
 
 # Load environment variables
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("reelvo")
 
-# Flask app
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
-# Constants
 OUTPUT_BASE = "output"
 POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
 IG_ACCOUNT_ID = os.getenv("INSTAGRAM_BUSINESS_ID")
 IG_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
-
 
 @flask_app.route('/')
 def index():
     if "user" in session:
         return redirect(url_for("dashboard"))
     return render_template("login.html")
-
 
 @flask_app.route('/login', methods=["POST"])
 def login():
@@ -47,12 +45,10 @@ def login():
     session["user"] = secure_filename(username)
     return redirect(url_for("dashboard"))
 
-
 @flask_app.route('/logout')
 def logout():
     session.pop("user", None)
     return redirect(url_for("index"))
-
 
 @flask_app.route('/dashboard')
 def dashboard():
@@ -65,7 +61,6 @@ def dashboard():
 
     return render_template("dashboard.html", user=username, videos=videos)
 
-
 @flask_app.route('/generate', methods=["POST"])
 def generate():
     if "user" not in session:
@@ -73,55 +68,57 @@ def generate():
 
     username = secure_filename(session["user"])
     theme = request.form.get("theme", "default").lower()
+    task_id = str(uuid.uuid4())
 
-    script = ""
-    status = ""
+    start_progress(task_id)
 
-    try:
-        script_path = generate_script_for_user(theme, username)
-        with open(script_path, "r", encoding="utf-8") as f:
-            script = f.read().strip()
+    def generate_thread():
+        script = ""
+        try:
+            update_progress(task_id, "🧠 Generating script...", 10)
+            script_path = generate_script_for_user(theme, username)
+            with open(script_path, "r", encoding="utf-8") as f:
+                script = f.read().strip()
 
-        video_path = create_video_for_category(theme, username)
-        if video_path:
-            status = f"✅ Reel generated for <b>{theme}</b>"
-        else:
-            status = f"❌ Video generation failed for {theme}"
+            update_progress(task_id, "🔊 Generating TTS...", 30)
+            video_path = create_video_for_category(theme, username)
 
-        # Upload to Google Drive
-        drive_url, drive_error = None, None
-        if video_path:
-            drive_url, drive_error = upload_to_google_drive(video_path, username)
-            if drive_url and drive_url.startswith("http"):
-                status += f"<br>📁 Uploaded to Drive: <a href='{drive_url}' target='_blank'>Open</a>"
+            if video_path:
+                update_progress(task_id, "📁 Uploading to Drive...", 80)
+                drive_url, drive_error = upload_to_google_drive(video_path, username)
+
+                if drive_url and drive_url.startswith("http"):
+                    finish_progress(task_id, f"✅ Generated and uploaded <a href='{drive_url}' target='_blank'>video</a>")
+                else:
+                    finish_progress(task_id, f"✅ Generated but upload failed: {drive_error}", 100)
+
+                if POST_TO_IG and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
+                    logger.info("[📲] Auto-posting to Instagram...")
+                    caption = f"{theme.capitalize()} Reel by {username}"
+                    post_result = post_to_instagram(
+                        video_path,
+                        caption,
+                        IG_ACCOUNT_ID,
+                        IG_ACCESS_TOKEN,
+                        username,
+                        video_url=drive_url
+                    )
+                    logger.info(f"[📲] Post Result: {post_result}")
+                    progress_status[task_id]["status"] += f"<br>{post_result}"
             else:
-                status += f"<br>{drive_error or '[❌] Unknown upload error.'}"
+                finish_progress(task_id, "❌ Video generation failed", -1)
 
-        # Auto-post to Instagram
-        if POST_TO_IG and video_path and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
-            logger.info("[📲] Auto-posting to Instagram...")
-            caption = f"{theme.capitalize()} Reel by {username}"
-            post_result = post_to_instagram(
-                video_path,
-                caption,
-                IG_ACCOUNT_ID,
-                IG_ACCESS_TOKEN,
-                username,
-                video_url=drive_url
-            )
-            logger.info(f"[📲] Post Result: {post_result}")
-            status += f"<br>{post_result}"
+        except Exception as e:
+            logger.exception("Error during generation")
+            finish_progress(task_id, f"❌ Error: {str(e)}", -1)
 
-    except Exception as e:
-        logger.exception("Error during generation")
-        status = f"❌ Error: {str(e)}"
+    Thread(target=generate_thread).start()
+    return jsonify({"task_id": task_id})
 
-    # Refresh video list
-    user_output_dir = os.path.join(OUTPUT_BASE, username)
-    videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
-
-    return render_template("dashboard.html", user=username, script=script, status=status, videos=videos)
-
+@flask_app.route("/progress/<task_id>")
+def get_progress(task_id):
+    from progress import get_progress
+    return jsonify(get_progress(task_id))
 
 @flask_app.route('/videos/<username>/<filename>')
 def serve_video(username, filename):
@@ -135,16 +132,12 @@ def serve_video(username, filename):
 
     return send_from_directory(path, safe_file)
 
-
-# Mount app under subpath `/reelvo.ai`
 application = DispatcherMiddleware(lambda e, s: s(b'404 Not Found', []), {
     '/reelvo.ai': flask_app
 })
 
-# WSGI entrypoint (e.g., Gunicorn)
 app = application
 
-# Local dev
 if __name__ == "__main__":
     os.makedirs(OUTPUT_BASE, exist_ok=True)
     port = int(os.environ.get("PORT", 5000))

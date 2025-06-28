@@ -23,7 +23,7 @@ def pad_or_trim_audio(input_path, output_path, duration=30):
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
-            "-af", f"apad=pad_dur={duration}",
+            "-af", f"adelay=500|500,apad=pad_dur={duration}",
             "-t", str(duration),
             "-ar", "44100", "-ac", "1", "-b:a", "192k",
             output_path
