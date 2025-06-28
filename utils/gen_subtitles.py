@@ -17,7 +17,7 @@ def split_into_sentences(text):
     return re.split(r'(?<=[.!?])\s+', text.strip())
 
 def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
-    print(f"[🧠] Transcribing audio for word-aligned subtitles: {audio_path}")
+    print(f"[🧠] Transcribing audio for subtitles (Whisper): {audio_path}")
 
     try:
         result = MODEL.transcribe(audio_path, word_timestamps=True)
@@ -82,23 +82,21 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str):
         word_idx += match_len
 
     # Add filler "..." subtitle if there's silent time left
-    if subtitles:
-        last_end = subtitles[-1].end.total_seconds()
-        if last_end < 29.0:
-            subtitles.append(srt.Subtitle(
-                index=index,
-                start=timedelta(seconds=last_end + 0.2),
-                end=timedelta(seconds=29.5),
-                content="..."
-            ))
-            print(f"[➕] Appended trailing subtitle (...) from {last_end+0.2:.2f}s to 29.5s")
+    if subtitles and subtitles[-1].end.total_seconds() < 29.0:
+        subtitles.append(srt.Subtitle(
+            index=index,
+            start=subtitles[-1].end + timedelta(seconds=0.2),
+            end=timedelta(seconds=29.5),
+            content="..."
+        ))
+        print(f"[➕] Appended trailing subtitle (...) from {subtitles[-1].start.total_seconds():.2f}s to 29.5s")
 
     # Save subtitles
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
 
-    print(f"[✅] Generated SRT for '{category}' → {output_path}")
+    print(f"[✅] Generated SRT for '{category}' via Whisper → {output_path}")
 
 # CLI usage
 if __name__ == "__main__":

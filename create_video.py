@@ -77,7 +77,7 @@ def concatenate_clips(clips, output_path):
             "ffmpeg", "-y", "-i", clip,
             "-vf", "scale=1080:1920,fps=30",
             "-c:v", "libx264", "-preset", "fast", "-crf", "20",
-            "-c:a", "aac", "-b:a", "128k",
+            "-c:a", "aac", "-ac", "2", "-b:a", "128k",
             "-movflags", "+faststart",
             fixed
         ], check=True)
@@ -118,7 +118,7 @@ def create_video_for_category(category, username):
 
     try:
         generate_text_overlay(script, text_image_path)
-        generate_tts_from_file(category, username)
+        audio_path = generate_tts_from_file(category, username)  # ✅ capture correct path
         generate_srt_from_audio(category, audio_path, srt_path)
     except Exception as e:
         print(f"[❌] Asset generation failed: {e}")
