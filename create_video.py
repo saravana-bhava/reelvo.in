@@ -2,7 +2,6 @@
 
 import os
 import subprocess
-import random
 from dotenv import load_dotenv
 from datetime import timedelta
 import srt
@@ -22,7 +21,7 @@ VIDEO_DIR = "assets/videos"
 TEMP_DIR = "temp"
 WATERMARK_PATH = "assets/logo.png"
 VIDEO_DURATION = 30
-CLIP_COUNT = 5  # 5 clips of ~6s to form 30s
+CLIP_COUNT = 5
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
@@ -70,16 +69,32 @@ def fetch_multiple_clips(category, count=5):
     return downloaded_clips
 
 def concatenate_clips(clips, output_path):
+    print("[🔁] Re-encoding clips for safe concat...")
+    reencoded_clips = []
+    for i, clip in enumerate(clips):
+        fixed = os.path.join(TEMP_DIR, f"fixed_clip{i+1}.mp4")
+        subprocess.run([
+            "ffmpeg", "-y", "-i", clip,
+            "-vf", "scale=1080:1920,fps=30",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            fixed
+        ], check=True)
+        reencoded_clips.append(fixed)
+
     list_file = os.path.join(TEMP_DIR, "concat_list.txt")
     with open(list_file, "w") as f:
-        for clip in clips:
+        for clip in reencoded_clips:
             f.write(f"file '{os.path.abspath(clip)}'\n")
 
-    cmd = [
+    subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
-        "-c", "copy", output_path
-    ]
-    subprocess.run(cmd, check=True)
+        "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+        "-c:a", "aac", "-b:a", "128k",
+        "-movflags", "+faststart",
+        output_path
+    ], check=True)
     return output_path
 
 def create_video_for_category(category, username):
@@ -138,9 +153,7 @@ def create_video_for_category(category, username):
     base_stream = "[bg]"
 
     if logo_index is not None:
-        filters.append(
-            f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]"
-        )
+        filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
         base_stream = "[wm]"
 
     filters.append(
@@ -150,15 +163,16 @@ def create_video_for_category(category, username):
 
     subtitle_style = (
         "FontName=DejaVuSans-Bold,"
-        "FontSize=20,"
+        "FontSize=16,"
         "PrimaryColour=&H00FFFFFF&,"
         "OutlineColour=&H000000&,"
         "BorderStyle=1,"
-        "Outline=1,"
+        "Outline=2,"
         "Shadow=0,"
         "MarginV=50,"
         "Alignment=2"
     )
+
     filters.append(f"[boxed]subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
 
     cmd = [

@@ -74,7 +74,7 @@ def generate_tts_audio(category: str, text: str, output_path: str):
 
             synthesis_input = texttospeech.SynthesisInput(text=text)
             voice = texttospeech.VoiceSelectionParams(
-                language_code="en-IN",  # or en-US
+                language_code="en-US",
                 name=GOOGLE_CLOUD_TTS_VOICE
             )
             audio_config = texttospeech.AudioConfig(
