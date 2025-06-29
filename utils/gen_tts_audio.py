@@ -84,7 +84,7 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
     if not success and USE_GOOGLE_CLOUD:
         try:
             from google.cloud import texttospeech
-            print("[🧠] Trying Google Cloud TTS (no SSML)...")
+            print("[🧠] Trying Google Cloud TTS...")
             update_progress(task_id, "🔊 Using Google Cloud TTS...", 39)
 
             lang_code = "hi-IN" if "।" in text or any('\u0900' <= c <= '\u097F' for c in text) else "en-US"
@@ -159,7 +159,6 @@ def generate_tts_from_file(category: str, username: str, output_root: str = "out
         raise ValueError("[❌] Script text is empty.")
     output_path = os.path.join(output_root, username, f"{category}.mp3")
     return generate_tts_audio(category, text, output_path, task_id)
-
 
 # CLI usage
 if __name__ == "__main__":

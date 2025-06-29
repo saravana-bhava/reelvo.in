@@ -88,18 +88,19 @@ def generate():
 
     username = secure_filename(session["user"])
     theme = request.form.get("theme", "default").lower()
+    language = request.form.get("language", "en").lower()
     task_id = str(uuid.uuid4())
     start_progress(task_id)
 
     def generate_thread():
         try:
             update_progress(task_id, "🧠 Generating script...", 10)
-            script_path = generate_script_for_user(theme, username)
+            script_path = generate_script_for_user(theme, username, language=language)
             with open(script_path, "r", encoding="utf-8") as f:
                 script = f.read().strip()
 
             update_progress(task_id, "🎬 Generating video...", 30)
-            video_path = create_video_for_category(theme, username, task_id=task_id)
+            video_path = create_video_for_category(theme, username, task_id=task_id, language=language)
 
             drive_url = ""
             if video_path:

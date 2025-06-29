@@ -13,7 +13,7 @@ from utils.gen_subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import try_pexels_fallback
-from utils.video_utils import download_video, get_video_duration
+from utils.video_utils import download_video
 from progress import start_progress, update_progress, finish_progress
 
 # Load env
@@ -116,8 +116,8 @@ def concatenate_clips(clips, output_path):
     return output_path
 
 
-def create_video_for_category(category, username, task_id=None, include_watermark=True, bgm_path=None):
-    logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
+def create_video_for_category(category, username, task_id=None, include_watermark=True, bgm_path=None, language="en"):
+    logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username} | Language: {language}")
 
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
@@ -128,7 +128,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
     if task_id:
         start_progress(task_id)
 
-    text_path = generate_script_for_user(category, username)
+    text_path = generate_script_for_user(category, username, language=language)
     if not os.path.exists(text_path):
         logger.error(f"[❌] Failed to generate script for {category}")
         return None
@@ -148,7 +148,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
         if task_id:
             update_progress(task_id, "🔊 Generating TTS...", 40)
-        audio_path, audio_duration = generate_tts_from_file(category, username)
+        audio_path, audio_duration = generate_tts_from_file(category, username, language=language)
 
         if task_id:
             update_progress(task_id, "📝 Generating subtitles...", 50)
@@ -171,15 +171,14 @@ def create_video_for_category(category, username, task_id=None, include_watermar
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
-    # Final audio with BGM mixed
     mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.mp3")
-
     if not bgm_path or not os.path.exists(bgm_path):
         bgm_path = DEFAULT_BGM_PATH
         if not os.path.exists(bgm_path):
             logger.warning("[⚠️] No BGM file found. Skipping background music.")
             bgm_path = None
 
+    audio_to_use = audio_path
     if bgm_path:
         subprocess.run([
             "ffmpeg", "-y",
@@ -190,10 +189,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
             mixed_audio_path
         ], check=True)
         audio_to_use = mixed_audio_path
-    else:
-        audio_to_use = audio_path
 
-    # --- Compose Final FFmpeg Command ---
     inputs = ["-i", combined_video_path, "-i", audio_to_use]
     input_index = 2
     logo_index = None
@@ -260,6 +256,7 @@ if __name__ == "__main__":
         category, username = sys.argv[1], sys.argv[2]
         include_watermark = sys.argv[3].lower() == "true" if len(sys.argv) >= 4 else True
         bgm_path = sys.argv[4] if len(sys.argv) >= 5 else None
-        create_video_for_category(category, username, include_watermark=include_watermark, bgm_path=bgm_path)
+        language = sys.argv[5] if len(sys.argv) >= 6 else "en"
+        create_video_for_category(category, username, include_watermark=include_watermark, bgm_path=bgm_path, language=language)
     else:
-        print("Usage: python create_video.py <category> <username> [include_watermark=True] [bgm_path]")
+        print("Usage: python create_video.py <category> <username> [include_watermark=True] [bgm_path] [language=en]")

@@ -1,254 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Dashboard - Reelvo.ai</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            padding: 60px 0 0;
-            display: flex;
-            justify-content: center;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - Reelvo.ai</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 60px 0 0;
+      display: flex;
+      justify-content: center;
+    }
 
-        .dashboard-box {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            width: 90%;
-            max-width: 600px;
-        }
+    .dashboard-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      width: 90%;
+      max-width: 600px;
+    }
 
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
 
-        h2 {
-            margin: 0;
-            font-size: 22px;
-        }
+    h2 {
+      margin: 0;
+      font-size: 22px;
+    }
 
-        select,
-        button {
-            padding: 10px;
-            font-size: 16px;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+    select,
+    button {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      width: 100%;
+      box-sizing: border-box;
+    }
 
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
 
-        button:disabled {
-            background-color: #aaa;
-            cursor: not-allowed;
-        }
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
 
-        .logout-btn {
-            background-color: #dc3545;
-            width: auto;
-            padding: 8px 14px;
-            font-size: 14px;
-            margin-left: auto;
-        }
+    .logout-btn {
+      background-color: #dc3545;
+      width: auto;
+      padding: 8px 14px;
+      font-size: 14px;
+      margin-left: auto;
+    }
 
-        .logout-btn:hover {
-            background-color: #c82333;
-        }
+    .logout-btn:hover {
+      background-color: #c82333;
+    }
 
-        label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
 
-        p {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            color: #333;
-            white-space: pre-line;
-        }
+    p {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      color: #333;
+      white-space: pre-line;
+    }
 
-        h3 {
-            margin-top: 30px;
-        }
+    h3 {
+      margin-top: 30px;
+    }
 
-        .reel-list a {
-            display: block;
-            color: #007bff;
-            text-decoration: none;
-            margin-bottom: 6px;
-            font-size: 15px;
-        }
+    .reel-list a {
+      display: block;
+      color: #007bff;
+      text-decoration: none;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
 
-        .reel-list a:hover {
-            text-decoration: underline;
-        }
+    .reel-list a:hover {
+      text-decoration: underline;
+    }
 
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #28a745;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto;
-        }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #28a745;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        @media (max-width: 500px) {
-            .top-bar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+    @media (max-width: 500px) {
+      .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
 
-            .logout-btn {
-                margin-top: 10px;
-            }
-        }
+      .logout-btn {
+        margin-top: 10px;
+      }
+    }
 
-        @media (prefers-color-scheme: dark) {
-            body {
-                background: #121212;
-                color: #f0f0f0;
-            }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #121212;
+        color: #f0f0f0;
+      }
 
-            .dashboard-box {
-                background: #1e1e1e;
-                color: #f0f0f0;
-            }
+      .dashboard-box {
+        background: #1e1e1e;
+        color: #f0f0f0;
+      }
 
-            select,
-            button {
-                background-color: #2c2c2c;
-                color: #f0f0f0;
-                border: 1px solid #555;
-            }
+      select,
+      button {
+        background-color: #2c2c2c;
+        color: #f0f0f0;
+        border: 1px solid #555;
+      }
 
-            .reel-list a {
-                color: #90cdf4;
-            }
-        }
-    </style>
+      .reel-list a {
+        color: #90cdf4;
+      }
+    }
+  </style>
 </head>
 <body>
 <main class="dashboard-box" role="main" aria-label="User dashboard">
-    <div class="top-bar">
-        <h2>Welcome, {{ user }} 👋</h2>
-        <form method="get" action="{{ url_for('logout') }}">
-            <button type="submit" class="logout-btn" aria-label="Logout">Logout</button>
-        </form>
-    </div>
-
-    <form id="generateForm">
-        <label for="theme">Select Niche/Topic:</label>
-        <select name="theme" id="theme" required>
-            <option value="">-- Choose a theme --</option>
-            <option value="motivation">Motivation</option>
-            <option value="sad">Sad</option>
-            <option value="inspiration">Inspiration</option>
-            <option value="success">Success</option>
-            <option value="life">Life</option>
-        </select>
-        <button type="submit" id="generateBtn">Generate & Post</button>
-        <div id="progressSpinner" class="spinner" style="display:none;"></div>
+  <div class="top-bar">
+    <h2>Welcome, {{ user }} 👋</h2>
+    <form method="get" action="{{ url_for('logout') }}">
+      <button type="submit" class="logout-btn" aria-label="Logout">Logout</button>
     </form>
+  </div>
 
-    <div id="statusArea" style="display:none;">
-        <h3>📣 Status</h3>
-        <p id="statusText" aria-live="polite">Waiting...</p>
-    </div>
+  <form id="generateForm">
+    <label for="theme">Select Niche/Topic:</label>
+    <select name="theme" id="theme" required>
+      <option value="">-- Choose a theme --</option>
+      <option value="motivation">Motivation</option>
+      <option value="sad">Sad</option>
+      <option value="inspiration">Inspiration</option>
+      <option value="success">Success</option>
+      <option value="life">Life</option>
+    </select>
 
-    {% if script %}
+    <label for="language">Select Language:</label>
+    <select name="language" id="language" required>
+      <option value="en" selected>🇺🇸 English</option>
+      <option value="hi">🇮🇳 Hindi</option>
+    </select>
+
+    <button type="submit" id="generateBtn">Generate & Post</button>
+    <div id="progressSpinner" class="spinner" style="display:none;"></div>
+  </form>
+
+  <div id="statusArea" style="display:none;">
+    <h3>📣 Status</h3>
+    <p id="statusText" aria-live="polite">Waiting...</p>
+  </div>
+
+  {% if script %}
     <h3>📝 Generated Script</h3>
     <p>{{ script }}</p>
-    {% endif %}
+  {% endif %}
 
-    {% if videos %}
+  {% if videos %}
     <h3>📂 Your Reels</h3>
     <div class="reel-list">
-        {% for video in videos %}
+      {% for video in videos %}
         <a href="{{ url_for('serve_video', username=user, filename=video) }}" target="_blank" rel="noopener">
-            {{ video }}
+          {{ video }}
         </a>
-        {% endfor %}
+      {% endfor %}
     </div>
-    {% else %}
+  {% else %}
     <p>No reels yet. Start by generating one above!</p>
-    {% endif %}
+  {% endif %}
 </main>
 
 <script>
-    document.getElementById("generateForm").addEventListener("submit", async function (e) {
-        e.preventDefault();
-        const theme = document.getElementById("theme").value;
-        const generateBtn = document.getElementById("generateBtn");
-        const spinner = document.getElementById("progressSpinner");
-        const statusText = document.getElementById("statusText");
-        const statusArea = document.getElementById("statusArea");
+  document.getElementById("generateForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const theme = document.getElementById("theme").value;
+    const language = document.getElementById("language").value;
+    const generateBtn = document.getElementById("generateBtn");
+    const spinner = document.getElementById("progressSpinner");
+    const statusText = document.getElementById("statusText");
+    const statusArea = document.getElementById("statusArea");
 
-        if (!theme) return;
+    if (!theme || !language) return;
 
-        generateBtn.disabled = true;
-        generateBtn.textContent = "Processing...";
-        spinner.style.display = "block";
-        statusArea.style.display = "block";
-        statusText.innerHTML = "⏳ Starting generation...";
+    generateBtn.disabled = true;
+    generateBtn.textContent = "Processing...";
+    spinner.style.display = "block";
+    statusArea.style.display = "block";
+    statusText.innerHTML = "⏳ Starting generation...";
 
-        const response = await fetch("/reelvo.ai/generate", {
-            method: "POST",
-            body: new URLSearchParams({ theme })
-        });
+    const response = await fetch("/reelvo.ai/generate", {
+      method: "POST",
+      body: new URLSearchParams({ theme, language })
+    });
 
-        const data = await response.json();
-        const taskId = data.task_id;
+    const data = await response.json();
+    const taskId = data.task_id;
 
-        const pollProgress = async () => {
-            const res = await fetch(`/reelvo.ai/progress/${taskId}`);
-            const prog = await res.json();
-            statusText.innerHTML = `
+    const pollProgress = async () => {
+      const res = await fetch(`/reelvo.ai/progress/${taskId}`);
+      const prog = await res.json();
+      statusText.innerHTML = `
         <strong>Status:</strong> ${prog.status}
         <br><strong>Progress:</strong> ${prog.percent}%
         <br><strong>Elapsed:</strong> ${prog.elapsed || 0}s
       `;
 
-            if (prog.percent >= 100 || prog.percent === -1) {
-                generateBtn.disabled = false;
-                generateBtn.textContent = "Generate & Post";
-                spinner.style.display = "none";
-                setTimeout(() => location.reload(), 2500);
-            } else {
-                setTimeout(pollProgress, 1500);
-            }
-        };
+      if (prog.percent >= 100 || prog.percent === -1) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = "Generate & Post";
+        spinner.style.display = "none";
+        setTimeout(() => location.reload(), 2500);
+      } else {
+        setTimeout(pollProgress, 1500);
+      }
+    };
 
-        pollProgress();
-    });
+    pollProgress();
+  });
 </script>
 </body>
 </html>
