@@ -1,13 +1,42 @@
 {
   "motivation": {
-    "en": "Every champion started as a beginner who refused to quit.\nYou don’t need the full map—just the courage to begin.\nYou’ll fall. You’ll doubt yourself. But you’ll rise again.\nGrowth doesn’t come from comfort—it comes from courage.\nThe path is hard, but the progress is real.",
-    "hi": "हर चैंपियन कभी एक ऐसा शुरुआतकर्ता था जिसने हार मानने से इनकार कर दिया।\nआपको पूरी योजना नहीं चाहिए—सिर्फ शुरुआत करने का साहस चाहिए।\nआप गिरोगे, खुद पर संदेह होगा, लेकिन आप फिर उठोगे।\nविकास हमेशा आराम से नहीं आता—वो साहस से आता है।\nरास्ता कठिन है, लेकिन प्रगति असली है।"
+    "en": "Don’t wait for the perfect moment. Start now. Even small steps matter. You’re not weak — you’re growing. Keep going. Greatness is built one rep at a time.",
+    "hi": "सही समय का इंतज़ार मत करो — अभी शुरू करो। हर छोटा कदम मायने रखता है। तुम कमज़ोर नहीं, बस बढ़ रहे हो। जारी रखो — यही सफलता का रास्ता है।"
+  },
+  "success": {
+    "en": "Success doesn’t come overnight. It’s built on failure, grit, and relentless effort. Don’t chase money — chase excellence. The results will follow.",
+    "hi": "सफलता एक दिन में नहीं मिलती। ये मेहनत, धैर्य और जुनून से बनती है। पैसे के पीछे मत भागो — कमाल करो, पैसा खुद आएगा।"
+  },
+  "inspiration": {
+    "en": "Every great story begins with a dream. You don’t need permission to shine. Your journey is yours — embrace it. Light your own fire.",
+    "hi": "हर बड़ी कहानी एक सपने से शुरू होती है। चमकने के लिए किसी की इजाज़त मत लो। ये सफ़र तुम्हारा है — इसे अपनाओ। अपनी चिंगारी खुद बनो।"
+  },
+  "life": {
+    "en": "Life isn’t a race. Breathe. Be present. The most beautiful moments are often quiet and simple. Don’t miss them chasing noise.",
+    "hi": "ज़िंदगी कोई दौड़ नहीं है। सांस लो, अभी में जियो। सबसे खूबसूरत पल अक्सर सादे होते हैं — उन्हें मत खोना, भागदौड़ में।"
   },
   "sad": {
-    "en": "Some days just hurt more than others.\nYou smile for the world, but ache in silence.\nEven in pain, your heart is healing.\nYou are not weak—you are human.",
-    "hi": "कुछ दिन दूसरों से ज़्यादा तकलीफ देते हैं।\nदुनिया के लिए मुस्कुराते हो, लेकिन अंदर से टूटे हो।\nइस दर्द में भी, दिल धीरे-धीरे ठीक हो रहा है।\nआप कमजोर नहीं—इंसान हो।"
+    "en": "Some days are heavy. That’s okay. Feel it, cry if you must, but don’t give up. Healing is not linear — you’re doing better than you think.",
+    "hi": "कुछ दिन बोझिल होते हैं — ये ठीक है। रो लो, महसूस करो, पर हार मत मानो। ठीक होना सीधा सफ़र नहीं — पर तुम रास्ते पर हो।"
   },
-  "PostureFix Pro": {
-    "hi": "पीठ झुका ली ना फिर से?\nसारा दिन कंप्यूटर, मोबाइल… और फिर वही कमर दर्द! 😩\nअब लाओ PostureFix Pro™!\n✅ हल्का, पहनने में आसान\n👇 नीचे क्लिक करो — अपनी रीढ़ की हड्डी को आज ही राहत दो!"
+  "posturefix": {
+    "en": "Back pain again? It’s your posture. Meet PostureFix Pro™ — the smart device that vibrates every time you slouch. Over 1 lakh people fixed their posture — now it’s your turn! Click below to fix your spine today.",
+    "hi": "फिर से पीठ दर्द? वजह है झुककर बैठना। PostureFix Pro™ लाओ — ये स्मार्ट डिवाइस झुकते ही वाइब्रेट करता है! 1 लाख से ज़्यादा लोग सुधार चुके हैं अपना पोस्चर — अब तुम्हारी बारी है। रीढ़ की हड्डी को आराम दिलाओ!"
+  },
+  "confidence": {
+    "en": "Real confidence doesn’t shout. It shows. You don’t need to prove yourself to anyone. Walk your path. Your energy speaks louder than words.",
+    "hi": "सच्चा आत्मविश्वास चिल्लाता नहीं — दिखता है। किसी को कुछ साबित करने की ज़रूरत नहीं। अपना रास्ता चुनो — तुम्हारी ऊर्जा खुद बोलेगी।"
+  },
+  "discipline": {
+    "en": "Motivation fades. But discipline? That’s your armor. Show up daily — even when it’s boring, even when it’s hard. That’s how champions are made.",
+    "hi": "मोटिवेशन खत्म हो सकता है — लेकिन अनुशासन हमेशा साथ देता है। हर दिन डटे रहो — चाहे मन करे या नहीं। यही चैंपियंस की पहचान है।"
+  },
+  "gratitude": {
+    "en": "Gratitude is a superpower. It grounds you. Reminds you of what you have, not what’s missing. Want to be happier? Start saying thank you more.",
+    "hi": "कृतज्ञता ताकत देती है। ये तुम्हें जोड़ती है — जो है, उसे देखने की आदत डालती है। ज़्यादा खुश रहना है? रोज़ शुक्रिया कहना शुरू करो।"
+  },
+  "fear": {
+    "en": "Fear will always whisper — 'you can’t.' But you’re stronger than your doubt. Take the step anyway. Your courage is louder than fear.",
+    "hi": "डर हमेशा कहेगा — 'तू नहीं कर सकता।' पर तुम उससे ज़्यादा ताकतवर हो। एक कदम बढ़ाओ — साहस की आवाज़ डर से ऊँची होती है।"
   }
 }
