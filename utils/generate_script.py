@@ -74,12 +74,14 @@ The story you carry—it’s just getting started.""",
     "sad": """Some days just hurt more than others.
 You smile for the world, but ache in silence.
 You miss what was. You wonder what could’ve been.
+You replay moments and choices in your mind.
 And that’s okay. You’re allowed to feel this deeply.
-Even in pain, your heart is healing.
+To pause. To grieve. To let your heart speak.
+Even in pain, your heart is quietly healing.
 You are not weak—you are human.
 You’re still here. Still breathing. Still trying.
-And that is enough.
-Don’t give up. You’re closer than you think to the light.""",
+And that, in itself, is enough.
+Don’t give up.""",
 }
 
 
