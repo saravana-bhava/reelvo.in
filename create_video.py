@@ -15,6 +15,7 @@ from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
 from utils.video_utils import download_video
+from utils.fetch_bgm_from_pixabay import fetch_bgm_from_pixabay
 from progress import start_progress, update_progress, finish_progress
 
 # Load env
@@ -52,7 +53,6 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
 
 
 def sanitize_english(text: str) -> str:
-    """Return clean English-only ASCII text suitable for search queries."""
     words = re.findall(r'\b\w+\b', text.lower())
     ascii_words = [w for w in words if w.isascii()]
     return " ".join(ascii_words) or "inspiration"
@@ -181,9 +181,9 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
     mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.mp3")
     if not bgm_path or not os.path.exists(bgm_path):
-        bgm_path = DEFAULT_BGM_PATH
+        bgm_path = fetch_bgm_from_pixabay(english_script) or DEFAULT_BGM_PATH
         if not os.path.exists(bgm_path):
-            logger.warning("[⚠️] No BGM file found. Skipping background music.")
+            logger.warning("[⚠️] No valid BGM file found. Skipping background music.")
             bgm_path = None
 
     audio_to_use = audio_path
