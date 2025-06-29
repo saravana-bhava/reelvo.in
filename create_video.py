@@ -1,4 +1,4 @@
-# create_video.py
+# File: create_video.py
 
 import os
 import subprocess
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
-from utils.gen_subtitles import generate_srt_from_audio, convert_srt_to_ass
+from utils.gen_subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import try_pexels_fallback
@@ -28,17 +28,12 @@ IMAGE_DIR = "assets/images"
 VIDEO_DIR = "assets/videos"
 TEMP_DIR = "temp"
 WATERMARK_PATH = "assets/logo.png"
+DEFAULT_BGM_PATH = "assets/bgm.mp3"
 VIDEO_DURATION = 30
 CLIP_COUNT = 5
-CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
-
-
-def is_hindi(text: str) -> bool:
-    # Check if the text contains Devanagari characters
-    return any('\u0900' <= char <= '\u097F' for char in text)
 
 
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
@@ -121,7 +116,7 @@ def concatenate_clips(clips, output_path):
     return output_path
 
 
-def create_video_for_category(category, username, task_id=None):
+def create_video_for_category(category, username, task_id=None, include_watermark=True, bgm_path=None):
     logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
 
     os.makedirs("output", exist_ok=True)
@@ -141,12 +136,10 @@ def create_video_for_category(category, username, task_id=None):
     audio_path = os.path.join(base_output, f"{category}.mp3")
     text_image_path = os.path.join(base_output, f"{category}_text.png")
     srt_path = os.path.join(base_output, f"{category}.srt")
-    ass_path = os.path.join(base_output, f"{category}.ass")
     final_output_path = os.path.join(base_output, f"{category}.mp4")
 
     with open(text_path, "r", encoding="utf-8") as f:
         script = f.read().strip()
-    language = "hi" if is_hindi(script) else "en"
 
     try:
         if task_id:
@@ -161,13 +154,6 @@ def create_video_for_category(category, username, task_id=None):
             update_progress(task_id, "📝 Generating subtitles...", 50)
         generate_srt_from_audio(category, audio_path, srt_path)
         clip_srt_timing(srt_path, 0.5, 29.5)
-
-        if language == "hi":
-            convert_srt_to_ass(srt_path, ass_path, font="Noto Sans Devanagari", fontsize=18)
-            subtitle_file = ass_path
-            logger.info("[🇮🇳] Converted SRT to ASS for Hindi subtitles.")
-        else:
-            subtitle_file = srt_path
 
     except Exception as e:
         logger.exception("[❌] Asset generation failed")
@@ -185,11 +171,35 @@ def create_video_for_category(category, username, task_id=None):
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
-    inputs = ["-i", combined_video_path, "-i", audio_path]
+    # Final audio with BGM mixed
+    mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.mp3")
+
+    # Fallback to default BGM if none provided or not found
+    if not bgm_path or not os.path.exists(bgm_path):
+        bgm_path = DEFAULT_BGM_PATH
+        if not os.path.exists(bgm_path):
+            logger.warning("[⚠️] No BGM file found. Skipping background music.")
+            bgm_path = None
+
+    if bgm_path:
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-i", audio_path,
+            "-i", bgm_path,
+            "-filter_complex", "[1:a]volume=0.10[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
+            "-c:a", "aac", "-b:a", "192k",
+            mixed_audio_path
+        ], check=True)
+        audio_to_use = mixed_audio_path
+    else:
+        audio_to_use = audio_path
+
+    # --- Compose Final FFmpeg Command ---
+    inputs = ["-i", combined_video_path, "-i", audio_to_use]
     input_index = 2
     logo_index = None
 
-    if os.path.exists(WATERMARK_PATH):
+    if include_watermark and os.path.exists(WATERMARK_PATH):
         inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
         logo_index = input_index
         input_index += 1
@@ -205,20 +215,17 @@ def create_video_for_category(category, username, task_id=None):
         filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
         base_stream = "[wm]"
 
-    if subtitle_file.endswith(".ass"):
-        filters.append(f"{base_stream}ass='{subtitle_file}'[outv]")
-    else:
-        subtitle_style = (
-            "Alignment=2,"
-            "Fontname=DejaVuSans-Bold,"
-            "Fontsize=16,"
-            "PrimaryColour=&H00FFFFFF,"
-            "OutlineColour=&H80000000,"
-            "BorderStyle=3,"
-            "Outline=2,"
-            "MarginV=100"
-        )
-        filters.append(f"{base_stream}subtitles='{subtitle_file}':force_style='{subtitle_style}'[outv]")
+    subtitle_style = (
+        "Alignment=2,"
+        "Fontname=DejaVuSans-Bold,"
+        "Fontsize=16,"
+        "PrimaryColour=&H00FFFFFF,"
+        "OutlineColour=&H80000000,"
+        "BorderStyle=3,"
+        "Outline=2,"
+        "MarginV=100"
+    )
+    filters.append(f"{base_stream}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
 
     cmd = [
         "ffmpeg", *inputs,
@@ -249,8 +256,10 @@ def create_video_for_category(category, username, task_id=None):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) == 3:
+    if len(sys.argv) >= 3:
         category, username = sys.argv[1], sys.argv[2]
-        create_video_for_category(category, username)
+        include_watermark = sys.argv[3].lower() == "true" if len(sys.argv) >= 4 else True
+        bgm_path = sys.argv[4] if len(sys.argv) >= 5 else None
+        create_video_for_category(category, username, include_watermark=include_watermark, bgm_path=bgm_path)
     else:
-        print("Usage: python create_video.py <category> <username>")
+        print("Usage: python create_video.py <category> <username> [include_watermark=True] [bgm_path]")
