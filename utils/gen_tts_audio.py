@@ -45,7 +45,7 @@ def get_audio_duration(path: str) -> float:
     )
     return float(result.stdout.decode().strip())
 
-def generate_tts_audio(category: str, text: str, output_path: str, task_id=None) -> tuple[str, float]:
+def generate_tts_audio(category: str, text: str, output_path: str, task_id=None, language="en") -> tuple[str, float]:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     print(f"[🔊] Generating TTS for '{category}' → {output_path}")
     update_progress(task_id, "🔊 Generating TTS...", 35)
@@ -87,7 +87,11 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
             print("[🧠] Trying Google Cloud TTS...")
             update_progress(task_id, "🔊 Using Google Cloud TTS...", 39)
 
-            lang_code = "hi-IN" if "।" in text or any('\u0900' <= c <= '\u097F' for c in text) else "en-US"
+            lang_code = {
+                "hi": "hi-IN",
+                "en": "en-US"
+            }.get(language, "en-US")
+
             voice_name = GOOGLE_CLOUD_TTS_VOICE
 
             cache_key = hashlib.md5(f"{text}|{voice_name}".encode()).hexdigest()
@@ -128,7 +132,7 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
         try:
             print("[🌍] Using gTTS fallback...")
             update_progress(task_id, "🔊 Using gTTS fallback...", 40)
-            lang = "hi" if any('\u0900' <= c <= '\u097F' for c in text) else "en"
+            lang = "hi" if language == "hi" or any('\u0900' <= c <= '\u097F' for c in text) else "en"
             tts = gTTS(text=text.strip(), lang=lang)
             tts.save(raw_path)
             print("[✅] gTTS audio saved.")
@@ -149,7 +153,7 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
     else:
         raise RuntimeError("[❌] All TTS methods failed.")
 
-def generate_tts_from_file(category: str, username: str, output_root: str = "output", task_id=None) -> tuple[str, float]:
+def generate_tts_from_file(category: str, username: str, output_root: str = "output", task_id=None, language="en") -> tuple[str, float]:
     text_path = os.path.join(output_root, username, f"{category}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Script not found: {text_path}")
@@ -158,12 +162,14 @@ def generate_tts_from_file(category: str, username: str, output_root: str = "out
     if not text:
         raise ValueError("[❌] Script text is empty.")
     output_path = os.path.join(output_root, username, f"{category}.mp3")
-    return generate_tts_audio(category, text, output_path, task_id)
+    return generate_tts_audio(category, text, output_path, task_id, language=language)
 
 # CLI usage
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 4:
+        generate_tts_from_file(sys.argv[1], sys.argv[2], language=sys.argv[3])
+    elif len(sys.argv) == 3:
         generate_tts_from_file(sys.argv[1], sys.argv[2])
     else:
-        print("Usage: python utils/gen_tts_audio.py <category> <username>")
+        print("Usage: python utils/gen_tts_audio.py <category> <username> [language]")
