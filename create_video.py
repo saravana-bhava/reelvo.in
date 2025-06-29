@@ -29,7 +29,7 @@ VIDEO_DIR = "assets/videos"
 TEMP_DIR = "temp"
 WATERMARK_PATH = "assets/logo.png"
 DEFAULT_BGM_PATH = "assets/bgm.mp3"
-CLIP_DURATION = 5.5  # approx duration of one stock clip
+CLIP_DURATION = 5.5
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
@@ -144,7 +144,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
     try:
         if task_id:
             update_progress(task_id, "🖼️ Generating overlay...", 35)
-        generate_text_overlay(script, text_image_path)
+        generate_text_overlay(script, text_image_path, language=language)
 
         if task_id:
             update_progress(task_id, "🔊 Generating TTS...", 40)

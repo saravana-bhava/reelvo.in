@@ -16,7 +16,8 @@ except ImportError:
 
 
 def generate_text_overlay(text: str, output_path: str, width: int = 1080, height: int = 1920,
-                           font_size: int = 60, font_path: str | None = None, task_id: str | None = None):
+                           font_size: int = 60, font_path: str | None = None, task_id: str | None = None,
+                           language: str = "en"):
     """
     Generate a vertically centered overlay image with word-wrapped multiline text.
 
@@ -28,18 +29,23 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
         font_size (int): Font size for text rendering.
         font_path (str | None): Optional path to a custom .ttf font.
         task_id (str | None): Optional task ID for progress updates.
+        language (str): Language hint ('en' or 'hi') to select font.
     """
     update_progress(task_id, "🖋️ Generating text overlay...", 35)
     print(f"[🖋️] Rendering text overlay → {output_path}")
 
-    # Font discovery: fallback to Hindi-compatible fonts
+    # Font discovery
     if not font_path:
-        possible_fonts = [
-            "assets/fonts/NotoSansDevanagari-Regular.ttf",
-            "assets/fonts/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        ]
+        if language == "hi":
+            possible_fonts = [
+                "assets/fonts/NotoSansDevanagari-Regular.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
+            ]
+        else:
+            possible_fonts = [
+                "assets/fonts/DejaVuSans-Bold.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+            ]
         for path in possible_fonts:
             if os.path.exists(path):
                 font_path = path
@@ -91,7 +97,10 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
 # CLI usage
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 3:
-        print("Usage: python utils/gen_text_overlay.py '<text>' <output_path>")
+    if len(sys.argv) < 3:
+        print("Usage: python utils/gen_text_overlay.py '<text>' <output_path> [language]")
     else:
-        generate_text_overlay(sys.argv[1], sys.argv[2])
+        text = sys.argv[1]
+        output = sys.argv[2]
+        lang = sys.argv[3] if len(sys.argv) > 3 else "en"
+        generate_text_overlay(text, output, language=lang)
