@@ -40,7 +40,6 @@ USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
         subs = list(srt.parse(f.read()))
-
     clipped = []
     for sub in subs:
         s = max(sub.start.total_seconds(), start)
@@ -49,7 +48,6 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
             sub.start = timedelta(seconds=s)
             sub.end = timedelta(seconds=e)
             clipped.append(sub)
-
     with open(srt_path, 'w', encoding='utf-8') as f:
         f.write(srt.compose(clipped))
 
@@ -61,7 +59,8 @@ def extract_keywords(script: str, top_n: int = 3):
         'be', 'as', 'an', 'have', 'has', 'from', 'by', 'just', 'not', 'but', 'or'
     }
     words = re.findall(r'\b\w{3,}\b', script.lower())
-    keywords = [w for w in words if w not in stopwords]
+    english_words = [w for w in words if w.isascii()]  # ✅ Exclude Hindi/Unicode
+    keywords = [w for w in english_words if w not in stopwords]
     counts = Counter(keywords)
     return [kw for kw, _ in counts.most_common(top_n)] or ["inspiration"]
 
@@ -105,7 +104,6 @@ def fetch_multiple_clips(keywords, target_duration, fallback_category):
 def concatenate_clips(clips, output_path):
     logger.info("[🔁] Re-encoding clips for safe concatenation...")
     reencoded_clips = []
-
     for i, clip in enumerate(clips):
         fixed = os.path.join(TEMP_DIR, f"fixed_clip{i+1}.mp4")
         subprocess.run([
@@ -117,12 +115,10 @@ def concatenate_clips(clips, output_path):
             fixed
         ], check=True)
         reencoded_clips.append(fixed)
-
     list_file = os.path.join(TEMP_DIR, "concat_list.txt")
     with open(list_file, "w") as f:
         for clip in reencoded_clips:
             f.write(f"file '{os.path.abspath(clip)}'\n")
-
     subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
@@ -130,16 +126,13 @@ def concatenate_clips(clips, output_path):
         "-movflags", "+faststart",
         output_path
     ], check=True)
-
     return output_path
 
 
 def create_video_for_category(category, username, task_id=None, include_watermark=True, bgm_path=None, language="en"):
     logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username} | Language: {language}")
-
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
-
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
