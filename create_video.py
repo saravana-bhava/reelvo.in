@@ -6,6 +6,8 @@ import logging
 from datetime import timedelta
 import srt
 from dotenv import load_dotenv
+from collections import Counter
+import re
 
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
@@ -52,31 +54,47 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
         f.write(srt.compose(clipped))
 
 
-def fetch_multiple_clips(category, target_duration):
+def extract_keywords(script: str, top_n: int = 3):
+    stopwords = {
+        'the', 'and', 'for', 'with', 'your', 'this', 'that', 'you', 'are', 'was',
+        'is', 'of', 'a', 'to', 'on', 'in', 'at', 'we', 'it', 'our', 'they',
+        'be', 'as', 'an', 'have', 'has', 'from', 'by', 'just', 'not', 'but', 'or'
+    }
+    words = re.findall(r'\b\w{3,}\b', script.lower())
+    keywords = [w for w in words if w not in stopwords]
+    counts = Counter(keywords)
+    return [kw for kw, _ in counts.most_common(top_n)] or ["inspiration"]
+
+
+def fetch_multiple_clips(keywords, target_duration, fallback_category):
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_urls = set()
     sources = [try_pexels_fallback, fetch_pixabay_video]
-    fallback_local = os.path.join(VIDEO_DIR, f"{category}.mp4")
+    fallback_local = os.path.join(VIDEO_DIR, f"{fallback_category}.mp4")
 
     for i in range(count):
-        clip_path = os.path.join(TEMP_DIR, f"{category}_clip{i+1}.mp4")
+        clip_path = os.path.join(TEMP_DIR, f"{fallback_category}_clip{i+1}.mp4")
         found = False
-        for source in sources:
-            if source == try_pexels_fallback and USE_PEXELS:
-                url = try_pexels_fallback(category, clip_path, used_urls=used_urls)
-                if url:
-                    used_urls.add(url)
-                    downloaded_clips.append(clip_path)
-                    found = True
-                    break
-            elif source == fetch_pixabay_video and USE_PIXABAY:
-                url = fetch_pixabay_video(category, clip_path, used_urls=used_urls)
-                if url:
-                    used_urls.add(url)
-                    downloaded_clips.append(clip_path)
-                    found = True
-                    break
+        for keyword in keywords:
+            for source in sources:
+                if source == try_pexels_fallback and USE_PEXELS:
+                    url = try_pexels_fallback(keyword, clip_path, used_urls=used_urls)
+                    if url:
+                        used_urls.add(url)
+                        downloaded_clips.append(clip_path)
+                        found = True
+                        break
+                elif source == fetch_pixabay_video and USE_PIXABAY:
+                    url = fetch_pixabay_video(keyword, clip_path, used_urls=used_urls)
+                    if url:
+                        used_urls.add(url)
+                        downloaded_clips.append(clip_path)
+                        found = True
+                        break
+            if found:
+                break
+
         if not found and os.path.exists(fallback_local):
             if download_video(fallback_local, clip_path, min_duration=5, max_duration=6):
                 downloaded_clips.append(clip_path)
@@ -161,7 +179,13 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
     if task_id:
         update_progress(task_id, "🎞️ Fetching video clips...", 60)
-    clips = fetch_multiple_clips(category, audio_duration)
+
+    english_script_path = generate_script_for_user(category, username, language="en")
+    with open(english_script_path, "r", encoding="utf-8") as ef:
+        english_script = ef.read().strip()
+    keywords = extract_keywords(english_script, top_n=3)
+
+    clips = fetch_multiple_clips(keywords, audio_duration, fallback_category=category)
     if not clips:
         logger.error("[❌] No background clips found.")
         return None
