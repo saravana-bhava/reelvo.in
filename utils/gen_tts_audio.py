@@ -2,7 +2,7 @@
 
 """
 Generates TTS audio using ElevenLabs, Google Cloud TTS (plain text), or gTTS (fallback).
-Pads all audio to exactly 30s for Instagram Reels.
+Returns actual duration in seconds (for use in dynamic 15–30s reels).
 """
 
 import os
@@ -35,19 +35,17 @@ def update_progress(task_id, status, percent):
     if task_id and task_id in progress_status:
         progress_status[task_id] = {"status": status, "percent": percent}
 
-def pad_or_trim_audio(input_path: str, output_path: str, duration: int = 30):
-    try:
-        subprocess.run([
-            "ffmpeg", "-y", "-i", input_path,
-            "-af", f"adelay=500|500,apad=pad_dur={duration}",
-            "-t", str(duration),
-            "-ar", "44100", "-ac", "1", "-b:a", "192k",
-            output_path
-        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"[❌] FFmpeg padding failed: {e}")
+def get_audio_duration(path: str) -> float:
+    """Returns duration in seconds of the audio file."""
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    return float(result.stdout.decode().strip())
 
-def generate_tts_audio(category: str, text: str, output_path: str, task_id=None) -> str:
+def generate_tts_audio(category: str, text: str, output_path: str, task_id=None) -> tuple[str, float]:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     print(f"[🔊] Generating TTS for '{category}' → {output_path}")
     update_progress(task_id, "🔊 Generating TTS...", 35)
@@ -82,7 +80,7 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
         except Exception as e:
             print(f"[❌] ElevenLabs error: {e}")
 
-    # Try Google Cloud TTS (Plain Text)
+    # Try Google Cloud TTS
     if not success and USE_GOOGLE_CLOUD:
         try:
             from google.cloud import texttospeech
@@ -138,17 +136,20 @@ def generate_tts_audio(category: str, text: str, output_path: str, task_id=None)
         except Exception as e:
             raise RuntimeError(f"[❌] gTTS failed: {e}")
 
-    # Final padding
     if success:
-        update_progress(task_id, "🎧 Padding audio...", 42)
-        pad_or_trim_audio(raw_path, output_path)
-        update_progress(task_id, "✅ TTS audio ready", 45)
-        print(f"[🎯] Final audio saved: {output_path}")
-        return output_path
+        subprocess.run([
+            "ffmpeg", "-y", "-i", raw_path,
+            "-ar", "44100", "-ac", "1", "-b:a", "192k",
+            output_path
+        ], check=True)
+        duration = get_audio_duration(output_path)
+        update_progress(task_id, f"✅ TTS ready ({duration:.1f}s)", 45)
+        print(f"[🎯] Final audio saved: {output_path} ({duration:.1f}s)")
+        return output_path, duration
     else:
         raise RuntimeError("[❌] All TTS methods failed.")
 
-def generate_tts_from_file(category: str, username: str, output_root: str = "output", task_id=None) -> str:
+def generate_tts_from_file(category: str, username: str, output_root: str = "output", task_id=None) -> tuple[str, float]:
     text_path = os.path.join(output_root, username, f"{category}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Script not found: {text_path}")

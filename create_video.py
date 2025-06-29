@@ -29,8 +29,7 @@ VIDEO_DIR = "assets/videos"
 TEMP_DIR = "temp"
 WATERMARK_PATH = "assets/logo.png"
 DEFAULT_BGM_PATH = "assets/bgm.mp3"
-VIDEO_DURATION = 30
-CLIP_COUNT = 5
+CLIP_DURATION = 5.5  # approx duration of one stock clip
 
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
@@ -53,7 +52,8 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
         f.write(srt.compose(clipped))
 
 
-def fetch_multiple_clips(category, count=5):
+def fetch_multiple_clips(category, target_duration):
+    count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_urls = set()
     sources = [try_pexels_fallback, fetch_pixabay_video]
@@ -148,12 +148,12 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
         if task_id:
             update_progress(task_id, "🔊 Generating TTS...", 40)
-        audio_path = generate_tts_from_file(category, username)
+        audio_path, audio_duration = generate_tts_from_file(category, username)
 
         if task_id:
             update_progress(task_id, "📝 Generating subtitles...", 50)
         generate_srt_from_audio(category, audio_path, srt_path)
-        clip_srt_timing(srt_path, 0.5, 29.5)
+        clip_srt_timing(srt_path, 0.5, audio_duration - 0.5)
 
     except Exception as e:
         logger.exception("[❌] Asset generation failed")
@@ -161,7 +161,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
     if task_id:
         update_progress(task_id, "🎞️ Fetching video clips...", 60)
-    clips = fetch_multiple_clips(category, CLIP_COUNT)
+    clips = fetch_multiple_clips(category, audio_duration)
     if not clips:
         logger.error("[❌] No background clips found.")
         return None
@@ -174,7 +174,6 @@ def create_video_for_category(category, username, task_id=None, include_watermar
     # Final audio with BGM mixed
     mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.mp3")
 
-    # Fallback to default BGM if none provided or not found
     if not bgm_path or not os.path.exists(bgm_path):
         bgm_path = DEFAULT_BGM_PATH
         if not os.path.exists(bgm_path):
@@ -200,14 +199,14 @@ def create_video_for_category(category, username, task_id=None, include_watermar
     logo_index = None
 
     if include_watermark and os.path.exists(WATERMARK_PATH):
-        inputs += ["-loop", "1", "-t", str(VIDEO_DURATION), "-i", WATERMARK_PATH]
+        inputs += ["-loop", "1", "-t", str(audio_duration), "-i", WATERMARK_PATH]
         logo_index = input_index
         input_index += 1
 
     filters = [
         f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
         f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
-        f"fade=t=in:st=0:d=1,fade=t=out:st={VIDEO_DURATION-1}:d=1[bg]"
+        f"fade=t=in:st=0:d=1,fade=t=out:st={max(audio_duration - 1, 1)}:d=1[bg]"
     ]
     base_stream = "[bg]"
 
@@ -229,6 +228,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
     cmd = [
         "ffmpeg", *inputs,
+        "-t", str(audio_duration),
         "-filter_complex", ";".join(filters),
         "-map", "[outv]",
         "-map", "1:a",

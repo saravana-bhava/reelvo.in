@@ -1,4 +1,4 @@
-# utils/generate_script.py
+# File: utils/generate_script.py
 
 """
 Generates short Instagram reel scripts using OpenAI or category-specific fallbacks.
@@ -7,6 +7,7 @@ Supports: English / Hindi script generation
 """
 
 import os
+import json
 from textwrap import dedent
 from dotenv import load_dotenv
 import openai
@@ -18,6 +19,14 @@ load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 USE_OPENAI = os.getenv("USE_OPENAI", "true").lower() == "true"
 API_KEY = os.getenv("OPENAI_API_KEY")
+FALLBACK_JSON_PATH = os.path.join(ROOT_DIR, "fallback_scripts.json")
+
+# Load fallback data
+try:
+    with open(FALLBACK_JSON_PATH, "r", encoding="utf-8") as f:
+        FALLBACKS = json.load(f)
+except FileNotFoundError:
+    FALLBACKS = {}
 
 if USE_OPENAI:
     if not API_KEY:
@@ -32,81 +41,62 @@ try:
 except ImportError:
     def update_progress(task_id, status, percent): pass
 
-# Fallback scripts (English & Hindi only for now)
-FALLBACKS = {
-    "motivation": {
-        "en": """Every champion started as a beginner who refused to quit.
-You don’t need the full map—just the courage to begin.
-You’ll fall. You’ll doubt yourself. But you’ll rise again.
-Growth doesn’t come from comfort—it comes from courage.
-The path is hard, but the progress is real.""",
-        "hi": """हर चैंपियन कभी एक ऐसा शुरुआतकर्ता था जिसने हार मानने से इनकार कर दिया।
-आपको पूरी योजना नहीं चाहिए—सिर्फ शुरुआत करने का साहस चाहिए।
-आप गिरोगे, खुद पर संदेह होगा, लेकिन आप फिर उठोगे।
-विकास हमेशा आराम से नहीं आता—वो साहस से आता है।
-रास्ता कठिन है, लेकिन प्रगति असली है।"""
-    },
-    "sad": {
-        "en": """Some days just hurt more than others.
-You smile for the world, but ache in silence.
-Even in pain, your heart is healing.
-You are not weak—you are human.""",
-        "hi": """कुछ दिन दूसरों से ज़्यादा तकलीफ देते हैं।
-दुनिया के लिए मुस्कुराते हो, लेकिन अंदर से टूटे हो।
-इस दर्द में भी, दिल धीरे-धीरे ठीक हो रहा है।
-आप कमजोर नहीं—इंसान हो।"""
-    },
+# Custom prompt overrides (category-specific)
+PROMPT_TEMPLATES = {
     "PostureFix Pro": {
-        "hi": """पीठ झुका ली ना फिर से?
-सारा दिन कंप्यूटर, मोबाइल… और फिर वही कमर दर्द! 😩
-अब लाओ PostureFix Pro™!
-✅ हल्का, पहनने में आसान
-👇 नीचे क्लिक करो — अपनी रीढ़ की हड्डी को आज ही राहत दो!"""
+        "hi": "Write a catchy, 20–30s Hindi Instagram ad script for PostureFix Pro, a smart posture corrector. Focus on pain relief, alert feature, and emotional appeal. Use emojis and clear CTAs."
     }
 }
 
 
 def generate_script(theme: str, task_id=None, language="en") -> str:
-    """Generate a 30-sec script in desired language."""
+    """Generate a 30-sec script in desired language using OpenAI or fallback."""
     theme = theme.lower()
     language = language.lower()
     update_progress(task_id, "🧠 Generating script...", 10)
 
-    if not USE_OPENAI:
-        print(f"⚠️ OpenAI disabled. Using fallback for '{theme}' in '{language}'")
-        update_progress(task_id, "📝 Using fallback script", 12)
-        return FALLBACKS.get(theme, {}).get(language, f"Fallback script for '{theme}' in {language}")
+    # Fallback access function
+    def fallback_script():
+        return FALLBACKS.get(theme, {}).get(language, f"[Fallback script for '{theme}' in '{language}']")
 
-    lang_prompt = {
-        "en": "in English",
-        "hi": "in Hindi"
-    }.get(language, "in English")
+    # Custom prompt override
+    if theme in PROMPT_TEMPLATES and language in PROMPT_TEMPLATES[theme]:
+        prompt = PROMPT_TEMPLATES[theme][language]
+    else:
+        lang_prompt = {
+            "en": "in English",
+            "hi": "in Hindi"
+        }.get(language, "in English")
 
-    prompt = (
-        f"Write a short, powerful Instagram reel script on the theme: '{theme}', {lang_prompt}. "
-        f"Use 4–5 short impactful lines. Keep it under 30 seconds for voiceover."
-    )
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{ "role": "user", "content": prompt }],
-            temperature=0.7
+        prompt = (
+            f"Write a short, powerful Instagram reel script on the theme: '{theme}', {lang_prompt}. "
+            f"Use 4–5 short impactful lines. Keep it under 30 seconds for voiceover."
         )
-        script = response.choices[0].message.content.strip()
-        print(f"[✅] OpenAI script generated for '{theme}' in '{language}'")
-        update_progress(task_id, "✅ Script generated", 15)
-        return script
 
-    except RateLimitError:
-        print("⚠️ OpenAI rate limit hit. Using fallback.")
-    except OpenAIError as e:
-        print(f"[❌] OpenAI error: {e}")
-    except Exception as e:
-        print(f"[❌] Unexpected error: {e}")
+    # Use OpenAI
+    if USE_OPENAI:
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{ "role": "user", "content": prompt }],
+                temperature=0.7
+            )
+            script = response.choices[0].message.content.strip()
+            print(f"[✅] OpenAI script generated for '{theme}' in '{language}'")
+            update_progress(task_id, "✅ Script generated", 15)
+            return script
 
+        except RateLimitError:
+            print("⚠️ OpenAI rate limit hit. Using fallback.")
+        except OpenAIError as e:
+            print(f"[❌] OpenAI error: {e}")
+        except Exception as e:
+            print(f"[❌] Unexpected error: {e}")
+
+    # Fallback
     update_progress(task_id, "⚠️ Using fallback script", 12)
-    return FALLBACKS.get(theme, {}).get(language, f"Fallback script for '{theme}' in {language}")
+    print(f"⚠️ Using fallback for '{theme}' in '{language}'")
+    return fallback_script()
 
 
 def generate_script_for_user(theme: str, username: str, output_root: str = "output", task_id=None, language="en") -> str:
