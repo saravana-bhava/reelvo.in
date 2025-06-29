@@ -10,7 +10,6 @@ Generates:
 """
 
 import os
-import json
 import srt
 import whisper
 import warnings
@@ -26,22 +25,30 @@ except ImportError:
     def update_progress(task_id, status, percent): pass
 
 
-def generate_srt_from_audio(category: str, audio_path: str, output_path: str, words_per_line: int = 6, task_id: str | None = None):
+def generate_srt_from_audio(
+    category: str,
+    audio_path: str,
+    output_path: str,
+    words_per_line: int = 6,
+    task_id: str | None = None,
+    language: str = "auto"
+):
     update_progress(task_id, "📝 Generating subtitles...", 50)
     print(f"[🧠] Transcribing audio for subtitles (Whisper)...")
 
-    # 🔍 Auto-detect Hindi
-    force_hindi = False
-    try:
-        with open(audio_path.replace(".mp3", ".txt"), "r", encoding="utf-8") as f:
-            raw_text = f.read()
-            if any('\u0900' <= c <= '\u097F' for c in raw_text):
-                force_hindi = True
-    except:
-        pass
+    # 🔍 Auto-detect Hindi unless language explicitly passed
+    if language == "auto":
+        language = "en"
+        try:
+            with open(audio_path.replace(".mp3", ".txt"), "r", encoding="utf-8") as f:
+                raw_text = f.read()
+                if any('\u0900' <= c <= '\u097F' for c in raw_text):
+                    language = "hi"
+        except:
+            pass
 
     try:
-        result = MODEL.transcribe(audio_path, word_timestamps=True, language="hi" if force_hindi else None)
+        result = MODEL.transcribe(audio_path, word_timestamps=True, language=language)
     except Exception as e:
         raise RuntimeError(f"[❌] Whisper transcription failed: {e}")
 
@@ -93,7 +100,7 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
     print(f"[✅] Generated Whisper SRT for '{category}' → {output_path}")
     update_progress(task_id, "✅ Subtitles ready (Whisper)", 55)
 
-    # Auto-convert to ASS if Hindi detected
+    # Auto-convert to ASS if Hindi detected in output
     all_text = " ".join(sub.content for sub in subtitles)
     if any('\u0900' <= c <= '\u097F' for c in all_text):
         ass_path = output_path.replace(".srt", ".ass")
@@ -140,13 +147,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     print(f"[🈶] Converted SRT → ASS → {ass_path}")
 
 
-# CLI
+# CLI usage
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 3:
-        print("Usage: python utils/gen_subtitles.py <category> <audio_path>")
+    if len(sys.argv) not in (3, 4):
+        print("Usage: python utils/gen_subtitles.py <category> <audio_path> [language]")
     else:
         category = sys.argv[1]
         audio_file = sys.argv[2]
+        lang = sys.argv[3] if len(sys.argv) == 4 else "auto"
         output_srt = os.path.splitext(audio_file)[0] + ".srt"
-        generate_srt_from_audio(category, audio_file, output_srt)
+        generate_srt_from_audio(category, audio_file, output_srt, language=lang)

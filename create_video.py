@@ -152,7 +152,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
         if task_id:
             update_progress(task_id, "📝 Generating subtitles...", 50)
-        generate_srt_from_audio(category, audio_path, srt_path)
+        generate_srt_from_audio(category, audio_path, srt_path, language=language)
         clip_srt_timing(srt_path, 0.5, audio_duration - 0.5)
 
     except Exception as e:
