@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
-from utils.gen_subtitles import generate_srt_from_audio
+from utils.gen_subtitles import generate_srt_from_audio, convert_srt_to_ass
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import try_pexels_fallback
@@ -36,7 +36,11 @@ USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 
 
-# --- Helper: Trim SRT to fit video duration ---
+def is_hindi(text: str) -> bool:
+    # Check if the text contains Devanagari characters
+    return any('\u0900' <= char <= '\u097F' for char in text)
+
+
 def clip_srt_timing(srt_path, start=0.5, end=29.5):
     with open(srt_path, 'r', encoding='utf-8') as f:
         subs = list(srt.parse(f.read()))
@@ -54,7 +58,6 @@ def clip_srt_timing(srt_path, start=0.5, end=29.5):
         f.write(srt.compose(clipped))
 
 
-# --- Helper: Fetch multiple clips for a category ---
 def fetch_multiple_clips(category, count=5):
     downloaded_clips = []
     used_urls = set()
@@ -86,7 +89,6 @@ def fetch_multiple_clips(category, count=5):
     return downloaded_clips
 
 
-# --- Helper: Concatenate clips safely ---
 def concatenate_clips(clips, output_path):
     logger.info("[🔁] Re-encoding clips for safe concatenation...")
     reencoded_clips = []
@@ -119,7 +121,6 @@ def concatenate_clips(clips, output_path):
     return output_path
 
 
-# --- Main: Generate final video ---
 def create_video_for_category(category, username, task_id=None):
     logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username}")
 
@@ -140,10 +141,12 @@ def create_video_for_category(category, username, task_id=None):
     audio_path = os.path.join(base_output, f"{category}.mp3")
     text_image_path = os.path.join(base_output, f"{category}_text.png")
     srt_path = os.path.join(base_output, f"{category}.srt")
+    ass_path = os.path.join(base_output, f"{category}.ass")
     final_output_path = os.path.join(base_output, f"{category}.mp4")
 
     with open(text_path, "r", encoding="utf-8") as f:
         script = f.read().strip()
+    language = "hi" if is_hindi(script) else "en"
 
     try:
         if task_id:
@@ -158,6 +161,13 @@ def create_video_for_category(category, username, task_id=None):
             update_progress(task_id, "📝 Generating subtitles...", 50)
         generate_srt_from_audio(category, audio_path, srt_path)
         clip_srt_timing(srt_path, 0.5, 29.5)
+
+        if language == "hi":
+            convert_srt_to_ass(srt_path, ass_path, font="Noto Sans Devanagari", fontsize=18)
+            subtitle_file = ass_path
+            logger.info("[🇮🇳] Converted SRT to ASS for Hindi subtitles.")
+        else:
+            subtitle_file = srt_path
 
     except Exception as e:
         logger.exception("[❌] Asset generation failed")
@@ -175,7 +185,6 @@ def create_video_for_category(category, username, task_id=None):
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
-    # --- Compose Final FFmpeg Command ---
     inputs = ["-i", combined_video_path, "-i", audio_path]
     input_index = 2
     logo_index = None
@@ -196,17 +205,20 @@ def create_video_for_category(category, username, task_id=None):
         filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
         base_stream = "[wm]"
 
-    subtitle_style = (
-        "Alignment=2,"
-        "Fontname=DejaVuSans-Bold,"
-        "Fontsize=16,"
-        "PrimaryColour=&H00FFFFFF,"
-        "OutlineColour=&H80000000,"
-        "BorderStyle=3,"
-        "Outline=2,"
-        "MarginV=100"
-    )
-    filters.append(f"{base_stream}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
+    if subtitle_file.endswith(".ass"):
+        filters.append(f"{base_stream}ass='{subtitle_file}'[outv]")
+    else:
+        subtitle_style = (
+            "Alignment=2,"
+            "Fontname=DejaVuSans-Bold,"
+            "Fontsize=16,"
+            "PrimaryColour=&H00FFFFFF,"
+            "OutlineColour=&H80000000,"
+            "BorderStyle=3,"
+            "Outline=2,"
+            "MarginV=100"
+        )
+        filters.append(f"{base_stream}subtitles='{subtitle_file}':force_style='{subtitle_style}'[outv]")
 
     cmd = [
         "ffmpeg", *inputs,
@@ -235,7 +247,6 @@ def create_video_for_category(category, username, task_id=None):
         return None
 
 
-# --- CLI Test Entry Point ---
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:

@@ -2,42 +2,43 @@
 
 """
 Generate a text overlay image centered in a vertical canvas.
-Used for displaying script text on Instagram reels.
+Supports both English and Hindi script for Instagram Reels.
 """
 
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-# Optional progress integration
+# Optional progress UI
 try:
     from progress import update_progress
 except ImportError:
-    def update_progress(task_id, status, percent):
-        pass
+    def update_progress(task_id, status, percent): pass
 
 
 def generate_text_overlay(text: str, output_path: str, width: int = 1080, height: int = 1920,
                            font_size: int = 60, font_path: str | None = None, task_id: str | None = None):
     """
-    Generates a vertically centered text overlay image for reel videos.
+    Generate a vertically centered overlay image with word-wrapped multiline text.
 
     Args:
-        text (str): Script content to render.
-        output_path (str): Output image path (.jpg or .png).
-        width (int): Width of the canvas.
-        height (int): Height of the canvas.
-        font_size (int): Font size for text.
-        font_path (str | None): Optional path to .ttf font.
-        task_id (str | None): Optional progress tracking ID.
+        text (str): Text content to render.
+        output_path (str): Path to save the generated .png/.jpg.
+        width (int): Canvas width (default 1080).
+        height (int): Canvas height (default 1920).
+        font_size (int): Font size for text rendering.
+        font_path (str | None): Optional path to a custom .ttf font.
+        task_id (str | None): Optional task ID for progress updates.
     """
     update_progress(task_id, "🖋️ Generating text overlay...", 35)
-    print(f"[🖋️] Generating text overlay image → {output_path}")
+    print(f"[🖋️] Rendering text overlay → {output_path}")
 
-    # Font discovery
+    # Font discovery: fallback to Hindi-compatible fonts
     if not font_path:
         possible_fonts = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "assets/fonts/DejaVuSans-Bold.ttf"
+            "assets/fonts/NotoSansDevanagari-Regular.ttf",
+            "assets/fonts/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         ]
         for path in possible_fonts:
             if os.path.exists(path):
@@ -45,15 +46,15 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
                 break
 
     if not font_path or not os.path.exists(font_path):
-        raise FileNotFoundError(f"[❌] Font not found. Checked: {possible_fonts}")
+        raise FileNotFoundError(f"[❌] No suitable font found. Tried: {possible_fonts}")
 
     font = ImageFont.truetype(font_path, font_size)
 
-    # Transparent canvas
+    # Transparent image (RGBA) for overlay
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
 
-    # Word wrapping
+    # Word wrapping with line break
     words = text.strip().split()
     lines = []
     line = ""
@@ -61,7 +62,7 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
     for word in words:
         test_line = f"{line} {word}".strip()
         bbox = draw.textbbox((0, 0), test_line, font=font)
-        if bbox[2] <= width - 100:  # Horizontal margin
+        if bbox[2] <= width - 100:  # Leave 50px padding on each side
             line = test_line
         else:
             lines.append(line)
@@ -69,19 +70,18 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
     if line:
         lines.append(line)
 
-    # Vertical center
+    # Calculate vertical start position for centering
     line_height = draw.textbbox((0, 0), "A", font=font)[3] + 15
-    total_height = line_height * len(lines)
-    y = (height - total_height) // 2
+    total_text_height = line_height * len(lines)
+    y = (height - total_text_height) // 2
 
-    # Draw text
+    # Draw lines
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         x = (width - bbox[2]) // 2
         draw.text((x, y), line, font=font, fill="white")
         y += line_height
 
-    # Save RGB image
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     image.convert("RGB").save(output_path)
     print(f"[✅] Overlay image saved → {output_path}")
