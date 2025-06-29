@@ -28,6 +28,7 @@ gTTS
 # Audio / Video processing
 # ------------------------
 ffmpeg-python
+freesound-python
 moviepy==1.0.3
 numpy
 opencv-python
