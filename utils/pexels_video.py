@@ -18,7 +18,7 @@ PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 HEADERS_PEXELS = {"Authorization": PEXELS_API_KEY}
 
 
-def try_pexels_fallback(
+def fetch_pexels_video(
     category: str,
     output_path: str,
     used_urls: Optional[Set[str]] = None,

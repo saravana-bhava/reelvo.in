@@ -14,7 +14,7 @@ from utils.gen_tts_audio import generate_tts_from_file
 from utils.gen_subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
-from utils.pexels_video import try_pexels_fallback
+from utils.pexels_video import fetch_pexels_video
 from utils.video_utils import download_video
 from progress import start_progress, update_progress, finish_progress
 
@@ -69,7 +69,7 @@ def fetch_multiple_clips(keywords, target_duration, fallback_category):
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_urls = set()
-    sources = [try_pexels_fallback, fetch_pixabay_video]
+    sources = [fetch_pexels_video, fetch_pixabay_video]
     fallback_local = os.path.join(VIDEO_DIR, f"{fallback_category}.mp4")
 
     for i in range(count):
@@ -77,8 +77,8 @@ def fetch_multiple_clips(keywords, target_duration, fallback_category):
         found = False
         for keyword in keywords:
             for source in sources:
-                if source == try_pexels_fallback and USE_PEXELS:
-                    url = try_pexels_fallback(keyword, clip_path, used_urls=used_urls)
+                if source == fetch_pexels_video and USE_PEXELS:
+                    url = fetch_pexels_video(keyword, clip_path, used_urls=used_urls)
                     if url:
                         used_urls.add(url)
                         downloaded_clips.append(clip_path)
@@ -186,7 +186,7 @@ def create_video_for_category(category, username, task_id=None, include_watermar
     if task_id:
         update_progress(task_id, "🎬 Concatenating clips...", 70)
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
-    concatenate_clips(clips, combined_video_path)
+    qconcatenate_clips(clips, combined_video_path)
 
     mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.mp3")
     if not bgm_path or not os.path.exists(bgm_path):
