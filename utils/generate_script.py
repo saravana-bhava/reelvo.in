@@ -38,30 +38,47 @@ FALLBACKS = {
 You don’t need the full map—just the courage to begin.
 You’ll fall. You’ll doubt yourself. But you’ll rise again.
 Growth doesn’t come from comfort—it comes from courage.
-Even on slow days, keep going. You’ve got this.""",
+It comes from showing up when it’s hard, not when it’s easy.
+Even on slow days, keep going. You’ve got this.
+The path is hard, but the progress is real.
+One day, you’ll thank yourself—for not quitting when it was hardest to stay.""",
 
     "success": """People only see the win—they don’t see what it cost.
 They don’t see the sleepless nights, the setbacks, the silent tears.
 They don’t hear the voice that said, “Quit,” and the one that whispered, “Keep going.”
+Success isn’t applause—it’s persistence when no one’s clapping.
+It’s getting back up—again and again—without validation.
 This victory? It’s built on effort, sacrifice, and belief.
-It’s yours because you earned it.""",
+It’s yours because you earned it. You kept showing up.
+That’s what success really looks like.""",
 
     "life": """Life doesn’t always go as planned.
 It breaks you, reshapes you, and teaches you to rebuild.
 You laugh with others, then cry alone—wondering if you matter.
+But every tear waters strength. Every scar is proof you’re healing.
 You’re not behind—you’re in bloom.
+Progress isn’t always loud. Becoming takes time.
+You’re not lost—you’re growing.
+Breathe. Trust this season.
 This chapter is not the end. It’s your becoming.""",
 
     "inspiration": """You weren’t born to blend in—you were made to stand out.
 That dream in your heart exists for a reason.
 Even if no one believes in it yet—start anyway.
-Keep building. Someone out there needs your light.
+Keep building. Keep creating. Someone out there needs your light.
+You’re not too small. You’re not too late.
+You are capable, you are worthy, and you are needed.
+Speak your truth. Share your gift.
 The story you carry—it’s just getting started.""",
 
     "sad": """Some days just hurt more than others.
 You smile for the world, but ache in silence.
 You miss what was. You wonder what could’ve been.
+And that’s okay. You’re allowed to feel this deeply.
 Even in pain, your heart is healing.
+You are not weak—you are human.
+You’re still here. Still breathing. Still trying.
+And that is enough.
 Don’t give up. You’re closer than you think to the light.""",
 }
 

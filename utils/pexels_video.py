@@ -23,7 +23,7 @@ def try_pexels_fallback(
     output_path: str,
     used_urls: Optional[Set[str]] = None,
     min_duration: int = 5,
-    max_duration: int = 60
+    max_duration: int = 6
 ) -> Optional[str]:
     """
     Fetches a suitable 1080x1920 video clip from Pexels matching the category.
@@ -64,7 +64,7 @@ def try_pexels_fallback(
 
     for video in videos:
         duration = video.get("duration", 0)
-        if not (min_duration <= duration <= max_duration):
+        if not (min_duration <= duration):
             continue
 
         for file in video.get("video_files", []):

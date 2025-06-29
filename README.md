@@ -45,7 +45,6 @@ Users choose a niche, AI writes a script, TTS converts it to voice, FFmpeg build
 ├── templates/             # HTML templates (login, dashboard)
 ├── utils/                 # All TTS, subtitle, script tools
 ├── output/                # Output videos per user
-├── fallback/              # Default/fallback video clips
 └── secure/                # OAuth credentials (.gitignored)
 ```
 

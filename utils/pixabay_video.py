@@ -23,7 +23,7 @@ def fetch_pixabay_video(
     output_path: str,
     used_urls: Optional[Set[str]] = None,
     min_duration: int = 5,
-    max_duration: int = 60
+    max_duration: int = 6
 ) -> Optional[str]:
     """
     Searches Pixabay for a portrait (1080x1920) video matching the theme.
@@ -65,7 +65,7 @@ def fetch_pixabay_video(
 
         for result in hits:
             duration = result.get("duration", 0)
-            if not (min_duration <= duration <= max_duration):
+            if not (min_duration <= duration):
                 continue
 
             for quality in ["large", "medium", "small", "tiny"]:
