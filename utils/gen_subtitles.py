@@ -1,5 +1,3 @@
-# utils/gen_subtitles.py
-
 """
 Subtitle generator using Whisper fallback.
 
@@ -32,8 +30,18 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
     update_progress(task_id, "📝 Generating subtitles...", 50)
     print(f"[🧠] Transcribing audio for subtitles (Whisper)...")
 
+    # 🔍 Auto-detect Hindi
+    force_hindi = False
     try:
-        result = MODEL.transcribe(audio_path, word_timestamps=True)
+        with open(audio_path.replace(".mp3", ".txt"), "r", encoding="utf-8") as f:
+            raw_text = f.read()
+            if any('\u0900' <= c <= '\u097F' for c in raw_text):
+                force_hindi = True
+    except:
+        pass
+
+    try:
+        result = MODEL.transcribe(audio_path, word_timestamps=True, language="hi" if force_hindi else None)
     except Exception as e:
         raise RuntimeError(f"[❌] Whisper transcription failed: {e}")
 
@@ -67,8 +75,6 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         elif duration > max_duration:
             end = start + max_duration
 
-        end = min(end, 29.5)
-
         subtitles.append(srt.Subtitle(
             index=index,
             start=timedelta(seconds=start),
@@ -79,14 +85,6 @@ def generate_srt_from_audio(category: str, audio_path: str, output_path: str, wo
         last_end_time = end
         index += 1
         i += words_per_line
-
-    if subtitles and subtitles[-1].end.total_seconds() < 29.5:
-        subtitles.append(srt.Subtitle(
-            index=index,
-            start=timedelta(seconds=subtitles[-1].end.total_seconds() + 0.2),
-            end=timedelta(seconds=29.5),
-            content="..."
-        ))
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
