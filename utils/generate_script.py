@@ -43,7 +43,7 @@ except ImportError:
 
 # Custom prompt overrides (e.g., product promos)
 PROMPT_TEMPLATES = {
-    "PostureFix Pro": {
+    "posturefix pro": {
         "hi": "Write a catchy, 20–30s Hindi Instagram ad script for PostureFix Pro, a smart posture corrector. Focus on pain relief, alert feature, and emotional appeal. Use emojis and clear CTAs."
     }
 }
@@ -51,28 +51,28 @@ PROMPT_TEMPLATES = {
 
 def generate_script(theme: str, task_id=None, language="en") -> str:
     """Generate a 30-sec script in desired language using OpenAI or fallback."""
-    theme = theme.strip().lower()
-    language = language.strip().lower()
+    theme_norm = theme.strip().lower()
+    language_norm = language.strip().lower()
     update_progress(task_id, "🧠 Generating script...", 10)
 
     def fallback_script() -> str:
-        return FALLBACKS.get(theme, {}).get(language, f"[Fallback script for '{theme}' in '{language}']")
+        return FALLBACKS.get(theme_norm, {}).get(language_norm, f"[Fallback script for '{theme_norm}' in '{language_norm}']")
 
     # Custom override
-    if theme in PROMPT_TEMPLATES and language in PROMPT_TEMPLATES[theme]:
-        prompt = PROMPT_TEMPLATES[theme][language]
+    if theme_norm in PROMPT_TEMPLATES and language_norm in PROMPT_TEMPLATES[theme_norm]:
+        prompt = PROMPT_TEMPLATES[theme_norm][language_norm]
     else:
         lang_phrase = {
             "en": "in English",
             "hi": "in Hindi"
-        }.get(language, "in English")
+        }.get(language_norm, "in English")
         prompt = (
             f"Write a short, powerful Instagram reel script on the theme: '{theme}', {lang_phrase}. "
             f"Use 4–5 short impactful lines. Keep it under 30 seconds for voiceover."
         )
 
     # Try OpenAI
-    if USE_OPENAI:
+    if USE_OPENAI and client:
         try:
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",

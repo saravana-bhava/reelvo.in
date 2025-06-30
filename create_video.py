@@ -63,7 +63,11 @@ def fetch_multiple_clips(script_text, target_duration, fallback_category):
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_urls = set()
-    sources = [fetch_pexels_video, fetch_pixabay_video]
+    sources = []
+    if USE_PEXELS:
+        sources.append(fetch_pexels_video)
+    if USE_PIXABAY:
+        sources.append(fetch_pixabay_video)
     fallback_local = os.path.join(VIDEO_DIR, f"{fallback_category}.mp4")
 
     search_query = sanitize_english(script_text)
@@ -72,22 +76,15 @@ def fetch_multiple_clips(script_text, target_duration, fallback_category):
         clip_path = os.path.join(TEMP_DIR, f"{fallback_category}_clip{i+1}.mp4")
         found = False
         for source in sources:
-            if source == fetch_pexels_video and USE_PEXELS:
-                url = fetch_pexels_video(search_query, clip_path, used_urls=used_urls)
-                if url:
-                    used_urls.add(url)
-                    downloaded_clips.append(clip_path)
-                    found = True
-                    break
-            elif source == fetch_pixabay_video and USE_PIXABAY:
-                url = fetch_pixabay_video(search_query, clip_path, used_urls=used_urls)
-                if url:
-                    used_urls.add(url)
-                    downloaded_clips.append(clip_path)
-                    found = True
-                    break
+            url = source(search_query, clip_path, used_urls=used_urls)
+            if url:
+                used_urls.add(url)
+                downloaded_clips.append(clip_path)
+                found = True
+                break
 
         if not found and os.path.exists(fallback_local):
+            # fallback_local might be local video, copy or trim it for the clip_path
             if download_video(fallback_local, clip_path, min_duration=5, max_duration=6):
                 downloaded_clips.append(clip_path)
 
