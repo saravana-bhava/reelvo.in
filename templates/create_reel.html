@@ -1,0 +1,78 @@
+<!-- File: templates/create_reel.html -->
+{% extends "base.html" %}
+
+{% block title %}Create Reel - Reelvo.ai{% endblock %}
+
+{% block content %}
+<h2>🎬 Create a New Reel</h2>
+
+<form method="POST" action="{{ url_for('create_reel_action') }}" enctype="multipart/form-data">
+  <label>Choose a Theme:</label>
+  <select name="theme" id="theme">
+    <option value="">-- Select --</option>
+    <option value="motivation">Motivation</option>
+    <option value="success">Success</option>
+    <option value="life">Life</option>
+    <option value="inspiration">Inspiration</option>
+    <option value="sad">Sad</option>
+  </select>
+
+  <label>Or Enter Custom Topic:</label>
+  <input type="text" name="custom_topic" id="custom_topic" placeholder="e.g., Overcoming fear" />
+
+  <label>Language:</label>
+  <select name="language">
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+  </select>
+
+  <button type="button" onclick="generateScript()">🧠 Generate Script</button>
+
+  <label>Script:</label>
+  <textarea name="script" rows="5" required>{{ script or '' }}</textarea>
+
+  <label>Voice Option:</label><br/>
+  <input type="radio" name="voice_option" value="tts" checked /> Use AI Voice (TTS)<br/>
+  <input type="radio" name="voice_option" value="upload" /> Upload your own voice file<br/>
+  <input type="file" name="custom_voice" accept="audio/*" />
+
+  <label>Voice Artist (TTS only):</label>
+  <select name="voice_artist">
+    <option value="en_male_energetic">Male Energetic (EN)</option>
+    <option value="en_female_smooth">Female Smooth (EN)</option>
+    <option value="hi_male_natural">Male Natural (HI)</option>
+    <option value="hi_female_confident">Female Confident (HI)</option>
+  </select>
+
+  <label>
+    <input type="checkbox" name="subtitles" checked /> Include Subtitles
+  </label><br/>
+
+  <label>
+    <input type="checkbox" name="watermark" checked /> Add Watermark
+  </label><br/>
+
+  <button type="submit">🚀 Create Reel</button>
+</form>
+
+<script>
+  async function generateScript() {
+    const theme = document.getElementById("theme").value;
+    const topic = document.getElementById("custom_topic").value;
+    const lang = document.querySelector("select[name='language']").value;
+
+    const res = await fetch("{{ url_for('generate_script_ajax') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: theme, custom_topic: topic, language: lang }),
+    });
+
+    const data = await res.json();
+    if (data.script) {
+      document.querySelector("textarea[name='script']").value = data.script;
+    } else {
+      alert("❌ " + (data.error || "Failed to generate script"));
+    }
+  }
+</script>
+{% endblock %}

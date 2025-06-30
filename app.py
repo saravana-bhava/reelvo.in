@@ -58,7 +58,6 @@ def login():
     username = request.form.get("username", "").strip()
     if not username:
         return redirect(url_for("index"))
-
     session["user"] = secure_filename(username)
     return redirect(url_for("dashboard"))
 
@@ -75,6 +74,15 @@ def dashboard():
         return redirect(url_for("index"))
 
     username = secure_filename(session["user"])
+    return render_template("dashboard.html", user=username)
+
+
+@flask_app.route('/create', methods=["GET"])
+def create_reel():
+    if "user" not in session:
+        return redirect(url_for("index"))
+
+    username = secure_filename(session["user"])
     user_output_dir = os.path.join(OUTPUT_BASE, username)
     videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
 
@@ -84,42 +92,11 @@ def dashboard():
         with open(last_script_path, "r", encoding="utf-8") as f:
             script = f.read()
 
-    return render_template("dashboard.html", user=username, videos=videos, script=script)
+    return render_template("create_reel.html", user=username, videos=videos, script=script)
 
 
-@flask_app.route('/reelvo.ai/generate-script', methods=["POST"])
-def generate_script_ajax():
-    if "user" not in session:
-        return jsonify({"error": "Not logged in"}), 401
-
-    data = request.get_json()
-    theme = data.get("theme", "").strip()
-    custom_topic = data.get("custom_topic", "").strip()
-    language = data.get("language", "en").strip()
-    username = secure_filename(session["user"])
-
-    try:
-        if custom_topic:
-            script = generate_script_for_user(custom_topic, username, language=language, custom=True)
-        elif theme:
-            script = generate_script_for_user(theme, username, language=language)
-        else:
-            return jsonify({"error": "Missing theme or topic"}), 400
-
-        user_output_dir = os.path.join(OUTPUT_BASE, username)
-        os.makedirs(user_output_dir, exist_ok=True)
-        last_script_path = os.path.join(user_output_dir, "last_script.txt")
-        with open(last_script_path, "w", encoding="utf-8") as f:
-            f.write(script)
-
-        return jsonify({"script": script})
-    except Exception as e:
-        logger.exception("Script generation failed")
-        return jsonify({"error": str(e)}), 500
-
-
-@flask_app.route('/create-reel', methods=["POST"])
-def create_reel_route():
+@flask_app.route('/create_reel', methods=["POST"])
+def create_reel_action():
     if "user" not in session:
         return redirect(url_for("index"))
 
@@ -186,6 +163,59 @@ def create_reel_route():
     return redirect(url_for("dashboard"))
 
 
+@flask_app.route('/history', methods=["GET"])
+def list_reels():
+    if "user" not in session:
+        return redirect(url_for("index"))
+
+    username = secure_filename(session["user"])
+    user_output_dir = os.path.join(OUTPUT_BASE, username)
+    videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
+
+    scripts = {}
+    for video in videos:
+        base = os.path.splitext(video)[0]
+        script_path = os.path.join(user_output_dir, f"{base}.txt")
+        if os.path.exists(script_path):
+            with open(script_path, "r", encoding="utf-8") as f:
+                scripts[video] = f.read()
+        else:
+            scripts[video] = "No script found."
+
+    return render_template("list_reels.html", user=username, videos=videos, scripts=scripts)
+
+
+@flask_app.route('/generate-script', methods=["POST"])
+def generate_script_ajax():
+    if "user" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+
+    data = request.get_json()
+    theme = data.get("theme", "").strip()
+    custom_topic = data.get("custom_topic", "").strip()
+    language = data.get("language", "en").strip()
+    username = secure_filename(session["user"])
+
+    try:
+        if custom_topic:
+            script = generate_script_for_user(custom_topic, username, language=language, custom=True)
+        elif theme:
+            script = generate_script_for_user(theme, username, language=language)
+        else:
+            return jsonify({"error": "Missing theme or topic"}), 400
+
+        user_output_dir = os.path.join(OUTPUT_BASE, username)
+        os.makedirs(user_output_dir, exist_ok=True)
+        last_script_path = os.path.join(user_output_dir, "last_script.txt")
+        with open(last_script_path, "w", encoding="utf-8") as f:
+            f.write(script)
+
+        return jsonify({"script": script})
+    except Exception as e:
+        logger.exception("Script generation failed")
+        return jsonify({"error": str(e)}), 500
+
+
 @flask_app.route("/progress/<task_id>")
 def get_progress_route(task_id):
     prog = get_progress(task_id)
@@ -209,12 +239,10 @@ def serve_video(username, filename):
 
 # ----------------- WSGI Application -----------------
 
-application = DispatcherMiddleware(
+wsgi_app = DispatcherMiddleware(
     lambda environ, start_response: start_response("404 Not Found", []) or [b"404 Not Found"],
     {"/reelvo.ai": flask_app}
 )
-
-app = application  # for gunicorn / production
 
 
 # ----------------- Local Dev Server -----------------
@@ -223,4 +251,4 @@ if __name__ == "__main__":
     os.makedirs(OUTPUT_BASE, exist_ok=True)
     port = int(os.environ.get("PORT", 5000))
     logger.info(f"🚀 Starting dev server on http://127.0.0.1:{port}/reelvo.ai")
-    run_simple("127.0.0.1", port, app, use_debugger=True, use_reloader=True)
+    run_simple("127.0.0.1", port, wsgi_app, use_debugger=True, use_reloader=True)

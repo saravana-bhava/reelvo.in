@@ -1,0 +1,22 @@
+<!-- File: templates/list_reels.html -->
+{% extends "base.html" %}
+{% block title %}Reel History - Reelvo.ai{% endblock %}
+
+{% block content %}
+<h2>📂 Your Reel History</h2>
+
+{% if videos %}
+  {% for video in videos %}
+    <div style="margin-bottom: 30px;">
+      <h4>{{ video }}</h4>
+      <video src="{{ url_for('serve_video', username=user, filename=video) }}" controls style="width: 100%; max-height: 300px;"></video>
+      <p><strong>Script:</strong></p>
+      <textarea rows="4" readonly>{{ scripts.get(video, "No script found.") }}</textarea>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No reels created yet.</p>
+{% endif %}
+
+<a class="button" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+{% endblock %}

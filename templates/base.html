@@ -1,0 +1,116 @@
+<!-- File: templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}Reelvo.ai{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f7f9fc;
+      color: #333;
+    }
+
+    header {
+      background: #1e88e5;
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    nav {
+      background: #1565c0;
+      display: flex;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      padding: 40px 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    textarea, input[type="text"], select, input[type="file"] {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #1e88e5;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    .button {
+      display: inline-block;
+      margin-top: 20px;
+      background: #1e88e5;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+
+    .flash {
+      background: #e3f2fd;
+      color: #0d47a1;
+      padding: 12px;
+      border-left: 4px solid #0d47a1;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎞️ Reelvo.ai</h1>
+</header>
+
+<nav>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <a href="{{ url_for('create_reel') }}">Create Reel</a>
+  <a href="{{ url_for('list_reels') }}">Reel History</a>
+  <a href="{{ url_for('logout') }}">Logout</a>
+</nav>
+
+<div class="container">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="flash">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>
