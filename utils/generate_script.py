@@ -99,7 +99,7 @@ def generate_script(theme: str, task_id=None, language="en") -> str:
     return fallback_script()
 
 
-def generate_script_for_user(theme: str, username: str, output_root: str = "output", task_id=None, language="en") -> str:
+def generate_script_for_user(theme: str, username: str, language="en", output_root: str = "output", task_id=None) -> str:
     """Generate and save a script for a user and theme in given language."""
     output_dir = os.path.join(output_root, username)
     os.makedirs(output_dir, exist_ok=True)

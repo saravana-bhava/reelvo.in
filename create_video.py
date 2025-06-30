@@ -17,11 +17,12 @@ from utils.pexels_video import fetch_pexels_video
 from utils.video_utils import download_video
 from utils.fetch_bgm import fetch_bgm
 from progress import start_progress, update_progress, finish_progress
+from utils.translate_text import translate_to_english
 
-# Load env
+# Load environment
 load_dotenv()
 
-# Logging
+# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_video")
 
@@ -107,10 +108,12 @@ def concatenate_clips(clips, output_path):
             fixed
         ], check=True)
         reencoded_clips.append(fixed)
+
     list_file = os.path.join(TEMP_DIR, "concat_list.txt")
     with open(list_file, "w") as f:
         for clip in reencoded_clips:
             f.write(f"file '{os.path.abspath(clip)}'\n")
+
     subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
@@ -118,6 +121,7 @@ def concatenate_clips(clips, output_path):
         "-movflags", "+faststart",
         output_path
     ], check=True)
+
     return output_path
 
 
@@ -158,17 +162,14 @@ def create_video_for_category(category, username, task_id=None, include_watermar
         generate_srt_from_audio(category, audio_path, srt_path, language=language)
         clip_srt_timing(srt_path, 0.5, audio_duration - 0.5)
 
-    except Exception as e:
+    except Exception:
         logger.exception("[❌] Asset generation failed")
         return None
 
     if task_id:
         update_progress(task_id, "🎞️ Fetching video clips...", 60)
 
-    english_script_path = generate_script_for_user(category, username, language="en")
-    with open(english_script_path, "r", encoding="utf-8") as ef:
-        english_script = ef.read().strip()
-
+    english_script = translate_to_english(script)
     clips = fetch_multiple_clips(english_script, audio_duration, fallback_category=category)
     if not clips:
         logger.error("[❌] No background clips found.")
@@ -192,11 +193,15 @@ def create_video_for_category(category, username, task_id=None, include_watermar
 
     audio_to_use = audio_path
     if bgm_path:
+        safe_audio = os.path.join(TEMP_DIR, f"{category}_voice.wav")
+        safe_bgm = os.path.join(TEMP_DIR, f"{category}_bgm.wav")
+        subprocess.run(["ffmpeg", "-y", "-i", audio_path, safe_audio], check=True)
+        subprocess.run(["ffmpeg", "-y", "-i", bgm_path, safe_bgm], check=True)
         subprocess.run([
             "ffmpeg", "-y",
-            "-i", audio_path,
-            "-i", bgm_path,
-            "-filter_complex", "[1:a]volume=0.10[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
+            "-i", safe_audio,
+            "-i", safe_bgm,
+            "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
             "-c:a", "aac", "-b:a", "192k",
             mixed_audio_path
         ], check=True)
