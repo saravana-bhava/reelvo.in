@@ -184,7 +184,7 @@ def create_video_for_category(category, username, include_watermark=True, bgm_pa
     mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.m4a")  # 👈 .m4a instead of .mp3
     if not bgm_path or not os.path.exists(bgm_path):
         try:
-            bgm_path = fetch_bgm(english_script) or DEFAULT_BGM_PATH
+            bgm_path = fetch_bgm(english_script, "en", "default") or DEFAULT_BGM_PATH
             if not os.path.exists(bgm_path):
                 logger.warning("[⚠️] No valid BGM file found. Skipping background music.")
                 bgm_path = None

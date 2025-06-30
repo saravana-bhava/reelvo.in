@@ -80,7 +80,7 @@ def fetch_bgm(script_text, language="en", fallback_category=None):
         logger.warning(f"[❌] Freesound search failed: {e}")
 
     if fallback_category:
-        fallback_path = os.path.join("assets", f"{fallback_category}.mp3")
+        fallback_path = os.path.join("assets", "music", f"{fallback_category}.mp3")
         if os.path.exists(fallback_path):
             logger.info(f"[🎵] Using fallback BGM: {fallback_path}")
             return fallback_path
