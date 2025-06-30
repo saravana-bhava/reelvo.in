@@ -179,6 +179,18 @@ def generate_tts_from_file(
     return generate_tts_audio(category, text, output_path, task_id, language=language)
 
 
+def generate_tts_from_text(
+    text: str,
+    username: str,
+    output_path: str,
+    category: str = "custom",
+    task_id: str | None = None,
+    language: str = "en"
+) -> tuple[str, float]:
+    """Generate TTS directly from text (no file read)."""
+    return generate_tts_audio(category, text, output_path, task_id=task_id, language=language)
+
+
 # CLI usage
 if __name__ == "__main__":
     import sys

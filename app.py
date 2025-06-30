@@ -69,7 +69,7 @@ def logout():
     return redirect(url_for("index"))
 
 
-@flask_app.route('/dashboard')
+@flask_app.route('/dashboard', methods=["GET"])
 def dashboard():
     if "user" not in session:
         return redirect(url_for("index"))
@@ -78,58 +78,93 @@ def dashboard():
     user_output_dir = os.path.join(OUTPUT_BASE, username)
     videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
 
-    return render_template("dashboard.html", user=username, videos=videos)
+    last_script_path = os.path.join(user_output_dir, "last_script.txt")
+    script = None
+    if os.path.exists(last_script_path):
+        with open(last_script_path, "r", encoding="utf-8") as f:
+            script = f.read()
+
+    return render_template("dashboard.html", user=username, videos=videos, script=script)
 
 
-@flask_app.route('/history')
-def reel_history():
+@flask_app.route('/reelvo.ai/generate-script', methods=["POST"])
+def generate_script_ajax():
+    if "user" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+
+    data = request.get_json()
+    theme = data.get("theme", "").strip()
+    custom_topic = data.get("custom_topic", "").strip()
+    language = data.get("language", "en").strip()
+    username = secure_filename(session["user"])
+
+    try:
+        if custom_topic:
+            script = generate_script_for_user(custom_topic, username, language=language, custom=True)
+        elif theme:
+            script = generate_script_for_user(theme, username, language=language)
+        else:
+            return jsonify({"error": "Missing theme or topic"}), 400
+
+        user_output_dir = os.path.join(OUTPUT_BASE, username)
+        os.makedirs(user_output_dir, exist_ok=True)
+        last_script_path = os.path.join(user_output_dir, "last_script.txt")
+        with open(last_script_path, "w", encoding="utf-8") as f:
+            f.write(script)
+
+        return jsonify({"script": script})
+    except Exception as e:
+        logger.exception("Script generation failed")
+        return jsonify({"error": str(e)}), 500
+
+
+@flask_app.route('/create-reel', methods=["POST"])
+def create_reel_route():
     if "user" not in session:
         return redirect(url_for("index"))
 
     username = secure_filename(session["user"])
-    user_output_dir = os.path.join(OUTPUT_BASE, username)
-    videos = sorted([f for f in os.listdir(user_output_dir) if f.endswith(".mp4")]) if os.path.exists(user_output_dir) else []
+    script = request.form.get("script", "").strip()
+    language = request.form.get("language", "en").strip()
+    voice_option = request.form.get("voice_option", "tts")
+    voice_artist = request.form.get("voice_artist", "en_male_energetic")
+    subtitles = 'subtitles' in request.form
+    watermark = 'watermark' in request.form
+    voice_file = request.files.get("custom_voice")
 
-    return render_template("reel_history.html", user=username, videos=videos)
-
-
-@flask_app.route('/generate', methods=["POST"])
-def generate():
-    if "user" not in session:
-        return redirect(url_for("index"))
-
-    username = secure_filename(session["user"])
-    theme = request.form.get("theme", "default").lower()
-    language = request.form.get("language", "en").lower()
     task_id = str(uuid.uuid4())
     start_progress(task_id)
 
-    def generate_thread():
+    def thread_job():
         try:
-            update_progress(task_id, "🧠 Generating script...", 10)
-            script_path = generate_script_for_user(theme, username, language=language)
-            with open(script_path, "r", encoding="utf-8") as f:
-                script = f.read().strip()
+            update_progress(task_id, "🎬 Generating reel...", 20)
 
-            update_progress(task_id, "🎬 Generating video...", 30)
-            video_path = create_video_for_category(theme, username, include_watermark=True, bgm_path=None, language=language, task_id=task_id)
+            video_path = create_video_for_category(
+                theme="custom",
+                username=username,
+                script_text=script,
+                voiceover_path=voice_file if voice_option == "upload" and voice_file else None,
+                tts_voice=voice_artist,
+                language=language,
+                include_subtitles=subtitles,
+                include_watermark=watermark,
+                task_id=task_id
+            )
 
             drive_url = ""
             if video_path:
                 if UPLOAD_TO_DRIVE:
-                    update_progress(task_id, "📁 Uploading to Drive...", 80)
-                    drive_url, drive_error = upload_to_google_drive(video_path, username, task_id=task_id)
-
-                    if drive_url and drive_url.startswith("http"):
-                        finish_progress(task_id, f"✅ Generated and uploaded <a href='{drive_url}' target='_blank'>video</a>")
+                    update_progress(task_id, "📤 Uploading to Drive...", 80)
+                    drive_url, err = upload_to_google_drive(video_path, username, task_id)
+                    if drive_url:
+                        finish_progress(task_id, f"✅ Done. <a href='{drive_url}' target='_blank'>View Reel</a>")
                     else:
-                        finish_progress(task_id, f"✅ Generated but upload failed: {drive_error}", 100)
+                        finish_progress(task_id, f"✅ Reel created. Drive upload failed: {err}", 100)
                 else:
-                    finish_progress(task_id, "✅ Generated reel (not uploaded to Drive)", 100)
+                    finish_progress(task_id, "✅ Reel created (not uploaded)", 100)
 
                 if POST_TO_IG and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
-                    logger.info("[📲] Auto-posting to Instagram...")
-                    caption = f"{theme.capitalize()} Reel by {username}"
+                    caption = f"Custom Reel by {username}"
                     post_result = post_to_instagram(
                         video_path=video_path,
                         caption=caption,
@@ -139,27 +174,23 @@ def generate():
                         video_url=drive_url,
                         task_id=task_id
                     )
-                    logger.info(f"[📲] Post Result: {post_result}")
                     progress_status[task_id]["status"] += f"<br>{post_result}"
             else:
                 finish_progress(task_id, "❌ Video generation failed", -1)
 
         except Exception as e:
-            logger.exception("❌ Error during generation")
+            logger.exception("❌ Error generating reel")
             finish_progress(task_id, f"❌ Error: {str(e)}", -1)
 
-    Thread(target=generate_thread).start()
-    return jsonify({"task_id": task_id})
+    Thread(target=thread_job).start()
+    return redirect(url_for("dashboard"))
 
 
 @flask_app.route("/progress/<task_id>")
 def get_progress_route(task_id):
     prog = get_progress(task_id)
     start_time = progress_status.get(task_id, {}).get("start_time", None)
-    if start_time:
-        prog["elapsed"] = int(time.time() - start_time)
-    else:
-        prog["elapsed"] = 0
+    prog["elapsed"] = int(time.time() - start_time) if start_time else 0
     return jsonify(prog)
 
 

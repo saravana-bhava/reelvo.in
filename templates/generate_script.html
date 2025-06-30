@@ -1,0 +1,72 @@
+<!-- File: templates/generate_script.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Reel Script</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>🎬 Create Your Instagram Reel</h2>
+
+        <form action="/generate" method="POST" enctype="multipart/form-data">
+            <div>
+                <label>🎯 Select Theme:</label>
+                <select name="theme" required>
+                    <option value="motivation">Motivation</option>
+                    <option value="success">Success</option>
+                    <option value="inspiration">Inspiration</option>
+                    <option value="life">Life</option>
+                    <option value="sad">Sad</option>
+                    <option value="custom">Custom Product</option>
+                </select>
+            </div>
+
+            <div>
+                <label>🗣️ Script Language:</label>
+                <select name="language" required>
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                </select>
+            </div>
+
+            <div>
+                <label>🎙️ Voice Style (for TTS):</label>
+                <select name="tts_voice">
+                    <option value="">Auto (Default)</option>
+                    <option value="en_male_neutral">Male - Neutral</option>
+                    <option value="en_female_energetic">Female - Energetic</option>
+                    <option value="hi_male_slow">Hindi Male - Calm</option>
+                    <option value="hi_female_fast">Hindi Female - Fast</option>
+                </select>
+            </div>
+
+            <div>
+                <label>📝 Custom Script (Optional):</label>
+                <textarea name="script_text" rows="4" placeholder="Enter your custom script here if you want to override the auto-generated script..."></textarea>
+            </div>
+
+            <div>
+                <label>📤 Upload Voiceover (Optional):</label>
+                <input type="file" name="voiceover" accept=".mp3,.wav,.m4a">
+            </div>
+
+            <div>
+                <input type="checkbox" name="include_subtitles" checked>
+                <label>Show Subtitles</label>
+            </div>
+
+            <div>
+                <input type="checkbox" name="include_watermark" checked>
+                <label>Show Watermark</label>
+            </div>
+
+            <button type="submit">🚀 Generate Reel</button>
+        </form>
+
+        <p><a href="/dashboard">⬅️ Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

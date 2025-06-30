@@ -3,280 +3,161 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - Reelvo.ai</title>
+  <title>Reel Generator - Reelvo.ai</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f0f2f5;
-      margin: 0;
-      padding: 60px 0 0;
+      padding: 60px 10px;
       display: flex;
       justify-content: center;
     }
 
-    .dashboard-box {
+    .box {
       background: #fff;
       padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      width: 90%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       max-width: 600px;
-      color: #333;
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    select,
-    button {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-      margin-bottom: 20px;
       width: 100%;
-      box-sizing: border-box;
-    }
-
-    button {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
-
-    .logout-btn {
-      background-color: #dc3545;
-      width: auto;
-      padding: 8px 14px;
-      font-size: 14px;
-      margin-left: auto;
-    }
-
-    .logout-btn:hover {
-      background-color: #c82333;
     }
 
     label {
+      display: block;
       font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
+      margin-top: 15px;
     }
 
-    p {
-      background: #f8f9fa;
-      padding: 12px;
-      border-radius: 6px;
-      white-space: pre-line;
-      color: #333;
-    }
-
-    h3 {
-      margin-top: 30px;
-    }
-
-    .reel-list a {
-      display: block;
-      color: #007bff;
-      text-decoration: none;
-      margin-bottom: 6px;
+    select, input[type="text"], input[type="file"], textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
       font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
-    .reel-list a:hover {
-      text-decoration: underline;
+    textarea {
+      height: 140px;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
     }
 
     .spinner {
+      margin-top: 15px;
       border: 4px solid #f3f3f3;
       border-top: 4px solid #28a745;
       border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 500px) {
-      .top-bar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .logout-btn {
-        margin-top: 10px;
-      }
+      to { transform: rotate(360deg); }
     }
 
     @media (prefers-color-scheme: dark) {
-      body {
-        background: #121212;
-        color: #f0f0f0;
-      }
-
-      .dashboard-box {
-        background: #1e1e1e;
-        color: #f0f0f0;
-      }
-
-      select,
-      button {
-        background-color: #2c2c2c;
-        color: #f0f0f0;
-        border: 1px solid #555;
-      }
-
-      p {
-        background: #2a2a2a;
-        color: #ddd;
-      }
-
-      .reel-list a {
-        color: #90cdf4;
-      }
+      body { background: #121212; }
+      .box { background: #1e1e1e; color: #eee; }
+      select, input, textarea { background: #2a2a2a; color: #eee; border-color: #555; }
     }
   </style>
 </head>
 <body>
-<main class="dashboard-box" role="main" aria-label="User dashboard">
-  <div class="top-bar">
-    <h2>Welcome, {{ user }} 👋</h2>
-    <form method="get" action="{{ url_for('logout') }}">
-      <button type="submit" class="logout-btn" aria-label="Logout">Logout</button>
+  <div class="box">
+    <h2>🎬 Create Your AI Reel</h2>
+    <form id="reelForm" method="POST" action="{{ url_for('create_reel') }}" enctype="multipart/form-data">
+      <label for="theme">Select Theme:</label>
+      <select name="theme" id="theme">
+        <option value="">-- Choose theme --</option>
+        <option value="motivation">Motivation</option>
+        <option value="gym">Gym</option>
+        <option value="life">Life</option>
+        <option value="success">Success</option>
+      </select>
+
+      <label for="custom_topic">Or enter a custom topic/product:</label>
+      <input type="text" id="custom_topic" name="custom_topic" placeholder="e.g. Protein Powder" />
+
+      <label for="language">Language:</label>
+      <select name="language" id="language" required>
+        <option value="en">🇺🇸 English</option>
+        <option value="hi">🇮🇳 Hindi</option>
+      </select>
+
+      <button type="button" onclick="generateScript()">✏️ Generate Script</button>
+
+      <label for="script">Edit Script:</label>
+      <textarea id="script" name="script" required placeholder="Generated script will appear here...">{{ script if script else '' }}</textarea>
+
+      <label for="voice_option">Voiceover Option:</label>
+      <select name="voice_option" id="voice_option">
+        <option value="tts">Use AI Voice (TTS)</option>
+        <option value="upload">Upload my voice</option>
+      </select>
+
+      <label for="voice_artist">TTS Voice Artist:</label>
+      <select name="voice_artist" id="voice_artist">
+        <option value="en_male_energetic">English Male (Energetic)</option>
+        <option value="en_female_neutral">English Female (Neutral)</option>
+        <option value="hi_male_deep">Hindi Male (Deep)</option>
+        <option value="hi_female_friendly">Hindi Female (Friendly)</option>
+      </select>
+
+      <label for="custom_voice">Upload voiceover (if selected):</label>
+      <input type="file" name="custom_voice" id="custom_voice" accept=".mp3,.wav" />
+
+      <label><input type="checkbox" name="subtitles" checked /> Include subtitles</label>
+      <label><input type="checkbox" name="watermark" checked /> Include watermark</label>
+
+      <button type="submit">🎥 Create Reel</button>
+      <div id="spinner" class="spinner" style="display:none;"></div>
     </form>
-  </div>
 
-  <!-- Form to trigger reel generation -->
-  <form id="generateForm">
-    <label for="theme">Select Niche/Topic:</label>
-    <select name="theme" id="theme" required>
-      <option value="">-- Choose a theme --</option>
-      <option value="motivation">Motivation</option>
-      <option value="sad">Sad</option>
-      <option value="inspiration">Inspiration</option>
-      <option value="success">Success</option>
-      <option value="life">Life</option>
-    </select>
-
-    <label for="language">Select Language:</label>
-    <select name="language" id="language" required>
-      <option value="en" selected>🇺🇸 English</option>
-      <option value="hi">🇮🇳 Hindi</option>
-    </select>
-
-    <button type="submit" id="generateBtn">Generate & Post</button>
-    <div id="progressSpinner" class="spinner" style="display:none;"></div>
-  </form>
-
-  <!-- Real-time generation status -->
-  <div id="statusArea" style="display:none;">
-    <h3>📣 Status</h3>
-    <p id="statusText" aria-live="polite">Waiting...</p>
-  </div>
-
-  <!-- Last generated script preview -->
-  {% if script %}
-    <h3>📝 Generated Script</h3>
-    <p>{{ script }}</p>
-  {% endif %}
-
-  <!-- Previously created reels -->
-  {% if videos %}
-    <h3>📂 Your Reels</h3>
-    <div class="reel-list">
-      {% for video in videos %}
-        <a href="{{ url_for('serve_video', username=user, filename=video) }}" target="_blank" rel="noopener">
-          {{ video }}
-        </a>
-      {% endfor %}
+    <div id="statusArea" style="margin-top: 20px; display:none;">
+      <h3>Status</h3>
+      <p id="statusText">Starting...</p>
     </div>
-  {% else %}
-    <p>No reels yet. Start by generating one above!</p>
-  {% endif %}
-</main>
+  </div>
 
-<script>
-  document.getElementById("generateForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
+  <script>
+    async function generateScript() {
+      const theme = document.getElementById('theme').value.trim();
+      const topic = document.getElementById('custom_topic').value.trim();
+      const language = document.getElementById('language').value;
 
-    const theme = document.getElementById("theme").value;
-    const language = document.getElementById("language").value;
-    const generateBtn = document.getElementById("generateBtn");
-    const spinner = document.getElementById("progressSpinner");
-    const statusText = document.getElementById("statusText");
-    const statusArea = document.getElementById("statusArea");
-
-    if (!theme || !language) return;
-
-    generateBtn.disabled = true;
-    generateBtn.textContent = "Processing...";
-    spinner.style.display = "block";
-    statusArea.style.display = "block";
-    statusText.textContent = "⏳ Starting generation...";
-
-    try {
-      const response = await fetch("/reelvo.ai/generate", {
-        method: "POST",
-        body: new URLSearchParams({ theme, language }),
+      const response = await fetch('/reelvo.ai/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme, custom_topic: topic, language })
       });
 
       const data = await response.json();
-      const taskId = data.task_id;
-
-      const pollProgress = async () => {
-        try {
-          const res = await fetch(`/reelvo.ai/progress/${taskId}`);
-          const prog = await res.json();
-
-          statusText.innerHTML = `
-            <strong>Status:</strong> ${prog.status}
-            <br><strong>Progress:</strong> ${prog.percent}%
-            <br><strong>Elapsed:</strong> ${prog.elapsed || 0}s
-          `;
-
-          if (prog.percent >= 100 || prog.percent === -1) {
-            generateBtn.disabled = false;
-            generateBtn.textContent = "Generate & Post";
-            spinner.style.display = "none";
-            setTimeout(() => location.reload(), 2500);
-          } else {
-            setTimeout(pollProgress, 1500);
-          }
-        } catch (err) {
-          statusText.textContent = "❌ Failed to fetch progress.";
-        }
-      };
-
-      pollProgress();
-    } catch (err) {
-      statusText.textContent = "❌ Failed to initiate generation.";
-      generateBtn.disabled = false;
-      generateBtn.textContent = "Generate & Post";
-      spinner.style.display = "none";
+      document.getElementById('script').value = data.script || 'Failed to generate script.';
     }
-  });
-</script>
+
+    document.getElementById('reelForm').addEventListener('submit', function() {
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('statusArea').style.display = 'block';
+      document.getElementById('statusText').innerText = 'Generating your reel...';
+    });
+  </script>
 </body>
 </html>

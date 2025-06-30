@@ -1,140 +1,144 @@
 <!-- File: templates/reel_history.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>{{ user }}'s Reel History</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Reel History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f5f5f5;
+      color: #333;
     }
 
-    header {
-      background-color: #222;
-      color: #fff;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    h1 {
+      text-align: center;
+      color: #222;
+      margin-bottom: 20px;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 20px;
+    .nav {
+      text-align: center;
+      margin-bottom: 20px;
     }
 
-    .logout-link {
-      color: #fff;
+    .nav a {
+      display: inline-block;
+      margin: 0 12px;
+      padding: 6px 12px;
       text-decoration: none;
-      font-size: 14px;
+      color: #333;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background-color: #fff;
+      transition: background-color 0.2s ease;
     }
 
-    .logout-link:hover {
-      text-decoration: underline;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
+    .nav a:hover {
+      background-color: #eee;
     }
 
     .video-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
     }
 
-    .card {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+    .video-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
-    .card video {
+    video {
       width: 100%;
       height: auto;
-      background: #000;
+      border-radius: 6px;
+      margin-bottom: 10px;
     }
 
-    .card-footer {
-      padding: 12px 16px;
+    textarea {
+      width: 100%;
+      height: 80px;
       font-size: 14px;
+      padding: 6px;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+
+    .controls {
       display: flex;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
       align-items: center;
-      border-top: 1px solid #eee;
+      justify-content: space-between;
     }
 
-    .card-footer span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 160px;
+    select, button {
+      padding: 6px 10px;
+      font-size: 14px;
     }
 
-    .download-btn {
-      color: #007bff;
-      text-decoration: none;
-      font-weight: 500;
+    .label {
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: block;
     }
 
-    .download-btn:hover {
-      text-decoration: underline;
-    }
-
-    .no-videos {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
-
-    @media (max-width: 600px) {
-      header h1 {
-        font-size: 18px;
-      }
-
-      .card-footer span {
-        max-width: 100px;
-      }
+    .script-label {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>📂 {{ user }}'s Reel History</h1>
-    <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
-  </header>
+  <h1>🎞️ {{ user | capitalize }}'s Reel History</h1>
 
-  <div class="container">
-    {% if videos %}
-      <div class="video-grid">
-        {% for video in videos %}
-          <div class="card">
-            <video controls preload="metadata">
-              <source src="{{ url_for('serve_video', username=user, filename=video) }}" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div class="card-footer">
-              <span title="{{ video }}">{{ video }}</span>
-              <a class="download-btn" href="{{ url_for('serve_video', username=user, filename=video) }}" download>⬇ Download</a>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="no-videos">
-        <p>No reels found yet. Generate your first video from the dashboard!</p>
-      </div>
-    {% endif %}
+  <div class="nav">
+    <a href="{{ url_for('dashboard') }}">⬅️ Back to Dashboard</a>
+    <a href="{{ url_for('logout') }}">🔓 Logout</a>
   </div>
+
+  {% if videos %}
+    <div class="video-grid">
+      {% for video in videos %}
+        <div class="video-card">
+          <video controls>
+            <source src="{{ url_for('serve_video', username=user, filename=video) }}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+
+          <label class="label script-label">🎤 Script</label>
+          <textarea name="script">{{ scripts.get(video, "No script found.") }}</textarea>
+
+          <div class="controls">
+            <div>
+              <label class="label">Voice Provider:</label>
+              <select name="voice_provider">
+                <option value="google">Google TTS</option>
+                <option value="elevenlabs">ElevenLabs</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Voice Gender:</label>
+              <select name="voice_gender">
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+              </select>
+            </div>
+            <button onclick="alert('🚧 Re-generation not yet wired up')">🔁 Regenerate Reel</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="text-align:center;">No reels generated yet.</p>
+  {% endif %}
 
 </body>
 </html>
