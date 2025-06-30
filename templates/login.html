@@ -1,132 +1,141 @@
+<!-- File: templates/login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Reelvo.ai</title>
-    <style>
-        :root {
-            --bg-light: #f0f2f5;
-            --bg-dark: #121212;
-            --card-light: #fff;
-            --card-dark: #1e1e1e;
-            --text-light: #333;
-            --text-dark: #eee;
-            --border: #ccc;
-            --accent: #007bff;
-            --accent-dark: #0056b3;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Reelvo.ai</title>
+  <style>
+    :root {
+      --bg-light: #f0f2f5;
+      --bg-dark: #121212;
+      --card-light: #fff;
+      --card-dark: #1e1e1e;
+      --text-light: #333;
+      --text-dark: #eee;
+      --border: #ccc;
+      --accent: #007bff;
+      --accent-dark: #0056b3;
+    }
 
-        @media (prefers-color-scheme: dark) {
-            body {
-                background: var(--bg-dark);
-            }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
 
-            .login-box {
-                background: var(--card-dark);
-                color: var(--text-dark);
-            }
+    .login-box {
+      background: var(--card-light);
+      padding: 30px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      width: 90%;
+      max-width: 320px;
+      text-align: center;
+      color: var(--text-light);
+    }
 
-            input[type="text"] {
-                background: #2a2a2a;
-                color: white;
-                border-color: #444;
-            }
+    .login-box h2 {
+      margin-bottom: 20px;
+    }
 
-            input[type="text"]::placeholder {
-                color: #aaa;
-            }
-        }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 16px;
+      background: #fff;
+      color: #000;
+      transition: border-color 0.3s ease;
+    }
 
-        body {
-            font-family: Arial, sans-serif;
-            background: var(--bg-light);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
 
-        .login-box {
-            background: var(--card-light);
-            padding: 30px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            width: 90%;
-            max-width: 320px;
-            text-align: center;
-        }
+    input::placeholder {
+      color: #888;
+    }
 
-        .login-box h2 {
-            margin-bottom: 20px;
-            color: var(--text-light);
-        }
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
+    button:hover {
+      background: var(--accent-dark);
+    }
 
-        input[type="text"]:focus {
-            border-color: var(--accent);
-            outline: none;
-        }
+    .sr-only {
+      position: absolute;
+      left: -10000px;
+      width: 1px;
+      height: 1px;
+      top: auto;
+      overflow: hidden;
+    }
 
-        button {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            background: var(--accent);
-            color: white;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: var(--bg-dark);
+      }
 
-        button:hover {
-            background: var(--accent-dark);
-        }
+      .login-box {
+        background: var(--card-dark);
+        color: var(--text-dark);
+      }
 
-        .sr-only {
-            position: absolute;
-            left: -10000px;
-            width: 1px;
-            height: 1px;
-            top: auto;
-            overflow: hidden;
-        }
+      input[type="text"] {
+        background: #2a2a2a;
+        color: #fff;
+        border-color: #444;
+      }
 
-        @media (max-height: 500px) {
-            body {
-                align-items: flex-start;
-                padding-top: 40px;
-            }
-        }
-    </style>
+      input::placeholder {
+        color: #aaa;
+      }
+    }
+
+    /* Better vertical handling on short screens */
+    @media (max-height: 500px) {
+      body {
+        align-items: flex-start;
+        padding-top: 40px;
+      }
+    }
+  </style>
 </head>
 <body>
-<main class="login-box" role="main" aria-label="Login form">
+  <main class="login-box" role="main" aria-label="Login form">
     <h2>Welcome to Reelvo.ai</h2>
     <form action="{{ url_for('login') }}" method="post">
-        <label for="username" class="sr-only">Username</label>
-        <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Enter your name"
-                autocomplete="name"
-                required
-                aria-required="true"
-        />
-        <button type="submit">Login</button>
+      <label for="username" class="sr-only">Username</label>
+      <input
+        type="text"
+        id="username"
+        name="username"
+        placeholder="Enter your name"
+        autocomplete="name"
+        required
+        aria-required="true"
+      />
+      <button type="submit">Login</button>
     </form>
-</main>
+  </main>
 </body>
 </html>

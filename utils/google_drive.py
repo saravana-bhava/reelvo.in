@@ -1,4 +1,4 @@
-# utils/google_drive.py
+# File: utils/google_drive.py
 
 """
 Google Drive integration for uploading videos under user-specific folders.
@@ -24,7 +24,7 @@ FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 GDRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID")
 GDRIVE_CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "secure/credentials.json")
 
-# Optional: UI progress handler
+# Optional: UI progress hook
 try:
     from progress import update_progress
 except ImportError:
@@ -39,7 +39,7 @@ def get_drive_service():
     return build("drive", "v3", credentials=creds)
 
 
-def get_or_create_user_folder(service, username):
+def get_or_create_user_folder(service, username: str) -> str:
     """
     Return folder ID for a user's folder under the parent.
     Creates the folder if it doesn't exist.
@@ -65,7 +65,7 @@ def get_or_create_user_folder(service, username):
     return folder["id"]
 
 
-def upload_to_google_drive(local_path, username, task_id=None):
+def upload_to_google_drive(local_path: str, username: str, task_id: str = None) -> tuple[str | None, str | None]:
     """
     Upload a file to Google Drive under the specified user's folder.
     Returns: (public_download_url, error_message)

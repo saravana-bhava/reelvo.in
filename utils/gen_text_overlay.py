@@ -1,4 +1,4 @@
-# utils/gen_text_overlay.py
+# File: utils/gen_text_overlay.py
 
 """
 Generate a text overlay image centered in a vertical canvas.
@@ -12,12 +12,19 @@ from PIL import Image, ImageDraw, ImageFont
 try:
     from progress import update_progress
 except ImportError:
-    def update_progress(task_id, status, percent): pass
+    def update_progress(task_id: str | None, status: str, percent: int): pass
 
 
-def generate_text_overlay(text: str, output_path: str, width: int = 1080, height: int = 1920,
-                           font_size: int = 60, font_path: str | None = None, task_id: str | None = None,
-                           language: str = "en"):
+def generate_text_overlay(
+    text: str,
+    output_path: str,
+    width: int = 1080,
+    height: int = 1920,
+    font_size: int = 60,
+    font_path: str | None = None,
+    task_id: str | None = None,
+    language: str = "en"
+) -> None:
     """
     Generate a vertically centered overlay image with word-wrapped multiline text.
 
@@ -29,38 +36,39 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
         font_size (int): Font size for text rendering.
         font_path (str | None): Optional path to a custom .ttf font.
         task_id (str | None): Optional task ID for progress updates.
-        language (str): Language hint ('en' or 'hi') to select font.
+        language (str): Language hint ('en' or 'hi') to auto-select fallback font.
     """
     update_progress(task_id, "🖋️ Generating text overlay...", 35)
     print(f"[🖋️] Rendering text overlay → {output_path}")
 
-    # Font discovery
+    # Step 1: Font discovery
     if not font_path:
-        if language == "hi":
-            possible_fonts = [
+        possible_fonts = (
+            [
                 "assets/fonts/NotoSansDevanagari-Regular.ttf",
-                "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
-            ]
-        else:
-            possible_fonts = [
+                "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+                "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf"
+            ] if language == "hi" else [
                 "assets/fonts/DejaVuSans-Bold.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/usr/local/share/fonts/DejaVuSans-Bold.ttf"
             ]
+        )
         for path in possible_fonts:
             if os.path.exists(path):
                 font_path = path
                 break
 
     if not font_path or not os.path.exists(font_path):
-        raise FileNotFoundError(f"[❌] No suitable font found. Tried: {possible_fonts}")
+        raise FileNotFoundError(f"[❌] No suitable font found. Tried:\n{possible_fonts}")
 
     font = ImageFont.truetype(font_path, font_size)
 
-    # Transparent image (RGBA) for overlay
+    # Step 2: Create transparent RGBA canvas
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
 
-    # Word wrapping with line break
+    # Step 3: Word wrap
     words = text.strip().split()
     lines = []
     line = ""
@@ -68,33 +76,35 @@ def generate_text_overlay(text: str, output_path: str, width: int = 1080, height
     for word in words:
         test_line = f"{line} {word}".strip()
         bbox = draw.textbbox((0, 0), test_line, font=font)
-        if bbox[2] <= width - 100:  # Leave 50px padding on each side
+        if bbox[2] <= width - 100:  # 50px side padding
             line = test_line
         else:
-            lines.append(line)
+            if line:
+                lines.append(line)
             line = word
     if line:
         lines.append(line)
 
-    # Calculate vertical start position for centering
+    # Step 4: Vertical centering
     line_height = draw.textbbox((0, 0), "A", font=font)[3] + 15
-    total_text_height = line_height * len(lines)
-    y = (height - total_text_height) // 2
+    total_height = line_height * len(lines)
+    y = (height - total_height) // 2
 
-    # Draw lines
+    # Step 5: Draw each line
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         x = (width - bbox[2]) // 2
         draw.text((x, y), line, font=font, fill="white")
         y += line_height
 
+    # Step 6: Save to file
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     image.convert("RGB").save(output_path)
     print(f"[✅] Overlay image saved → {output_path}")
     update_progress(task_id, "🖼️ Text overlay ready", 38)
 
 
-# CLI usage
+# CLI usage for testing
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 3:

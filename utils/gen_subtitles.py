@@ -1,12 +1,14 @@
+# File: utils/gen_subtitles.py
+
 """
 Subtitle generator using Whisper fallback.
 
 Priority:
-1. use OpenAI Whisper model for transcription.
+1. Use OpenAI Whisper model for transcription if Google TTS marks are unavailable.
 
 Generates:
-- .srt subtitle file for overlay on final Instagram Reels.
-- Automatically converts .srt → .ass for rendering Hindi (Devanagari) correctly.
+- .srt subtitle file for overlay on Instagram Reels.
+- Automatically converts .srt → .ass for proper Hindi (Devanagari) subtitle rendering.
 """
 
 import os
@@ -19,10 +21,11 @@ warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using F
 
 MODEL = whisper.load_model("small")
 
+# Optional real-time progress updater
 try:
     from progress import update_progress
 except ImportError:
-    def update_progress(task_id, status, percent): pass
+    def update_progress(task_id: str, status: str, percent: int): pass
 
 
 def generate_srt_from_audio(
@@ -32,11 +35,22 @@ def generate_srt_from_audio(
     words_per_line: int = 6,
     task_id: str | None = None,
     language: str = "auto"
-):
-    update_progress(task_id, "📝 Generating subtitles...", 50)
-    print(f"[🧠] Transcribing audio for subtitles (Whisper)...")
+) -> None:
+    """
+    Generate SRT subtitles using OpenAI Whisper.
 
-    # 🔍 Auto-detect Hindi unless language explicitly passed
+    Args:
+        category (str): Video category (e.g., 'motivation').
+        audio_path (str): Path to the audio file (mp3).
+        output_path (str): Where to save the .srt file.
+        words_per_line (int): Number of words per subtitle line.
+        task_id (str | None): Optional task ID for progress updates.
+        language (str): Language code ('en', 'hi', or 'auto').
+    """
+    update_progress(task_id, "📝 Generating subtitles...", 50)
+    print(f"[🧠] Transcribing audio for subtitles with Whisper...")
+
+    # Detect Hindi automatically if not specified
     if language == "auto":
         language = "en"
         try:
@@ -44,7 +58,7 @@ def generate_srt_from_audio(
                 raw_text = f.read()
                 if any('\u0900' <= c <= '\u097F' for c in raw_text):
                     language = "hi"
-        except:
+        except Exception:
             pass
 
     try:
@@ -57,7 +71,7 @@ def generate_srt_from_audio(
         words.extend(segment.get("words", []))
 
     if not words:
-        raise ValueError("[❌] No words found in transcription.")
+        raise ValueError("[❌] No words found in Whisper transcription.")
 
     subtitles = []
     index = 1
@@ -100,7 +114,7 @@ def generate_srt_from_audio(
     print(f"[✅] Generated Whisper SRT for '{category}' → {output_path}")
     update_progress(task_id, "✅ Subtitles ready (Whisper)", 55)
 
-    # Auto-convert to ASS if Hindi detected in output
+    # Detect Hindi and convert SRT → ASS
     all_text = " ".join(sub.content for sub in subtitles)
     if any('\u0900' <= c <= '\u097F' for c in all_text):
         ass_path = output_path.replace(".srt", ".ass")
@@ -108,11 +122,20 @@ def generate_srt_from_audio(
         print(f"[🈶] Detected Hindi — ASS subtitle created: {ass_path}")
 
 
-def convert_srt_to_ass(srt_path: str, ass_path: str, font: str = "Noto Sans Devanagari", fontsize: int = 18):
+def convert_srt_to_ass(srt_path: str, ass_path: str, font: str = "Noto Sans Devanagari", fontsize: int = 18) -> None:
+    """
+    Convert .srt subtitle file to .ass format with font support for Hindi.
+
+    Args:
+        srt_path (str): Input SRT file path.
+        ass_path (str): Output ASS file path.
+        font (str): Font name to use.
+        fontsize (int): Font size in points.
+    """
     with open(srt_path, "r", encoding="utf-8") as f:
         subs = list(srt.parse(f.read()))
 
-    def format_time(t: timedelta):
+    def format_time(t: timedelta) -> str:
         total = int(t.total_seconds())
         hours = total // 3600
         minutes = (total % 3600) // 60
@@ -147,7 +170,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     print(f"[🈶] Converted SRT → ASS → {ass_path}")
 
 
-# CLI usage
+# CLI entry point for manual testing
 if __name__ == "__main__":
     import sys
     if len(sys.argv) not in (3, 4):

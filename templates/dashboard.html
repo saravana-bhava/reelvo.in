@@ -1,3 +1,4 @@
+<!-- File: templates/dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,12 +16,13 @@
     }
 
     .dashboard-box {
-      background: white;
+      background: #fff;
       padding: 30px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       width: 90%;
       max-width: 600px;
+      color: #333;
     }
 
     .top-bar {
@@ -82,8 +84,8 @@
       background: #f8f9fa;
       padding: 12px;
       border-radius: 6px;
-      color: #333;
       white-space: pre-line;
+      color: #333;
     }
 
     h3 {
@@ -146,6 +148,11 @@
         border: 1px solid #555;
       }
 
+      p {
+        background: #2a2a2a;
+        color: #ddd;
+      }
+
       .reel-list a {
         color: #90cdf4;
       }
@@ -161,6 +168,7 @@
     </form>
   </div>
 
+  <!-- Form to trigger reel generation -->
   <form id="generateForm">
     <label for="theme">Select Niche/Topic:</label>
     <select name="theme" id="theme" required>
@@ -182,16 +190,19 @@
     <div id="progressSpinner" class="spinner" style="display:none;"></div>
   </form>
 
+  <!-- Real-time generation status -->
   <div id="statusArea" style="display:none;">
     <h3>📣 Status</h3>
     <p id="statusText" aria-live="polite">Waiting...</p>
   </div>
 
+  <!-- Last generated script preview -->
   {% if script %}
     <h3>📝 Generated Script</h3>
     <p>{{ script }}</p>
   {% endif %}
 
+  <!-- Previously created reels -->
   {% if videos %}
     <h3>📂 Your Reels</h3>
     <div class="reel-list">
@@ -209,6 +220,7 @@
 <script>
   document.getElementById("generateForm").addEventListener("submit", async function (e) {
     e.preventDefault();
+
     const theme = document.getElementById("theme").value;
     const language = document.getElementById("language").value;
     const generateBtn = document.getElementById("generateBtn");
@@ -222,36 +234,48 @@
     generateBtn.textContent = "Processing...";
     spinner.style.display = "block";
     statusArea.style.display = "block";
-    statusText.innerHTML = "⏳ Starting generation...";
+    statusText.textContent = "⏳ Starting generation...";
 
-    const response = await fetch("/reelvo.ai/generate", {
-      method: "POST",
-      body: new URLSearchParams({ theme, language })
-    });
+    try {
+      const response = await fetch("/reelvo.ai/generate", {
+        method: "POST",
+        body: new URLSearchParams({ theme, language }),
+      });
 
-    const data = await response.json();
-    const taskId = data.task_id;
+      const data = await response.json();
+      const taskId = data.task_id;
 
-    const pollProgress = async () => {
-      const res = await fetch(`/reelvo.ai/progress/${taskId}`);
-      const prog = await res.json();
-      statusText.innerHTML = `
-        <strong>Status:</strong> ${prog.status}
-        <br><strong>Progress:</strong> ${prog.percent}%
-        <br><strong>Elapsed:</strong> ${prog.elapsed || 0}s
-      `;
+      const pollProgress = async () => {
+        try {
+          const res = await fetch(`/reelvo.ai/progress/${taskId}`);
+          const prog = await res.json();
 
-      if (prog.percent >= 100 || prog.percent === -1) {
-        generateBtn.disabled = false;
-        generateBtn.textContent = "Generate & Post";
-        spinner.style.display = "none";
-        setTimeout(() => location.reload(), 2500);
-      } else {
-        setTimeout(pollProgress, 1500);
-      }
-    };
+          statusText.innerHTML = `
+            <strong>Status:</strong> ${prog.status}
+            <br><strong>Progress:</strong> ${prog.percent}%
+            <br><strong>Elapsed:</strong> ${prog.elapsed || 0}s
+          `;
 
-    pollProgress();
+          if (prog.percent >= 100 || prog.percent === -1) {
+            generateBtn.disabled = false;
+            generateBtn.textContent = "Generate & Post";
+            spinner.style.display = "none";
+            setTimeout(() => location.reload(), 2500);
+          } else {
+            setTimeout(pollProgress, 1500);
+          }
+        } catch (err) {
+          statusText.textContent = "❌ Failed to fetch progress.";
+        }
+      };
+
+      pollProgress();
+    } catch (err) {
+      statusText.textContent = "❌ Failed to initiate generation.";
+      generateBtn.disabled = false;
+      generateBtn.textContent = "Generate & Post";
+      spinner.style.display = "none";
+    }
   });
 </script>
 </body>

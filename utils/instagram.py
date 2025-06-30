@@ -1,17 +1,19 @@
-# utils/instagram.py
+# File: utils/instagram.py
 
 """
 Automated posting of Instagram Reels via Graph API.
 Handles:
-- Optional Google Drive upload
-- Reel container creation
+- Google Drive upload (if needed)
+- IG reel container creation
 - Polling for media readiness
-- Publishing and permalink fetch
+- Publishing + permalink fetch
+- Logging to history
 """
 
 import time
 import requests
 from utils.google_drive import upload_to_google_drive
+from utils.user_db import get_instagram_credentials, log_post
 
 # Optional progress status tracker
 try:
@@ -23,8 +25,8 @@ except ImportError:
 def post_to_instagram(
     video_path: str,
     caption: str,
-    ig_account_id: str,
-    access_token: str,
+    ig_account_id: str = None,
+    access_token: str = None,
     username: str = "default",
     video_url: str = None,
     task_id: str = None
@@ -36,7 +38,15 @@ def post_to_instagram(
     try:
         update_progress(task_id, "📤 Preparing Instagram upload...", 91)
 
-        # Upload to Google Drive if URL not already available
+        # Auto-fetch access_token & IG ID from local DB
+        if not access_token or not ig_account_id:
+            creds = get_instagram_credentials(username)
+            if not creds:
+                return "[❌] Instagram account not linked for this user."
+            access_token = creds["access_token"]
+            ig_account_id = creds["ig_account_id"]
+
+        # Upload to Google Drive if video URL not already available
         if not video_url:
             update_progress(task_id, "📁 Uploading to Google Drive...", 92)
             video_url, upload_error = upload_to_google_drive(video_path, username, task_id)
@@ -64,7 +74,7 @@ def post_to_instagram(
 
         update_progress(task_id, "⏳ Waiting for media processing...", 95)
 
-        # Poll for status
+        # Poll for media readiness
         for _ in range(12):  # Max ~60 seconds
             time.sleep(5)
             status_res = requests.get(
@@ -74,7 +84,6 @@ def post_to_instagram(
                     "access_token": access_token
                 }
             )
-
             if status_res.status_code == 200:
                 status = status_res.json().get("status_code")
                 if status == "FINISHED":
@@ -101,7 +110,7 @@ def post_to_instagram(
         if not post_id:
             return "[❌] Publishing succeeded but no post ID returned."
 
-        # Retrieve permalink
+        # Fetch permalink
         permalink_res = requests.get(
             f"https://graph.facebook.com/v19.0/{post_id}",
             params={
@@ -114,6 +123,11 @@ def post_to_instagram(
             permalink = permalink_res.json().get("permalink")
             if permalink:
                 update_progress(task_id, "🎉 Reel published!", 100)
+
+                # 📝 Log this post
+                category = os.path.splitext(os.path.basename(video_path))[0]
+                log_post(username, category, permalink)
+
                 return f"[✅] Reel posted: <a href='{permalink}' target='_blank'>{permalink}</a>"
             else:
                 return "[✅] Reel posted but no permalink returned."
