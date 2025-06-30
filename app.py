@@ -2,9 +2,9 @@
 
 import os
 import time
+import json
 import logging
 import uuid
-import json
 import requests
 from threading import Thread
 from flask import (
@@ -25,29 +25,56 @@ from progress import (
     update_progress, finish_progress, get_progress
 )
 
-# Load environment variables
+# ----------------- Load Environment -----------------
+
 load_dotenv()
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("reelvo")
 
-# Flask setup
+# Flask app
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
-if flask_app.secret_key == "demo_secret":
-    logger.warning("⚠️ Using default Flask secret key — not safe for production.")
 
 # Constants
 OUTPUT_BASE = "output"
 POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
 UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
-IG_ACCOUNT_ID = os.getenv("INSTAGRAM_BUSINESS_ID")
-IG_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
-FB_APP_ID = os.getenv("FB_APP_ID")
-FB_APP_SECRET = os.getenv("FB_APP_SECRET")
-FB_REDIRECT_URI = os.getenv("FB_REDIRECT_URI")
+IG_APP_ID = os.getenv("IG_APP_ID")
+IG_APP_SECRET = os.getenv("IG_APP_SECRET")
+IG_REDIRECT_URI = os.getenv("IG_REDIRECT_URI", "http://localhost:5000/reelvo.ai/connect-instagram/callback")
 
+# ----------------- Token Refresher -----------------
+
+def refresh_instagram_tokens():
+    logger.info("🔄 Starting Instagram token refresher thread...")
+    while True:
+        for username in os.listdir(OUTPUT_BASE):
+            user_dir = os.path.join(OUTPUT_BASE, username)
+            tokens_path = os.path.join(user_dir, "tokens.json")
+            if not os.path.exists(tokens_path):
+                continue
+            try:
+                with open(tokens_path, "r") as f:
+                    tokens = json.load(f)
+                if "long_lived_token" not in tokens:
+                    continue
+                refresh_url = (
+                    f"https://graph.instagram.com/refresh_access_token"
+                    f"?grant_type=ig_refresh_token&access_token={tokens['long_lived_token']}"
+                )
+                r = requests.get(refresh_url)
+                if r.ok:
+                    data = r.json()
+                    tokens["long_lived_token"] = data.get("access_token", tokens["long_lived_token"])
+                    tokens["expires_in"] = data.get("expires_in", None)
+                    with open(tokens_path, "w") as f:
+                        json.dump(tokens, f, indent=2)
+                    logger.info(f"[✅] Refreshed token for {username}")
+            except Exception as e:
+                logger.warning(f"[❌] Token refresh error for {username}: {e}")
+        time.sleep(24 * 3600)
 
 # ----------------- Routes -----------------
 
@@ -73,12 +100,23 @@ def logout():
     return redirect(url_for("index"))
 
 
-@flask_app.route('/dashboard', methods=["GET"])
+@flask_app.route('/dashboard')
 def dashboard():
     if "user" not in session:
         return redirect(url_for("index"))
     username = secure_filename(session["user"])
-    return render_template("dashboard.html", user=username)
+    user_dir = os.path.join(OUTPUT_BASE, username)
+    connected = False
+    tokens_path = os.path.join(user_dir, "tokens.json")
+    if os.path.exists(tokens_path):
+        try:
+            with open(tokens_path) as f:
+                data = json.load(f)
+            if "long_lived_token" in data:
+                connected = True
+        except:
+            pass
+    return render_template("dashboard.html", user=username, connected=connected)
 
 
 @flask_app.route('/connect-instagram')
@@ -86,88 +124,120 @@ def connect_instagram():
     if "user" not in session:
         return redirect(url_for("index"))
 
-    oauth_url = (
-        f"https://www.facebook.com/v18.0/dialog/oauth?"
-        f"client_id={FB_APP_ID}&redirect_uri={FB_REDIRECT_URI}"
-        f"&scope=pages_show_list,instagram_basic,pages_read_engagement,"
-        f"pages_manage_posts,instagram_content_publish"
-    )
-    return redirect(oauth_url)
+    client_id = os.getenv("IG_CLIENT_ID")
+    redirect_uri = os.getenv("IG_REDIRECT_URI")
+    scopes = "user_profile,user_media"
+    auth_url = f"https://api.instagram.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&scope={scopes}&response_type=code"
+    return redirect(auth_url)
 
 
-@flask_app.route('/instagram/callback')
-def instagram_callback():
+@flask_app.route('/connect-instagram')
+def connect_instagram():
     if "user" not in session:
         return redirect(url_for("index"))
+    state = session["user"]
+    auth_url = (
+        f"https://api.instagram.com/oauth/authorize"
+        f"?client_id={IG_APP_ID}&redirect_uri={IG_REDIRECT_URI}"
+        f"&scope=user_profile,user_media&response_type=code&state={state}"
+    )
+    return redirect(auth_url)
 
+
+@flask_app.route('/connect-instagram/callback')
+def connect_instagram_callback():
     code = request.args.get("code")
-    username = secure_filename(session["user"])
-    if not code:
-        return "❌ Missing OAuth code", 400
+    state = request.args.get("state")
+    if not code or not state:
+        return "❌ Missing code/state from Instagram", 400
+    username = secure_filename(state)
+    user_dir = os.path.join(OUTPUT_BASE, username)
+    os.makedirs(user_dir, exist_ok=True)
 
     try:
-        token_url = "https://graph.facebook.com/v18.0/oauth/access_token"
-        token_res = requests.get(token_url, params={
-            "client_id": FB_APP_ID,
-            "client_secret": FB_APP_SECRET,
-            "redirect_uri": FB_REDIRECT_URI,
+        r = requests.post("https://api.instagram.com/oauth/access_token", data={
+            "client_id": IG_APP_ID,
+            "client_secret": IG_APP_SECRET,
+            "grant_type": "authorization_code",
+            "redirect_uri": IG_REDIRECT_URI,
             "code": code
-        }).json()
-        access_token = token_res.get("access_token")
-        if not access_token:
-            return f"❌ Failed to get access_token: {token_res}", 400
+        })
+        r.raise_for_status()
+        data = r.json()
+        short_token = data.get("access_token")
+        user_id = data.get("user_id")
 
-        # Get page
-        pages_res = requests.get("https://graph.facebook.com/v18.0/me/accounts", params={
-            "access_token": access_token
-        }).json()
-        pages = pages_res.get("data", [])
-        if not pages:
-            return "❌ No connected Facebook Pages found.", 400
+        r2 = requests.get("https://graph.instagram.com/access_token", params={
+            "grant_type": "ig_exchange_token",
+            "client_secret": IG_APP_SECRET,
+            "access_token": short_token
+        })
+        r2.raise_for_status()
+        long_token_data = r2.json()
 
-        page = pages[0]
-        page_token = page["access_token"]
-        page_id = page["id"]
-
-        # Get IG Business ID
-        ig_res = requests.get(f"https://graph.facebook.com/v18.0/{page_id}", params={
-            "fields": "instagram_business_account",
-            "access_token": page_token
-        }).json()
-        ig_account_id = ig_res.get("instagram_business_account", {}).get("id")
-        if not ig_account_id:
-            return "❌ Instagram Business account not linked.", 400
-
-        # Save tokens to file
-        os.makedirs(os.path.join(OUTPUT_BASE, username), exist_ok=True)
-        with open(os.path.join(OUTPUT_BASE, username, "tokens.json"), "w") as f:
+        with open(os.path.join(user_dir, "tokens.json"), "w") as f:
             json.dump({
-                "access_token": page_token,
-                "page_id": page_id,
-                "ig_account_id": ig_account_id
+                "user_id": user_id,
+                "short_lived_token": short_token,
+                "long_lived_token": long_token_data.get("access_token"),
+                "expires_in": long_token_data.get("expires_in"),
             }, f, indent=2)
 
         return redirect(url_for("dashboard"))
+
     except Exception as e:
-        logger.exception("Instagram OAuth failed")
-        return f"❌ Error: {str(e)}", 500
+        logger.exception("Instagram connect error")
+        return f"❌ Instagram connect failed: {e}", 500
 
 
-@flask_app.route('/create', methods=["GET"])
+@flask_app.route('/auth-callback')
+def auth_callback():
+    code = request.args.get("code")
+    if not code or "user" not in session:
+        return "Missing code or session", 400
+
+    username = secure_filename(session["user"])
+    try:
+        res = requests.post("https://api.instagram.com/oauth/access_token", data={
+            "client_id": os.getenv("IG_CLIENT_ID"),
+            "client_secret": os.getenv("IG_CLIENT_SECRET"),
+            "grant_type": "authorization_code",
+            "redirect_uri": os.getenv("IG_REDIRECT_URI"),
+            "code": code
+        })
+        data = res.json()
+        save_user_tokens(username, data["access_token"], data.get("refresh_token", ""), data["expires_in"])
+        return redirect(url_for("dashboard"))
+    except Exception as e:
+        logger.exception("Auth failed")
+        return f"Auth failed: {str(e)}", 500
+
+
+@flask_app.route("/token-status")
+def token_status():
+    if "user" not in session:
+        return jsonify({"status": "🔒 Not logged in"}), 401
+
+    tokens = load_user_tokens(session["user"])
+    if not tokens:
+        return jsonify({"status": "❌ Not connected"})
+
+    expires_at = tokens.get("expires_at", "unknown")
+    return jsonify({"status": f"✅ Connected | Expires at: {expires_at}"})
+
+
+@flask_app.route('/create')
 def create_reel():
     if "user" not in session:
         return redirect(url_for("index"))
-
     username = secure_filename(session["user"])
     user_output_dir = os.path.join(OUTPUT_BASE, username)
     videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
-
     last_script_path = os.path.join(user_output_dir, "last_script.txt")
     script = None
     if os.path.exists(last_script_path):
         with open(last_script_path, "r", encoding="utf-8") as f:
             script = f.read()
-
     return render_template("create_reel.html", user=username, videos=videos, script=script)
 
 
@@ -175,7 +245,6 @@ def create_reel():
 def create_reel_action():
     if "user" not in session:
         return redirect(url_for("index"))
-
     username = secure_filename(session["user"])
     script = request.form.get("script", "").strip()
     language = request.form.get("language", "en").strip()
@@ -184,14 +253,12 @@ def create_reel_action():
     subtitles = 'subtitles' in request.form
     watermark = 'watermark' in request.form
     voice_file = request.files.get("custom_voice")
-
     task_id = str(uuid.uuid4())
     start_progress(task_id)
 
     def thread_job():
         try:
             update_progress(task_id, "🎬 Generating reel...", 20)
-
             video_path = create_video_for_category(
                 theme="custom",
                 username=username,
@@ -203,7 +270,6 @@ def create_reel_action():
                 include_watermark=watermark,
                 task_id=task_id
             )
-
             drive_url = ""
             if video_path:
                 if UPLOAD_TO_DRIVE:
@@ -215,16 +281,11 @@ def create_reel_action():
                         finish_progress(task_id, f"✅ Reel created. Drive upload failed: {err}", 100)
                 else:
                     finish_progress(task_id, "✅ Reel created (not uploaded)", 100)
-
-                token_file = os.path.join(OUTPUT_BASE, username, "tokens.json")
-                if POST_TO_IG and os.path.exists(token_file):
-                    with open(token_file, "r") as f:
-                        creds = json.load(f)
+                if POST_TO_IG:
+                    caption = f"Custom Reel by {username}"
                     post_result = post_to_instagram(
                         video_path=video_path,
-                        caption=f"Custom Reel by {username}",
-                        ig_account_id=creds["ig_account_id"],
-                        access_token=creds["access_token"],
+                        caption=caption,
                         username=username,
                         video_url=drive_url,
                         task_id=task_id
@@ -232,7 +293,6 @@ def create_reel_action():
                     progress_status[task_id]["status"] += f"<br>{post_result}"
             else:
                 finish_progress(task_id, "❌ Video generation failed", -1)
-
         except Exception as e:
             logger.exception("❌ Error generating reel")
             finish_progress(task_id, f"❌ Error: {str(e)}", -1)
@@ -241,15 +301,13 @@ def create_reel_action():
     return redirect(url_for("dashboard"))
 
 
-@flask_app.route('/history', methods=["GET"])
+@flask_app.route('/history')
 def list_reels():
     if "user" not in session:
         return redirect(url_for("index"))
-
     username = secure_filename(session["user"])
     user_output_dir = os.path.join(OUTPUT_BASE, username)
     videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
-
     scripts = {}
     for video in videos:
         base = os.path.splitext(video)[0]
@@ -259,7 +317,6 @@ def list_reels():
                 scripts[video] = f.read()
         else:
             scripts[video] = "No script found."
-
     return render_template("list_reels.html", user=username, videos=videos, scripts=scripts)
 
 
@@ -267,13 +324,11 @@ def list_reels():
 def generate_script_ajax():
     if "user" not in session:
         return jsonify({"error": "Not logged in"}), 401
-
     data = request.get_json()
     theme = data.get("theme", "").strip()
     custom_topic = data.get("custom_topic", "").strip()
     language = data.get("language", "en").strip()
     username = secure_filename(session["user"])
-
     try:
         if custom_topic:
             script = generate_script_for_user(custom_topic, username, language=language, custom=True)
@@ -281,13 +336,11 @@ def generate_script_ajax():
             script = generate_script_for_user(theme, username, language=language)
         else:
             return jsonify({"error": "Missing theme or topic"}), 400
-
         user_output_dir = os.path.join(OUTPUT_BASE, username)
         os.makedirs(user_output_dir, exist_ok=True)
         last_script_path = os.path.join(user_output_dir, "last_script.txt")
         with open(last_script_path, "w", encoding="utf-8") as f:
             f.write(script)
-
         return jsonify({"script": script})
     except Exception as e:
         logger.exception("Script generation failed")
@@ -308,14 +361,12 @@ def serve_video(username, filename):
     safe_file = secure_filename(filename)
     path = os.path.join(OUTPUT_BASE, safe_user)
     full_path = os.path.join(path, safe_file)
-
     if not os.path.exists(full_path):
         abort(404)
-
     return send_from_directory(path, safe_file, mimetype="video/mp4")
 
 
-# ----------------- WSGI Application -----------------
+# ----------------- WSGI App -----------------
 
 wsgi_app = DispatcherMiddleware(
     lambda environ, start_response: start_response("404 Not Found", []) or [b"404 Not Found"],
@@ -323,10 +374,11 @@ wsgi_app = DispatcherMiddleware(
 )
 
 
-# ----------------- Local Dev Server -----------------
+# ----------------- Run Dev Server -----------------
 
 if __name__ == "__main__":
     os.makedirs(OUTPUT_BASE, exist_ok=True)
-    port = int(os.environ.get("PORT", 5000))
+    Thread(target=refresh_instagram_tokens, daemon=True).start()
+    port = int(os.getenv("PORT", 5000))
     logger.info(f"🚀 Starting dev server on http://127.0.0.1:{port}/reelvo.ai")
     run_simple("127.0.0.1", port, wsgi_app, use_debugger=True, use_reloader=True)

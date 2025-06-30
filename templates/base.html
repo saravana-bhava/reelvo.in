@@ -102,29 +102,31 @@
   </style>
 </head>
 <body>
-
-  <header>
-    <h1>🎞️ Reelvo.ai</h1>
-  </header>
-
-  <nav>
-    <a href="{{ url_for('dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('create_reel') }}">Create Reel</a>
-    <a href="{{ url_for('list_reels') }}">Reel History</a>
-    <a href="{{ url_for('logout') }}">Logout</a>
-  </nav>
-
-  <div class="container">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <div class="flash">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    {% block content %}{% endblock %}
-  </div>
-
+<header>
+  <h1>🎞️ Reelvo.ai</h1>
+</header>
+<nav>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <a href="{{ url_for('create_reel') }}">Create Reel</a>
+  <a href="{{ url_for('list_reels') }}">Reel History</a>
+  {% if session.user %}
+    <form action="{{ url_for('disconnect_instagram') }}" method="post" style="display:inline;">
+      <button type="submit" style="margin-left:10px;">Disconnect Instagram</button>
+    </form>
+    <a href="{{ url_for('logout') }}" style="margin-left:10px;">Logout</a>
+  {% else %}
+    <a href="{{ url_for('login') }}">Login</a>
+  {% endif %}
+</nav>
+<div class="container">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="flash">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
 </body>
 </html>

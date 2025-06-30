@@ -1,99 +1,46 @@
-# File: utils/instagram_store.py
+# File: utils/user_db.py
 
 """
-Handles saving and retrieving Instagram credentials and logging reel post history.
+Handles saving and retrieving user Instagram tokens (access, refresh, expiration).
+Uses JSON files for simplicity.
 """
 
 import os
 import json
-import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
-# Setup logging
-logger = logging.getLogger("instagram_store")
-logging.basicConfig(level=logging.INFO)
+USER_DB_DIR = "user_tokens"
+os.makedirs(USER_DB_DIR, exist_ok=True)
 
-# Constants
-DB_DIR = "db"
-ACCOUNTS_FILE = os.path.join(DB_DIR, "user_accounts.json")
-HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
 
-# Ensure database directory and files exist
-os.makedirs(DB_DIR, exist_ok=True)
-for path in [ACCOUNTS_FILE, HISTORY_FILE]:
+def get_user_token_path(username: str) -> str:
+    return os.path.join(USER_DB_DIR, f"{username}.json")
+
+
+def save_user_tokens(username: str, access_token: str, refresh_token: str, expires_in: int):
+    path = get_user_token_path(username)
+    data = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_at": (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat()
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_user_tokens(username: str) -> Optional[dict]:
+    path = get_user_token_path(username)
     if not os.path.exists(path):
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump({}, f)
-
-
-def save_instagram_credentials(username: str, access_token: str, ig_account_id: str) -> None:
-    """
-    Save Instagram API credentials for a user.
-
-    Args:
-        username: App username
-        access_token: Instagram long-lived access token
-        ig_account_id: Instagram business account ID
-    """
-    try:
-        with open(ACCOUNTS_FILE, "r+", encoding="utf-8") as f:
-            data = json.load(f)
-            data[username] = {
-                "access_token": access_token,
-                "ig_account_id": ig_account_id
-            }
-            f.seek(0)
-            json.dump(data, f, indent=2)
-            f.truncate()
-        logger.info(f"[✅] Saved IG credentials for: {username}")
-    except Exception as e:
-        logger.error(f"[❌] Failed to save IG credentials: {e}")
-
-
-def get_instagram_credentials(username: str) -> Optional[dict]:
-    """
-    Retrieve saved Instagram credentials for a user.
-
-    Args:
-        username: App username
-
-    Returns:
-        dict or None
-    """
-    try:
-        with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f).get(username)
-    except Exception as e:
-        logger.error(f"[❌] Failed to read IG credentials: {e}")
         return None
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-def log_post(username: str, category: str, permalink: str) -> None:
-    """
-    Log the reel post history with category and permalink.
-
-    Args:
-        username: App username
-        category: Reel category or theme
-        permalink: Instagram permalink of the posted reel
-    """
-    try:
-        with open(HISTORY_FILE, "r+", encoding="utf-8") as f:
-            data = json.load(f)
-            if username not in data:
-                data[username] = []
-
-            data[username].append({
-                "category": category,
-                "permalink": permalink,
-                "timestamp": datetime.utcnow().isoformat() + "Z"
-            })
-
-            f.seek(0)
-            json.dump(data, f, indent=2)
-            f.truncate()
-
-        logger.info(f"[📦] Logged reel post for {username}: {permalink}")
-    except Exception as e:
-        logger.error(f"[❌] Failed to log reel post: {e}")
+def update_access_token(username: str, new_token: str, new_expiry: int):
+    tokens = load_user_tokens(username)
+    if tokens:
+        tokens["access_token"] = new_token
+        tokens["expires_at"] = (datetime.utcnow() + timedelta(seconds=new_expiry)).isoformat()
+        with open(get_user_token_path(username), "w", encoding="utf-8") as f:
+            json.dump(tokens, f, indent=2)

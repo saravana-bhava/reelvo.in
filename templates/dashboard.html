@@ -1,13 +1,20 @@
 <!-- File: templates/dashboard.html -->
 {% extends "base.html" %}
-{% block title %}Dashboard - Reelvo.ai{% endblock %}
+
+{% block title %}Dashboard | Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 style="text-align: center;">👋 Welcome, {{ user }}</h2>
+  <h2>👋 Welcome, {{ user }}</h2>
 
-  <div style="display: flex; flex-direction: column; gap: 20px; max-width: 400px; margin: 30px auto;">
-    <a class="button" href="{{ url_for('create_reel') }}">🎬 Create New Reel</a>
-    <a class="button" href="{{ url_for('list_reels') }}">📂 View Reel History</a>
-    <a class="button" href="{{ url_for('logout') }}">🚪 Logout</a>
+  <div style="margin: 20px 0;">
+    {% if connected %}
+      <p>✅ Instagram connected.</p>
+    {% else %}
+      <a class="button" href="{{ url_for('connect_instagram') }}">🔗 Connect Instagram</a>
+    {% endif %}
   </div>
+
+  <a class="button" href="{{ url_for('create_reel') }}">🎬 Create New Reel</a>
+  <a class="button" href="{{ url_for('list_reels') }}">📂 View Reel History</a>
+  <a class="button" href="{{ url_for('logout') }}">🚪 Logout</a>
 {% endblock %}
