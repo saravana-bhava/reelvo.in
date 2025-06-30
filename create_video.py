@@ -149,6 +149,8 @@ def create_video_for_category(
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
+    lang_suffix = f"_{language}"
+
     if task_id:
         start_progress(task_id)
 
@@ -157,10 +159,10 @@ def create_video_for_category(
         with open(text_path, "r", encoding="utf-8") as f:
             script_text = f.read().strip()
 
-    audio_path = os.path.join(base_output, f"{category}_voice.mp3")
-    text_image_path = os.path.join(base_output, f"{category}_text.png")
-    srt_path = os.path.join(base_output, f"{category}.srt")
-    final_output_path = os.path.join(base_output, f"{category}.mp4")
+    audio_path = os.path.join(base_output, f"{category}_voice{lang_suffix}.mp3")
+    text_image_path = os.path.join(base_output, f"{category}_text{lang_suffix}.png")
+    srt_path = os.path.join(base_output, f"{category}{lang_suffix}.srt")
+    final_output_path = os.path.join(base_output, f"{category}{lang_suffix}.mp4")
 
     try:
         if task_id: update_progress(task_id, "🖼️ Generating overlay...", 30)
@@ -177,7 +179,8 @@ def create_video_for_category(
         else:
             if task_id: update_progress(task_id, "🔊 Generating TTS...", 40)
             audio_path, audio_duration = generate_tts_from_file(
-                category, username, output_root="output", task_id=task_id, language=language, tts_voice=tts_voice
+                category, username, output_root="output", task_id=task_id,
+                language=language, tts_voice=tts_voice
             )
 
         if include_subtitles:
@@ -202,7 +205,7 @@ def create_video_for_category(
     concatenate_clips(clips, combined_video_path)
 
     # Audio mixing
-    mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed.m4a")
+    mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed{lang_suffix}.m4a")
     if not bgm_path or not os.path.exists(bgm_path):
         try:
             bgm_path = fetch_bgm(english_script, "en", "default") or DEFAULT_BGM_PATH

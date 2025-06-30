@@ -63,12 +63,14 @@ def fetch_bgm(script_text: str, language: str = "en", fallback_category: Optiona
         Optional[str]: Path to the local MP3 file or None if not found.
     """
     # Translate to English if needed
+    original_text = script_text
     if language != "en":
         try:
             logger.info("[🌐] Translating script to English for BGM matching...")
             script_text = translate_to_english(script_text)
         except Exception as e:
             logger.warning(f"[⚠️] Translation failed: {e}. Proceeding with raw script.")
+            script_text = original_text
 
     # Extract long words (keyword candidates)
     words = re.findall(r'\b\w+\b', script_text.lower())
@@ -79,14 +81,18 @@ def fetch_bgm(script_text: str, language: str = "en", fallback_category: Optiona
     logger.info(f"[🔍] Extracted BGM keyword candidates: {long_words}")
     logger.info(f"[🎵] Using keyword: '{keyword}' (safe: '{safe_keyword}')")
 
-    cached_path = os.path.join(CACHE_DIR, f"{safe_keyword}.mp3")
+    # Append language to filename
+    suffix = "_hi" if language == "hi" else "_en"
+    cache_filename = f"{safe_keyword}{suffix}.mp3"
+    cached_path = os.path.join(CACHE_DIR, cache_filename)
+
     if os.path.exists(cached_path):
         logger.info(f"[💾] Using cached BGM: {cached_path}")
         return cached_path
 
     # Try Freesound
     try:
-        bgm_url_or_path = search_freesound(keyword)
+        bgm_url_or_path = search_freesound(keyword, language=language)
         if bgm_url_or_path:
             if bgm_url_or_path.startswith("http"):
                 return download_bgm_from_url(bgm_url_or_path, cached_path)

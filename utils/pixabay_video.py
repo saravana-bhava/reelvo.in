@@ -100,6 +100,7 @@ def fetch_pixabay_video(
                         max_duration=max_duration
                     )
                     if success:
+                        used_urls.add(url)
                         logger.info(f"[✅] Saved to {output_path}")
                         return url
                     else:

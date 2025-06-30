@@ -76,7 +76,8 @@ def fetch_pexels_video(
 
         for file in video.get("video_files", []):
             url = file.get("link")
-            width, height = file.get("width"), file.get("height")
+            width = file.get("width")
+            height = file.get("height")
 
             if (
                 url and width == 1080 and height == 1920
@@ -91,8 +92,9 @@ def fetch_pexels_video(
                 )
 
                 if success:
+                    used_urls.add(url)
                     logger.info(f"[✅] Downloaded successfully → {output_path}")
-                    return url  # Return for caller to mark as used
+                    return url
                 else:
                     logger.warning("[⚠️] Download failed, trying next...")
 

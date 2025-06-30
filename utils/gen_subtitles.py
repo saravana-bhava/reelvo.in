@@ -121,6 +121,10 @@ def generate_srt_from_audio(
         index += 1
         i += words_per_line
 
+    # Append language to output filename
+    if output_path.endswith(".srt"):
+        output_path = output_path.replace(".srt", f"_{language}.srt")
+
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
@@ -193,5 +197,5 @@ if __name__ == "__main__":
         category = sys.argv[1]
         audio_file = sys.argv[2]
         lang = sys.argv[3] if len(sys.argv) == 4 else "auto"
-        output_srt = os.path.splitext(audio_file)[0] + ".srt"
+        output_srt = os.path.splitext(audio_file)[0] + f"_{lang}.srt"
         generate_srt_from_audio(category, audio_file, output_srt, language=lang)

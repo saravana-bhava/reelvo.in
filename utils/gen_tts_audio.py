@@ -37,6 +37,7 @@ try:
 except ImportError:
     progress_status = {}
 
+
 def update_progress(task_id: Optional[str], status: str, percent: int):
     if task_id and task_id in progress_status:
         progress_status[task_id] = {"status": status, "percent": percent}
@@ -196,7 +197,9 @@ def generate_tts_from_file(
     if not text:
         raise ValueError("[❌] Script text is empty.")
 
-    output_path = os.path.join(output_root, username, f"{category}.mp3")
+    lang_suffix = f"_{language}"
+    output_path = os.path.join(output_root, username, f"{category}_voice{lang_suffix}.mp3")
+
     return generate_tts_audio(
         category, text, output_path,
         task_id=task_id,

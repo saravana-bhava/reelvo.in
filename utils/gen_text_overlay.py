@@ -67,9 +67,14 @@ def generate_text_overlay(
 
     if not font_path or not os.path.exists(font_path):
         logger.error(f"[❌] No suitable font found. Tried:\n{possible_fonts}")
-        raise FileNotFoundError(f"No suitable font found. Please install or set path manually.")
+        raise FileNotFoundError("No suitable font found. Please install or set path manually.")
 
     font = ImageFont.truetype(font_path, font_size)
+
+    # Adjust output path to be language-specific if it ends in _text.png
+    if output_path.endswith("_text.png"):
+        base = output_path[:-9]  # remove "_text.png"
+        output_path = f"{base}_text_{language}.png"
 
     # Step 2: Create transparent RGBA canvas
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))

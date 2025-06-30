@@ -4,6 +4,8 @@ import os
 import time
 import logging
 import uuid
+import json
+import requests
 from threading import Thread
 from flask import (
     Flask, render_template, request, redirect, session,
@@ -42,6 +44,9 @@ POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
 UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
 IG_ACCOUNT_ID = os.getenv("INSTAGRAM_BUSINESS_ID")
 IG_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
+FB_APP_ID = os.getenv("FB_APP_ID")
+FB_APP_SECRET = os.getenv("FB_APP_SECRET")
+FB_REDIRECT_URI = os.getenv("FB_REDIRECT_URI")
 
 
 # ----------------- Routes -----------------
@@ -72,9 +77,80 @@ def logout():
 def dashboard():
     if "user" not in session:
         return redirect(url_for("index"))
-
     username = secure_filename(session["user"])
     return render_template("dashboard.html", user=username)
+
+
+@flask_app.route('/connect-instagram')
+def connect_instagram():
+    if "user" not in session:
+        return redirect(url_for("index"))
+
+    oauth_url = (
+        f"https://www.facebook.com/v18.0/dialog/oauth?"
+        f"client_id={FB_APP_ID}&redirect_uri={FB_REDIRECT_URI}"
+        f"&scope=pages_show_list,instagram_basic,pages_read_engagement,"
+        f"pages_manage_posts,instagram_content_publish"
+    )
+    return redirect(oauth_url)
+
+
+@flask_app.route('/instagram/callback')
+def instagram_callback():
+    if "user" not in session:
+        return redirect(url_for("index"))
+
+    code = request.args.get("code")
+    username = secure_filename(session["user"])
+    if not code:
+        return "❌ Missing OAuth code", 400
+
+    try:
+        token_url = "https://graph.facebook.com/v18.0/oauth/access_token"
+        token_res = requests.get(token_url, params={
+            "client_id": FB_APP_ID,
+            "client_secret": FB_APP_SECRET,
+            "redirect_uri": FB_REDIRECT_URI,
+            "code": code
+        }).json()
+        access_token = token_res.get("access_token")
+        if not access_token:
+            return f"❌ Failed to get access_token: {token_res}", 400
+
+        # Get page
+        pages_res = requests.get("https://graph.facebook.com/v18.0/me/accounts", params={
+            "access_token": access_token
+        }).json()
+        pages = pages_res.get("data", [])
+        if not pages:
+            return "❌ No connected Facebook Pages found.", 400
+
+        page = pages[0]
+        page_token = page["access_token"]
+        page_id = page["id"]
+
+        # Get IG Business ID
+        ig_res = requests.get(f"https://graph.facebook.com/v18.0/{page_id}", params={
+            "fields": "instagram_business_account",
+            "access_token": page_token
+        }).json()
+        ig_account_id = ig_res.get("instagram_business_account", {}).get("id")
+        if not ig_account_id:
+            return "❌ Instagram Business account not linked.", 400
+
+        # Save tokens to file
+        os.makedirs(os.path.join(OUTPUT_BASE, username), exist_ok=True)
+        with open(os.path.join(OUTPUT_BASE, username, "tokens.json"), "w") as f:
+            json.dump({
+                "access_token": page_token,
+                "page_id": page_id,
+                "ig_account_id": ig_account_id
+            }, f, indent=2)
+
+        return redirect(url_for("dashboard"))
+    except Exception as e:
+        logger.exception("Instagram OAuth failed")
+        return f"❌ Error: {str(e)}", 500
 
 
 @flask_app.route('/create', methods=["GET"])
@@ -140,13 +216,15 @@ def create_reel_action():
                 else:
                     finish_progress(task_id, "✅ Reel created (not uploaded)", 100)
 
-                if POST_TO_IG and IG_ACCOUNT_ID and IG_ACCESS_TOKEN:
-                    caption = f"Custom Reel by {username}"
+                token_file = os.path.join(OUTPUT_BASE, username, "tokens.json")
+                if POST_TO_IG and os.path.exists(token_file):
+                    with open(token_file, "r") as f:
+                        creds = json.load(f)
                     post_result = post_to_instagram(
                         video_path=video_path,
-                        caption=caption,
-                        ig_account_id=IG_ACCOUNT_ID,
-                        access_token=IG_ACCESS_TOKEN,
+                        caption=f"Custom Reel by {username}",
+                        ig_account_id=creds["ig_account_id"],
+                        access_token=creds["access_token"],
                         username=username,
                         video_url=drive_url,
                         task_id=task_id

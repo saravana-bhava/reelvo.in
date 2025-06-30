@@ -19,16 +19,17 @@ HEADERS = {
 }
 
 
-def search_freesound(query: str) -> Optional[str]:
+def search_freesound(query: str, language: str = "en") -> Optional[str]:
     """
     Search Freesound.org for background music using a keyword,
     and return the URL to a high-quality preview MP3 if found.
 
     Args:
-        query (str): The keyword to search for (e.g., "inspiration").
+        query (str): Keyword for search (e.g., 'success', 'motivation').
+        language (str): Language hint for filename suffix ('en', 'hi').
 
     Returns:
-        Optional[str]: Preview MP3 URL or None if not found or error.
+        Optional[str]: Downloaded preview MP3 file path or None.
     """
     if not FREESOUND_API_KEY:
         logger.warning("[⚠️] FREESOUND_API_KEY not set. Cannot fetch BGM.")
@@ -42,7 +43,7 @@ def search_freesound(query: str) -> Optional[str]:
         f"&sort=score+desc&page_size=5"
     )
 
-    logger.info(f"[🔍] Searching Freesound for: '{query}'")
+    logger.info(f"[🔍] Searching Freesound for: '{query}' (lang={language})")
 
     try:
         response = requests.get(search_url, headers=HEADERS, timeout=10)
@@ -50,7 +51,7 @@ def search_freesound(query: str) -> Optional[str]:
 
         results = response.json().get("results", [])
         if not results:
-            logger.warning(f"[❌] No results found for: '{query}'")
+            logger.warning(f"[❌] No Freesound results found for: '{query}'")
             return None
 
         top_result = results[0]
@@ -58,10 +59,23 @@ def search_freesound(query: str) -> Optional[str]:
         preview_url = previews.get("preview-hq-mp3")
 
         if preview_url:
-            logger.info(f"[🎧] Found preview MP3: {preview_url}")
-            return preview_url
-        else:
-            logger.warning("[⚠️] Preview MP3 not found in top result.")
+            os.makedirs("assets/bgm_cache", exist_ok=True)
+            file_name = f"{query.lower().replace(' ', '_')}_{language}.mp3"
+            dest_path = os.path.join("assets/bgm_cache", file_name)
+
+            if os.path.exists(dest_path):
+                logger.info(f"[📦] Using cached BGM: {dest_path}")
+                return dest_path
+
+            logger.info(f"[⬇️] Downloading BGM preview → {dest_path}")
+            with requests.get(preview_url, stream=True, timeout=15) as r:
+                r.raise_for_status()
+                with open(dest_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            return dest_path
+
+        logger.warning("[⚠️] No preview MP3 found in top result.")
 
     except requests.RequestException as e:
         logger.warning(f"[❌] Freesound API request error: {e}")
@@ -69,3 +83,15 @@ def search_freesound(query: str) -> Optional[str]:
         logger.warning(f"[❌] Unexpected error while querying Freesound: {e}")
 
     return None
+
+
+# CLI for manual testing
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) not in (2, 3):
+        print("Usage: python utils/freesound_bgm.py <query> [language]")
+    else:
+        q = sys.argv[1]
+        lang = sys.argv[2] if len(sys.argv) == 3 else "en"
+        result = search_freesound(q, language=lang)
+        print(f"Result: {result}")
