@@ -6,13 +6,19 @@ Supports both English and Hindi script for Instagram Reels.
 """
 
 import os
+import logging
+from typing import Optional
 from PIL import Image, ImageDraw, ImageFont
+
+# Logging setup
+logger = logging.getLogger("text_overlay")
+logging.basicConfig(level=logging.INFO)
 
 # Optional progress UI
 try:
     from progress import update_progress
 except ImportError:
-    def update_progress(task_id: str | None, status: str, percent: int): pass
+    def update_progress(task_id: Optional[str], status: str, percent: int): pass
 
 
 def generate_text_overlay(
@@ -21,8 +27,8 @@ def generate_text_overlay(
     width: int = 1080,
     height: int = 1920,
     font_size: int = 60,
-    font_path: str | None = None,
-    task_id: str | None = None,
+    font_path: Optional[str] = None,
+    task_id: Optional[str] = None,
     language: str = "en"
 ) -> None:
     """
@@ -34,12 +40,12 @@ def generate_text_overlay(
         width (int): Canvas width (default 1080).
         height (int): Canvas height (default 1920).
         font_size (int): Font size for text rendering.
-        font_path (str | None): Optional path to a custom .ttf font.
-        task_id (str | None): Optional task ID for progress updates.
+        font_path (Optional[str]): Optional path to a custom .ttf font.
+        task_id (Optional[str]): Optional task ID for progress updates.
         language (str): Language hint ('en' or 'hi') to auto-select fallback font.
     """
     update_progress(task_id, "🖋️ Generating text overlay...", 35)
-    print(f"[🖋️] Rendering text overlay → {output_path}")
+    logger.info(f"[🖋️] Rendering text overlay → {output_path}")
 
     # Step 1: Font discovery
     if not font_path:
@@ -60,7 +66,8 @@ def generate_text_overlay(
                 break
 
     if not font_path or not os.path.exists(font_path):
-        raise FileNotFoundError(f"[❌] No suitable font found. Tried:\n{possible_fonts}")
+        logger.error(f"[❌] No suitable font found. Tried:\n{possible_fonts}")
+        raise FileNotFoundError(f"No suitable font found. Please install or set path manually.")
 
     font = ImageFont.truetype(font_path, font_size)
 
@@ -100,7 +107,7 @@ def generate_text_overlay(
     # Step 6: Save to file
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     image.convert("RGB").save(output_path)
-    print(f"[✅] Overlay image saved → {output_path}")
+    logger.info(f"[✅] Overlay image saved → {output_path}")
     update_progress(task_id, "🖼️ Text overlay ready", 38)
 
 

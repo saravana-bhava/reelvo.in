@@ -3,20 +3,25 @@
 {% block title %}Reel History - Reelvo.ai{% endblock %}
 
 {% block content %}
-<h2>📂 Your Reel History</h2>
+  <h2>📂 Your Reel History</h2>
 
-{% if videos %}
-  {% for video in videos %}
-    <div style="margin-bottom: 30px;">
-      <h4>{{ video }}</h4>
-      <video src="{{ url_for('serve_video', username=user, filename=video) }}" controls style="width: 100%; max-height: 300px;"></video>
-      <p><strong>Script:</strong></p>
-      <textarea rows="4" readonly>{{ scripts.get(video, "No script found.") }}</textarea>
+  {% if videos %}
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+      {% for video in videos %}
+        <div style="border: 1px solid #ccc; border-radius: 8px; padding: 16px; background: #fff;">
+          <h4 style="margin-top: 0;">🎞️ {{ video }}</h4>
+          <video controls style="width: 100%; max-height: 320px; border-radius: 6px;">
+            <source src="{{ url_for('serve_video', username=user, filename=video) }}" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <label style="display: block; margin-top: 10px; font-weight: bold;">📜 Script:</label>
+          <textarea rows="4" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace;">{{ scripts.get(video, "No script found.") }}</textarea>
+        </div>
+      {% endfor %}
     </div>
-  {% endfor %}
-{% else %}
-  <p>No reels created yet.</p>
-{% endif %}
+  {% else %}
+    <p>No reels created yet.</p>
+  {% endif %}
 
-<a class="button" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+  <a class="button" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
 {% endblock %}

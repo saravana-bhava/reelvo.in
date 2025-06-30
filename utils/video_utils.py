@@ -1,4 +1,4 @@
-# utils/video_utils.py
+# File: utils/video_utils.py
 
 """
 Handles video downloading, caching, trimming, and duration validation.
@@ -9,11 +9,23 @@ import os
 import subprocess
 import requests
 import hashlib
+import shutil
+import logging
 from typing import Optional, Tuple
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
+
+# Logging setup
+logger = logging.getLogger("video_utils")
+logging.basicConfig(level=logging.INFO)
+
+# Constants
+CACHE_DIR = os.path.join("cache", "videos")
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 
 def get_video_duration(filepath: str) -> Optional[float]:
     """Returns video duration in seconds using ffprobe."""
@@ -32,7 +44,7 @@ def get_video_duration(filepath: str) -> Optional[float]:
         )
         return float(result.stdout.strip())
     except Exception as e:
-        print(f"[❌] ffprobe failed: {e}")
+        logger.warning(f"[❌] ffprobe failed: {e}")
         return None
 
 
@@ -51,10 +63,10 @@ def trim_video(input_path: str, output_path: str, max_duration: int = 30) -> boo
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT
         )
-        print(f"[✂️] Trimmed video to {max_duration}s → {output_path}")
+        logger.info(f"[✂️] Trimmed video to {max_duration}s → {output_path}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"[❌] FFmpeg trim error: {e}")
+        logger.error(f"[❌] FFmpeg trim error: {e}")
         return False
 
 
@@ -64,7 +76,7 @@ def download_video(
     min_duration: int = 5,
     max_duration: int = 6,
     return_url: bool = False
-) -> Optional[str] | Tuple[Optional[str], Optional[str]]:
+) -> str | Tuple[Optional[str], Optional[str]]:
     """
     Downloads a video, optionally trims, and checks duration.
 
@@ -81,25 +93,22 @@ def download_video(
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # Hash + cache
-        cache_dir = os.path.join("cache", "videos")
-        os.makedirs(cache_dir, exist_ok=True)
         hashed = hashlib.md5(url.encode()).hexdigest()
-        cached_path = os.path.join(cache_dir, f"{hashed}.mp4")
+        cached_path = os.path.join(CACHE_DIR, f"{hashed}.mp4")
 
         # Use cached version if valid
         if not DISABLE_CACHE and os.path.exists(cached_path):
-            print(f"[📦] Cached video found for URL: {url}")
+            logger.info(f"[📦] Using cached video for: {url}")
             duration = get_video_duration(cached_path)
             if duration and duration >= min_duration:
-                subprocess.run(["cp", cached_path, output_path], check=True)
+                shutil.copyfile(cached_path, output_path)
                 return (output_path, url) if return_url else output_path
             else:
-                print("[⚠️] Cached video too short or unreadable. Deleting...")
+                logger.warning("[⚠️] Cached video invalid or too short. Deleting...")
                 os.remove(cached_path)
 
-        # Download fresh
-        print(f"[⬇️] Downloading: {url}")
+        # Download video
+        logger.info(f"[⬇️] Downloading from: {url}")
         temp_path = output_path + ".tmp"
         with requests.get(url, stream=True, timeout=15) as r:
             r.raise_for_status()
@@ -109,33 +118,32 @@ def download_video(
 
         duration = get_video_duration(temp_path)
         if duration is None:
-            print("[⚠️] Duration unknown, saving as-is.")
+            logger.warning("[⚠️] Could not get duration. Saving as-is.")
             os.rename(temp_path, output_path)
             if not DISABLE_CACHE:
-                subprocess.run(["cp", output_path, cached_path], check=True)
+                shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else output_path
 
         if duration < min_duration:
-            print(f"[⏹️] Skipping: too short ({duration:.2f}s < {min_duration}s)")
+            logger.warning(f"[⏹️] Skipping: too short ({duration:.2f}s < {min_duration}s)")
             os.remove(temp_path)
             return (None, None) if return_url else None
 
         if duration > max_duration:
-            print(f"[⏱️] Trimming: {duration:.2f}s → {max_duration}s")
+            logger.info(f"[⏱️] Trimming: {duration:.2f}s → {max_duration}s")
             success = trim_video(temp_path, output_path, max_duration)
             os.remove(temp_path)
             if success and not DISABLE_CACHE:
-                subprocess.run(["cp", output_path, cached_path], check=True)
+                shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else (output_path if success else None)
 
-        # Save as-is
         os.rename(temp_path, output_path)
-        print(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
+        logger.info(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
         if not DISABLE_CACHE:
-            subprocess.run(["cp", output_path, cached_path], check=True)
+            shutil.copyfile(output_path, cached_path)
 
         return (output_path, url) if return_url else output_path
 
     except Exception as e:
-        print(f"[❌] Video download error: {e}")
+        logger.error(f"[❌] Video download error: {e}")
         return (None, None) if return_url else None

@@ -1,12 +1,23 @@
 # File: create_video.py
 
+"""
+Generates a full Instagram Reel from a script:
+1. Overlay image from script
+2. TTS audio (or uploaded)
+3. Subtitle (SRT)
+4. Background video clips (Pixabay/Pexels/fallback)
+5. Background music mix
+6. Watermark (optional)
+7. Output high-quality 1080x1920 MP4
+"""
+
 import os
 import subprocess
 import logging
 from datetime import timedelta
 import srt
-from dotenv import load_dotenv
 import re
+from dotenv import load_dotenv
 
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
@@ -22,7 +33,7 @@ from utils.translate_text import translate_to_english
 # Load environment
 load_dotenv()
 
-# Logging setup
+# Logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_video")
 
@@ -68,8 +79,8 @@ def fetch_multiple_clips(script_text, target_duration, fallback_category):
         sources.append(fetch_pexels_video)
     if USE_PIXABAY:
         sources.append(fetch_pixabay_video)
-    fallback_local = os.path.join(VIDEO_DIR, f"{fallback_category}.mp4")
 
+    fallback_local = os.path.join(VIDEO_DIR, f"{fallback_category}.mp4")
     search_query = sanitize_english(script_text)
 
     for i in range(count):
@@ -82,9 +93,7 @@ def fetch_multiple_clips(script_text, target_duration, fallback_category):
                 downloaded_clips.append(clip_path)
                 found = True
                 break
-
         if not found and os.path.exists(fallback_local):
-            # fallback_local might be local video, copy or trim it for the clip_path
             if download_video(fallback_local, clip_path, min_duration=5, max_duration=6):
                 downloaded_clips.append(clip_path)
 
@@ -92,7 +101,7 @@ def fetch_multiple_clips(script_text, target_duration, fallback_category):
 
 
 def concatenate_clips(clips, output_path):
-    logger.info("[🔁] Re-encoding clips for safe concatenation...")
+    logger.info("[🔁] Re-encoding and concatenating clips...")
     reencoded_clips = []
     for i, clip in enumerate(clips):
         fixed = os.path.join(TEMP_DIR, f"fixed_clip{i+1}.mp4")
@@ -134,7 +143,7 @@ def create_video_for_category(
     tts_voice=None,
     include_subtitles=True
 ):
-    logger.info(f"🎬 Generating reel for: {category.upper()} | User: {username} | Lang: {language}")
+    logger.info(f"🎬 Starting reel for: {category.upper()} | User: {username} | Lang: {language}")
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
     base_output = os.path.join("output", username)
@@ -143,7 +152,6 @@ def create_video_for_category(
     if task_id:
         start_progress(task_id)
 
-    # Script handling
     if not script_text:
         text_path = generate_script_for_user(category, username, language=language)
         with open(text_path, "r", encoding="utf-8") as f:
@@ -155,11 +163,9 @@ def create_video_for_category(
     final_output_path = os.path.join(base_output, f"{category}.mp4")
 
     try:
-        if task_id:
-            update_progress(task_id, "🖼️ Generating overlay...", 30)
+        if task_id: update_progress(task_id, "🖼️ Generating overlay...", 30)
         generate_text_overlay(script_text, text_image_path, language=language)
 
-        # Voice generation
         if voiceover_path:
             logger.info("[🔊] Using uploaded voiceover...")
             voiceover_path.save(audio_path)
@@ -169,16 +175,13 @@ def create_video_for_category(
                 audio_path
             ]).strip())
         else:
-            if task_id:
-                update_progress(task_id, "🔊 Generating TTS...", 40)
+            if task_id: update_progress(task_id, "🔊 Generating TTS...", 40)
             audio_path, audio_duration = generate_tts_from_file(
-                category, username, output_root="output", task_id=task_id, language=language
+                category, username, output_root="output", task_id=task_id, language=language, tts_voice=tts_voice
             )
 
-        # Subtitles
         if include_subtitles:
-            if task_id:
-                update_progress(task_id, "📝 Generating subtitles...", 50)
+            if task_id: update_progress(task_id, "📝 Generating subtitles...", 50)
             generate_srt_from_audio(category, audio_path, srt_path, language=language)
             clip_srt_timing(srt_path, 0.5, audio_duration - 0.5)
 
@@ -186,17 +189,15 @@ def create_video_for_category(
         logger.exception("[❌] Asset generation failed")
         return None
 
-    if task_id:
-        update_progress(task_id, "🎞️ Fetching video clips...", 60)
+    if task_id: update_progress(task_id, "🎞️ Fetching video clips...", 60)
 
     english_script = translate_to_english(script_text)
     clips = fetch_multiple_clips(english_script, audio_duration, fallback_category=category)
     if not clips:
-        logger.error("[❌] No background clips found.")
+        logger.error("[❌] No video clips found.")
         return None
 
-    if task_id:
-        update_progress(task_id, "🎬 Concatenating clips...", 70)
+    if task_id: update_progress(task_id, "🎬 Concatenating clips...", 70)
     combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
@@ -211,16 +212,13 @@ def create_video_for_category(
     audio_to_use = audio_path
     if bgm_path and os.path.exists(bgm_path):
         subprocess.run([
-            "ffmpeg", "-y",
-            "-i", audio_path,
-            "-i", bgm_path,
+            "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
             "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
-            "-c:a", "aac", "-b:a", "192k",
-            mixed_audio_path
+            "-c:a", "aac", "-b:a", "192k", mixed_audio_path
         ], check=True)
         audio_to_use = mixed_audio_path
 
-    # Video rendering
+    # Final render
     inputs = ["-i", combined_video_path, "-i", audio_to_use]
     input_index = 2
     logo_index = None
@@ -235,11 +233,11 @@ def create_video_for_category(
         f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
         f"fade=t=in:st=0:d=1,fade=t=out:st={max(audio_duration - 1, 1)}:d=1[bg]"
     ]
-    base_stream = "[bg]"
+    base = "[bg]"
 
     if logo_index is not None:
-        filters.append(f"{base_stream}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
-        base_stream = "[wm]"
+        filters.append(f"{base}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
+        base = "[wm]"
 
     if include_subtitles:
         subtitle_style = (
@@ -247,36 +245,31 @@ def create_video_for_category(
             "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
             "BorderStyle=3,Outline=2,MarginV=100"
         )
-        filters.append(f"{base_stream}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
+        filters.append(f"{base}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
         map_video = "[outv]"
     else:
-        map_video = base_stream
+        map_video = base
 
     cmd = [
         "ffmpeg", *inputs,
         "-t", str(audio_duration),
         "-filter_complex", ";".join(filters),
-        "-map", map_video,
-        "-map", "1:a",
+        "-map", map_video, "-map", "1:a",
         "-c:v", "libx264", "-preset", "slow", "-crf", "18",
         "-b:v", "10M", "-minrate", "8M", "-maxrate", "12M", "-bufsize", "12M",
         "-c:a", "aac", "-ar", "44100", "-b:a", "256k", "-ac", "2",
-        "-movflags", "+faststart",
-        "-pix_fmt", "yuv420p",
-        "-r", "30",
+        "-movflags", "+faststart", "-pix_fmt", "yuv420p", "-r", "30",
         "-y", final_output_path
     ]
 
-    logger.info(f"[📦] Running FFmpeg:\n{' '.join(cmd)}")
-
     try:
+        logger.info(f"[📦] Final FFmpeg render command:\n{' '.join(cmd)}")
         subprocess.run(cmd, check=True)
-        if task_id:
-            finish_progress(task_id, "✅ Video generated!")
-        logger.info(f"[✅] Final reel generated: {final_output_path}")
+        if task_id: finish_progress(task_id, "✅ Video generated!")
+        logger.info(f"[✅] Reel created: {final_output_path}")
         return final_output_path
     except subprocess.CalledProcessError:
-        logger.exception("[❌] FFmpeg failed")
+        logger.exception("[❌] FFmpeg final render failed")
         return None
 
 
@@ -287,6 +280,9 @@ if __name__ == "__main__":
         include_watermark = sys.argv[3].lower() == "true" if len(sys.argv) >= 4 else True
         bgm_path = sys.argv[4] if len(sys.argv) >= 5 else None
         language = sys.argv[5] if len(sys.argv) >= 6 else "en"
-        create_video_for_category(category, username, include_watermark=include_watermark, bgm_path=bgm_path, language=language)
+        create_video_for_category(
+            category, username, include_watermark=include_watermark,
+            bgm_path=bgm_path, language=language
+        )
     else:
         print("Usage: python create_video.py <category> <username> [include_watermark=True] [bgm_path] [language=en]")

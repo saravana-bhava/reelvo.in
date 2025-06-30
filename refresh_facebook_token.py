@@ -1,4 +1,4 @@
-# refresh_facebook_token.py
+# File: refresh_facebook_token.py
 
 """
 Refreshes the Facebook long-lived access token and updates it in the .env file.
@@ -10,26 +10,29 @@ import logging
 import shutil
 from dotenv import load_dotenv
 
-# Config
+# Constants
 ENV_PATH = ".env"
 BACKUP_PATH = ".env.bak"
 
-# Load environment
+# Load environment variables
 load_dotenv(ENV_PATH)
 
-# Logging setup
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("fb_token_refresh")
 
-# Required ENV keys
+# Required environment variables
 APP_ID = os.getenv("FB_APP_ID")
 APP_SECRET = os.getenv("FB_APP_SECRET")
 CURRENT_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
 
 
-def validate_secrets():
+def validate_secrets() -> bool:
     """
-    Ensures all required secrets are loaded.
+    Ensure all required Facebook secrets are loaded.
+
+    Returns:
+        bool: True if valid, False otherwise.
     """
     if not all([APP_ID, APP_SECRET, CURRENT_TOKEN]):
         logger.error("❌ Missing FB_APP_ID, FB_APP_SECRET, or FB_PAGE_ACCESS_TOKEN in .env")
@@ -37,9 +40,12 @@ def validate_secrets():
     return True
 
 
-def refresh_long_lived_token():
+def refresh_long_lived_token() -> bool:
     """
-    Fetches a new long-lived token and updates the .env file.
+    Refresh Facebook long-lived token and update .env.
+
+    Returns:
+        bool: True on success, False on failure.
     """
     if not validate_secrets():
         return False
@@ -66,20 +72,22 @@ def refresh_long_lived_token():
         logger.error("[❌] No access_token in Facebook API response.")
         return False
 
-    logger.info("✅ Token refreshed successfully. Updating .env...")
+    logger.info("✅ Token refreshed. Updating .env...")
 
     try:
-        # Backup original .env
-        shutil.copyfile(ENV_PATH, BACKUP_PATH)
+        # Backup .env
+        if os.path.exists(ENV_PATH):
+            shutil.copyfile(ENV_PATH, BACKUP_PATH)
 
-        # Rewrite .env with new token
-        with open(ENV_PATH, "r") as f:
+        # Read .env content
+        with open(ENV_PATH, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
-        with open(ENV_PATH, "w") as f:
+        # Update or append token line
+        with open(ENV_PATH, "w", encoding="utf-8") as f:
             updated = False
             for line in lines:
-                if line.startswith("FB_PAGE_ACCESS_TOKEN="):
+                if line.strip().startswith("FB_PAGE_ACCESS_TOKEN="):
                     f.write(f"FB_PAGE_ACCESS_TOKEN={new_token}\n")
                     updated = True
                 else:
@@ -87,11 +95,11 @@ def refresh_long_lived_token():
             if not updated:
                 f.write(f"\nFB_PAGE_ACCESS_TOKEN={new_token}\n")
 
-        logger.info("✅ .env updated. Backup saved as .env.bak")
+        logger.info("✅ .env updated successfully. Backup saved as .env.bak")
         return True
 
     except Exception as e:
-        logger.exception("[❌] Failed to update .env file.")
+        logger.exception("[❌] Failed to update .env file")
         return False
 
 

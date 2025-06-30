@@ -8,14 +8,18 @@ Supports: English / Hindi script generation
 
 import os
 import json
+import logging
 from textwrap import dedent
 from dotenv import load_dotenv
 import openai
 from openai import OpenAIError, RateLimitError
 
-# Load environment
+# Setup
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
+
+logger = logging.getLogger("script_gen")
+logging.basicConfig(level=logging.INFO)
 
 USE_OPENAI = os.getenv("USE_OPENAI", "true").lower() == "true"
 API_KEY = os.getenv("OPENAI_API_KEY")
@@ -25,7 +29,9 @@ FALLBACK_JSON_PATH = os.path.join(ROOT_DIR, "fallback_scripts.json")
 try:
     with open(FALLBACK_JSON_PATH, "r", encoding="utf-8") as f:
         FALLBACKS = json.load(f)
+    logger.info("[🗂️] Loaded fallback scripts.")
 except FileNotFoundError:
+    logger.warning("[⚠️] Fallback scripts file not found.")
     FALLBACKS = {}
 
 if USE_OPENAI:
@@ -41,7 +47,7 @@ try:
 except ImportError:
     def update_progress(task_id, status, percent): pass
 
-# Custom prompt overrides (e.g., product promos)
+# Custom prompt overrides
 PROMPT_TEMPLATES = {
     "posturefix pro": {
         "hi": "Write a catchy, 20–30s Hindi Instagram ad script for PostureFix Pro, a smart posture corrector. Focus on pain relief, alert feature, and emotional appeal. Use emojis and clear CTAs."
@@ -50,7 +56,17 @@ PROMPT_TEMPLATES = {
 
 
 def generate_script(theme: str, task_id=None, language="en") -> str:
-    """Generate a 30-sec script in desired language using OpenAI or fallback."""
+    """
+    Generate a 30-second script using OpenAI or fallback.
+
+    Args:
+        theme (str): Script topic.
+        task_id (str): Optional task ID for progress UI.
+        language (str): "en" or "hi".
+
+    Returns:
+        str: Generated script text.
+    """
     theme_norm = theme.strip().lower()
     language_norm = language.strip().lower()
     update_progress(task_id, "🧠 Generating script...", 10)
@@ -58,7 +74,7 @@ def generate_script(theme: str, task_id=None, language="en") -> str:
     def fallback_script() -> str:
         return FALLBACKS.get(theme_norm, {}).get(language_norm, f"[Fallback script for '{theme_norm}' in '{language_norm}']")
 
-    # Custom override
+    # Use custom template if defined
     if theme_norm in PROMPT_TEMPLATES and language_norm in PROMPT_TEMPLATES[theme_norm]:
         prompt = PROMPT_TEMPLATES[theme_norm][language_norm]
     else:
@@ -71,7 +87,6 @@ def generate_script(theme: str, task_id=None, language="en") -> str:
             f"Use 4–5 short impactful lines. Keep it under 30 seconds for voiceover."
         )
 
-    # Try OpenAI
     if USE_OPENAI and client:
         try:
             response = client.chat.completions.create(
@@ -80,19 +95,19 @@ def generate_script(theme: str, task_id=None, language="en") -> str:
                 temperature=0.7
             )
             script = response.choices[0].message.content.strip()
-            print(f"[✅] OpenAI script generated for '{theme}' in '{language}'")
+            logger.info(f"[✅] OpenAI script generated for '{theme}' in '{language}'")
             update_progress(task_id, "✅ Script generated", 15)
             return script
         except RateLimitError:
-            print("⚠️ OpenAI rate limit hit. Using fallback.")
+            logger.warning("⚠️ OpenAI rate limit hit. Using fallback.")
         except OpenAIError as e:
-            print(f"[❌] OpenAI error: {e}")
+            logger.error(f"[❌] OpenAI error: {e}")
         except Exception as e:
-            print(f"[❌] Unexpected error: {e}")
+            logger.error(f"[❌] Unexpected OpenAI error: {e}")
 
-    # Use fallback
+    # Use fallback if OpenAI fails
     update_progress(task_id, "⚠️ Using fallback script", 12)
-    print(f"⚠️ Using fallback for '{theme}' in '{language}'")
+    logger.info(f"[⚠️] Using fallback script for '{theme}' in '{language}'")
     return fallback_script()
 
 
@@ -103,20 +118,24 @@ def generate_script_for_user(
     output_root: str = "output",
     task_id=None
 ) -> str:
-    """Generate and save a script for a user and theme in given language."""
+    """
+    Generate and save a script for a user and theme.
+
+    Returns the path to the saved script file.
+    """
     output_dir = os.path.join(output_root, username)
     os.makedirs(output_dir, exist_ok=True)
 
     output_path = os.path.join(output_dir, f"{theme}_text.txt")
     if os.path.exists(output_path):
-        print(f"[📝] Script already exists → {output_path}")
+        logger.info(f"[📝] Script already exists → {output_path}")
         return output_path
 
     script = generate_script(theme, task_id, language=language)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
 
-    print(f"[📄] Script saved → {output_path}")
+    logger.info(f"[📄] Script saved → {output_path}")
     return output_path
 
 

@@ -3,9 +3,10 @@
 {% block title %}Login - Reelvo.ai{% endblock %}
 
 {% block content %}
-<h2>🔐 Login to Reelvo.ai</h2>
-<form method="post" action="{{ url_for('login') }}">
-  <input type="text" name="username" placeholder="Enter your name..." required />
-  <button type="submit">Login</button>
-</form>
+  <h2>🔐 Login to Reelvo.ai</h2>
+  <form method="post" action="{{ url_for('login') }}" style="max-width: 400px; margin: auto;">
+    <label for="username">👤 Your Name:</label>
+    <input type="text" id="username" name="username" placeholder="Enter your name..." required />
+    <button type="submit">🚀 Login</button>
+  </form>
 {% endblock %}

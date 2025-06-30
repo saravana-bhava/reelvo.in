@@ -3,8 +3,11 @@
 {% block title %}Dashboard - Reelvo.ai{% endblock %}
 
 {% block content %}
-<h2>👋 Welcome, {{ user }}</h2>
-<a class="button" href="{{ url_for('create_reel') }}">🎬 Create New Reel</a>
-<a class="button" href="{{ url_for('list_reels') }}">📂 View Reel History</a>
-<a class="button" href="{{ url_for('logout') }}">🚪 Logout</a>
+  <h2 style="text-align: center;">👋 Welcome, {{ user }}</h2>
+
+  <div style="display: flex; flex-direction: column; gap: 20px; max-width: 400px; margin: 30px auto;">
+    <a class="button" href="{{ url_for('create_reel') }}">🎬 Create New Reel</a>
+    <a class="button" href="{{ url_for('list_reels') }}">📂 View Reel History</a>
+    <a class="button" href="{{ url_for('logout') }}">🚪 Logout</a>
+  </div>
 {% endblock %}
