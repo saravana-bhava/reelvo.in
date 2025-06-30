@@ -1,4 +1,4 @@
-# app.py
+# File: app.py
 
 import os
 import time
@@ -79,6 +79,18 @@ def dashboard():
     videos = [f for f in os.listdir(user_output_dir) if f.endswith(".mp4")] if os.path.exists(user_output_dir) else []
 
     return render_template("dashboard.html", user=username, videos=videos)
+
+
+@flask_app.route('/history')
+def reel_history():
+    if "user" not in session:
+        return redirect(url_for("index"))
+
+    username = secure_filename(session["user"])
+    user_output_dir = os.path.join(OUTPUT_BASE, username)
+    videos = sorted([f for f in os.listdir(user_output_dir) if f.endswith(".mp4")]) if os.path.exists(user_output_dir) else []
+
+    return render_template("reel_history.html", user=username, videos=videos)
 
 
 @flask_app.route('/generate', methods=["POST"])
