@@ -63,7 +63,9 @@ def generate_tts_audio(
     text: str,
     output_path: str,
     task_id: Optional[str] = None,
-    language: str = "en"
+    language: str = "en",
+    tts_voice: str = "en-US-Wavenet-D",
+    cache: bool = True
 ) -> tuple[str, float]:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     logger.info(f"[🔊] Generating TTS for '{category}' → {output_path}")
@@ -87,7 +89,8 @@ def generate_tts_audio(
                 "voice_settings": {"stability": 0.75, "similarity_boost": 0.75},
                 "model_id": "eleven_multilingual_v2"
             }
-            url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+            voice_id = tts_voice or ELEVENLABS_VOICE_ID
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
             response = requests.post(url, headers=headers, json=payload)
             if response.status_code == 200:
                 with open(raw_path, "wb") as f:
@@ -107,14 +110,14 @@ def generate_tts_audio(
             update_progress(task_id, "🔊 Using Google Cloud TTS...", 39)
 
             lang_code = {"hi": "hi-IN", "en": "en-US"}.get(language, "en-US")
-            voice_name = GOOGLE_CLOUD_TTS_VOICE
+            voice_name = tts_voice or GOOGLE_CLOUD_TTS_VOICE
 
             cache_key = hashlib.md5(f"{text}|{voice_name}".encode()).hexdigest()
             cache_dir = os.path.join(ROOT_DIR, "cache", "tts")
             os.makedirs(cache_dir, exist_ok=True)
             cached_path = os.path.join(cache_dir, f"{cache_key}.mp3")
 
-            if not DISABLE_CACHE and os.path.exists(cached_path):
+            if cache and not DISABLE_CACHE and os.path.exists(cached_path):
                 subprocess.run(["cp", cached_path, raw_path], check=True)
                 logger.info("[📦] Using cached Google TTS")
                 success = True
@@ -133,7 +136,7 @@ def generate_tts_audio(
                 )
                 with open(raw_path, "wb") as f:
                     f.write(response.audio_content)
-                if not DISABLE_CACHE:
+                if cache and not DISABLE_CACHE:
                     with open(cached_path, "wb") as f:
                         f.write(response.audio_content)
                 logger.info("[✅] Google Cloud TTS audio saved.")
@@ -178,7 +181,9 @@ def generate_tts_from_file(
     username: str,
     output_root: str = "output",
     task_id: Optional[str] = None,
-    language: str = "en"
+    language: str = "en",
+    tts_voice: str = "en-US-Wavenet-D",
+    cache: bool = True
 ) -> tuple[str, float]:
     """Helper to read script from file and generate TTS."""
     text_path = os.path.join(output_root, username, f"{category}_text.txt")
@@ -192,7 +197,13 @@ def generate_tts_from_file(
         raise ValueError("[❌] Script text is empty.")
 
     output_path = os.path.join(output_root, username, f"{category}.mp3")
-    return generate_tts_audio(category, text, output_path, task_id, language=language)
+    return generate_tts_audio(
+        category, text, output_path,
+        task_id=task_id,
+        language=language,
+        tts_voice=tts_voice,
+        cache=cache
+    )
 
 
 def generate_tts_from_text(
@@ -201,10 +212,18 @@ def generate_tts_from_text(
     output_path: str,
     category: str = "custom",
     task_id: Optional[str] = None,
-    language: str = "en"
+    language: str = "en",
+    tts_voice: str = "en-US-Wavenet-D",
+    cache: bool = True
 ) -> tuple[str, float]:
     """Generate TTS directly from text (no file read)."""
-    return generate_tts_audio(category, text, output_path, task_id=task_id, language=language)
+    return generate_tts_audio(
+        category, text, output_path,
+        task_id=task_id,
+        language=language,
+        tts_voice=tts_voice,
+        cache=cache
+    )
 
 
 # CLI usage for testing

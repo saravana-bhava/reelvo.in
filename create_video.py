@@ -243,7 +243,7 @@ def create_video_for_category(
         subtitle_style = (
             "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
             "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
-            "BorderStyle=3,Outline=2,MarginV=100"
+            "BorderStyle=3,Outline=2,MarginV=50"
         )
         filters.append(f"{base}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
         map_video = "[outv]"
