@@ -100,7 +100,7 @@ def generate():
                 script = f.read().strip()
 
             update_progress(task_id, "🎬 Generating video...", 30)
-            video_path = create_video_for_category(theme, username, task_id=task_id, language=language)
+            video_path = create_video_for_category(theme, username, include_watermark=True, bgm_path=None, language=language, task_id=task_id)
 
             drive_url = ""
             if video_path:

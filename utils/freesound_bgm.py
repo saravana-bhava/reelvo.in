@@ -26,7 +26,7 @@ def search_freesound(query: str) -> str | None:
         return None
 
     search_url = (
-        f"{FREESOUND_API_URL}?query={quote(query)}"
+        f"{FREESOUND_API_URL}?query=music+{quote(query)}"
         f"&filter=duration:[5 TO 30]"
         f"&fields=name,previews,license,duration,download"
         f"&sort=score+desc&page_size=5"
