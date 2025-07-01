@@ -132,17 +132,17 @@
   </header>
 
   <nav>
-    <a href="{{ url_for('dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('create_reel') }}">Create Reel</a>
-    <a href="{{ url_for('list_reels') }}">Reel History</a>
-    <a href="{{ url_for('view_schedule') }}">Scheduled Reels</a>
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('reels.create_reel') }}">Create Reel</a>
+    <a href="{{ url_for('reels.list_reels') }}">Reel History</a>
+    <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}">Scheduled Reels</a>
     {% if session.user %}
-      <form action="{{ url_for('disconnect_instagram') }}" method="post" class="logout-form">
+      <form action="{{ url_for('instagram.disconnect_instagram') }}" method="post" class="logout-form">
         <button type="submit">Disconnect Instagram</button>
       </form>
-      <a href="{{ url_for('logout') }}">Logout</a>
+      <a href="{{ url_for('auth.logout') }}">Logout</a>
     {% else %}
-      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('auth.index') }}">Login</a>
     {% endif %}
   </nav>
 

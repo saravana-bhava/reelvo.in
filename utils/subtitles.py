@@ -1,4 +1,4 @@
-# File: utils/gen_subtitles.py
+# File: utils/subtitles.py
 
 """
 Subtitle generator using Whisper fallback.
@@ -193,7 +193,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 if __name__ == "__main__":
     import sys
     if len(sys.argv) not in (3, 4):
-        print("Usage: python utils/gen_subtitles.py <category> <audio_path> [language]")
+        print("Usage: python utils/subtitles.py <category> <audio_path> [language]")
     else:
         category = sys.argv[1]
         audio_file = sys.argv[2]

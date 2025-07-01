@@ -5,7 +5,7 @@
   <h2 style="margin-bottom: 20px;">📅 Scheduled Reels for <span style="color: #007BFF;">{{ user }}</span></h2>
 
   {% if scheduled and scheduled|length > 0 %}
-    <form method="post" action="{{ url_for('update_schedule') }}">
+    <form method="post" action="{{ url_for('schedule.update_schedule') }}">
       <table style="width: 100%; background: #ffffff; border-collapse: collapse; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
         <thead>
           <tr style="background: #e3f2fd;">
@@ -61,6 +61,6 @@
   {% endif %}
 
   <p style="margin-top: 30px;">
-    <a class="button" href="{{ url_for('dashboard') }}">⬅️ Back to Dashboard</a>
+    <a class="button" href="{{ url_for('dashboard.dashboard') }}">⬅️ Back to Dashboard</a>
   </p>
 {% endblock %}

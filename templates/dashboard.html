@@ -8,14 +8,14 @@
   <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 30px;">
     {% if connected %}
       <p style="margin-bottom: 10px;">✅ Instagram is connected to your account.</p>
-      <form method="post" action="{{ url_for('disconnect_instagram') }}">
+      <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
         <button type="submit"
                 style="padding: 8px 14px; background-color: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">
           ❌ Disconnect Instagram
         </button>
       </form>
     {% else %}
-      <a href="{{ url_for('connect_instagram') }}"
+      <a href="{{ url_for('instagram.connect_instagram') }}"
          style="padding: 10px 16px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 6px;">
         🔗 Connect Instagram
       </a>
@@ -24,25 +24,25 @@
 
   <div style="display: flex; flex-wrap: wrap; gap: 12px;">
     <a class="button"
-       href="{{ url_for('create_reel') }}"
+       href="{{ url_for('reels.create_reel') }}"
        style="padding: 12px 18px; background-color: #28a745; color: white; border-radius: 6px; text-decoration: none;">
       🎬 Create New Reel
     </a>
 
     <a class="button"
-       href="{{ url_for('list_reels') }}"
+       href="{{ url_for('reels.list_reels') }}"
        style="padding: 12px 18px; background-color: #17a2b8; color: white; border-radius: 6px; text-decoration: none;">
       📂 View Reel History
     </a>
 
     <a class="button"
-       href="{{ url_for('schedule_page') }}"
+       href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
        style="padding: 12px 18px; background-color: #ffc107; color: black; border-radius: 6px; text-decoration: none;">
       🕓 Scheduled Reels
     </a>
 
     <a class="button"
-       href="{{ url_for('logout') }}"
+       href="{{ url_for('auth.logout') }}"
        style="padding: 12px 18px; background-color: #6c757d; color: white; border-radius: 6px; text-decoration: none;">
       🚪 Logout
     </a>

@@ -8,7 +8,7 @@
     {% for vid in videos %}
       <div style="margin-bottom: 30px; padding: 15px; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.1);">
         <video width="320" height="568" controls style="border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-          <source src="{{ url_for('serve_video', username=user, filename=vid) }}" type="video/mp4">
+          <source src="{{ url_for('reels.serve_video', username=user, filename=vid) }}" type="video/mp4">
           Your browser does not support the video tag.
         </video>
         <div style="margin-top: 12px;">
@@ -22,6 +22,6 @@
   {% endif %}
 
   <p style="margin-top: 40px;">
-    <a class="button" href="{{ url_for('dashboard') }}">⬅️ Back to Dashboard</a>
+    <a class="button" href="{{ url_for('dashboard.dashboard') }}">⬅️ Back to Dashboard</a>
   </p>
 {% endblock %}

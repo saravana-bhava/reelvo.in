@@ -4,7 +4,7 @@
 {% block content %}
 <h2>🎬 Create Your AI Reel ({{ user }})</h2>
 
-<form id="reelForm" method="post" action="{{ url_for('create_reel_action') }}" enctype="multipart/form-data">
+<form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data">
   <!-- Theme/topic selection -->
   <label for="theme"><strong>🎯 Select Theme:</strong></label>
   <select name="theme" id="theme">
@@ -67,7 +67,7 @@
     statusDiv.textContent = '⏳ Generating script...';
 
     try {
-      const res = await fetch('{{ url_for("generate_script_ajax") }}', {
+      const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, custom_topic: topic, language: lang })
@@ -93,7 +93,7 @@
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-    <li><a href="{{ url_for('serve_video', username=user, filename=v) }}" target="_blank">{{ v }}</a></li>
+    <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank">{{ v }}</a></li>
   {% else %}
     <li>No reels found.</li>
   {% endfor %}

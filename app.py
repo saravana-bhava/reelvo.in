@@ -6,7 +6,6 @@ import json
 import logging
 import uuid
 import requests
-from datetime import datetime
 from threading import Thread
 from flask import (
     Flask, render_template, request, redirect, session,
@@ -37,15 +36,14 @@ flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
 OUTPUT_BASE = "output"
-POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
-UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
-SCHEDULED_JOBS_DIR = "scheduled_jobs"
+SCHEDULED_JOBS_DIR = os.path.join(OUTPUT_BASE, "_scheduled")
 os.makedirs(SCHEDULED_JOBS_DIR, exist_ok=True)
 
+POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
+UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
 IG_APP_ID = os.getenv("IG_APP_ID")
 IG_APP_SECRET = os.getenv("IG_APP_SECRET")
 IG_REDIRECT_URI = os.getenv("IG_REDIRECT_URI", "http://localhost:5000/reelvo.ai/connect-instagram/callback")
-
 
 # ----------------- Token Refresher -----------------
 
@@ -78,43 +76,7 @@ def refresh_instagram_tokens():
                 logger.warning(f"[❌] Token refresh error for {username}: {e}")
         time.sleep(24 * 3600)
 
-
-# ----------------- Schedule Background Poster -----------------
-
-def scheduler_runner():
-    logger.info("⏱️ Starting background scheduler...")
-    while True:
-        for fname in os.listdir(SCHEDULED_JOBS_DIR):
-            fpath = os.path.join(SCHEDULED_JOBS_DIR, fname)
-            try:
-                with open(fpath, "r") as f:
-                    jobs = json.load(f)
-                updated_jobs = []
-                for job in jobs:
-                    if job["status"] == "pending" and datetime.now().isoformat() >= job["scheduled_time"]:
-                        try:
-                            caption = job.get("caption", "Scheduled post")
-                            post_result = post_to_instagram(
-                                video_path=job["video_path"],
-                                caption=caption,
-                                username=job["username"]
-                            )
-                            job["status"] = "posted"
-                            job["result"] = post_result
-                            logger.info(f"[✅] Posted scheduled reel for {job['username']}")
-                        except Exception as e:
-                            job["status"] = "error"
-                            job["error"] = str(e)
-                            logger.error(f"[❌] Scheduled post failed: {e}")
-                    updated_jobs.append(job)
-                with open(fpath, "w") as f:
-                    json.dump(updated_jobs, f, indent=2)
-            except Exception as e:
-                logger.warning(f"[⚠️] Error processing schedule file {fname}: {e}")
-        time.sleep(60)
-
-
-# ----------------- Auth Routes -----------------
+# ----------------- Routes -----------------
 
 @flask_app.route('/')
 def index():
@@ -138,7 +100,24 @@ def logout():
     return redirect(url_for("index"))
 
 
-# ----------------- Instagram Connect -----------------
+@flask_app.route('/dashboard')
+def dashboard():
+    if "user" not in session:
+        return redirect(url_for("index"))
+    username = secure_filename(session["user"])
+    user_dir = os.path.join(OUTPUT_BASE, username)
+    connected = False
+    tokens_path = os.path.join(user_dir, "tokens.json")
+    if os.path.exists(tokens_path):
+        try:
+            with open(tokens_path) as f:
+                data = json.load(f)
+            if "long_lived_token" in data:
+                connected = True
+        except:
+            pass
+    return render_template("dashboard.html", user=username, connected=connected)
+
 
 @flask_app.route('/connect-instagram')
 def connect_instagram():
@@ -199,16 +178,13 @@ def connect_instagram_callback():
         return f"❌ Instagram connect failed: {e}", 500
 
 
-# ----------------- Dashboard + Reel Routes -----------------
-
-@flask_app.route('/dashboard')
-def dashboard():
-    if "user" not in session:
-        return redirect(url_for("index"))
-    username = secure_filename(session["user"])
-    user_dir = os.path.join(OUTPUT_BASE, username)
-    connected = os.path.exists(os.path.join(user_dir, "tokens.json"))
-    return render_template("dashboard.html", user=username, connected=connected)
+@flask_app.route("/disconnect-instagram", methods=["POST"])
+def disconnect_instagram():
+    if "user" in session:
+        username = session["user"]
+        instagram_tokens.pop(username, None)
+        flash("Instagram disconnected.")
+    return redirect(url_for("dashboard"))
 
 
 @flask_app.route('/create')
@@ -305,8 +281,6 @@ def list_reels():
     return render_template("list_reels.html", user=username, videos=videos, scripts=scripts)
 
 
-# ----------------- Script Generation + Progress + Scheduling -----------------
-
 @flask_app.route('/generate-script', methods=["POST"])
 def generate_script_ajax():
     if "user" not in session:
@@ -342,59 +316,6 @@ def get_progress_route(task_id):
     return jsonify(prog)
 
 
-@flask_app.route("/schedule", methods=["GET"])
-def list_scheduled_jobs():
-    if "user" not in session:
-        return jsonify({"error": "Not logged in"}), 401
-    username = session["user"]
-    fpath = os.path.join(SCHEDULED_JOBS_DIR, f"{username}.json")
-    if not os.path.exists(fpath):
-        return jsonify([])
-    with open(fpath) as f:
-        return jsonify(json.load(f))
-
-
-@flask_app.route("/schedule", methods=["POST"])
-def schedule_reel():
-    if "user" not in session:
-        return jsonify({"error": "Not logged in"}), 401
-    data = request.get_json()
-    username = session["user"]
-    job = {
-        "job_id": str(uuid.uuid4()),
-        "username": username,
-        "video_path": data["video_path"],
-        "caption": data.get("caption", "Scheduled Reel"),
-        "scheduled_time": data["scheduled_time"],
-        "status": "pending"
-    }
-    fpath = os.path.join(SCHEDULED_JOBS_DIR, f"{username}.json")
-    jobs = []
-    if os.path.exists(fpath):
-        with open(fpath) as f:
-            jobs = json.load(f)
-    jobs.append(job)
-    with open(fpath, "w") as f:
-        json.dump(jobs, f, indent=2)
-    return jsonify({"success": True, "job": job})
-
-
-@flask_app.route("/schedule/<job_id>", methods=["DELETE"])
-def delete_scheduled_job(job_id):
-    if "user" not in session:
-        return jsonify({"error": "Not logged in"}), 401
-    username = session["user"]
-    fpath = os.path.join(SCHEDULED_JOBS_DIR, f"{username}.json")
-    if not os.path.exists(fpath):
-        return jsonify({"error": "No scheduled jobs found"}), 404
-    with open(fpath) as f:
-        jobs = json.load(f)
-    jobs = [j for j in jobs if j["job_id"] != job_id]
-    with open(fpath, "w") as f:
-        json.dump(jobs, f, indent=2)
-    return jsonify({"success": True})
-
-
 @flask_app.route('/videos/<username>/<filename>')
 def serve_video(username, filename):
     safe_user = secure_filename(username)
@@ -406,7 +327,87 @@ def serve_video(username, filename):
     return send_from_directory(path, safe_file, mimetype="video/mp4")
 
 
-# ----------------- WSGI -----------------
+@flask_app.route("/scheduled", methods=["GET"])
+def list_scheduled_jobs_view():
+    if "user" not in session:
+        return redirect(url_for("index"))
+    username = secure_filename(session["user"])
+    fpath = os.path.join(SCHEDULED_JOBS_DIR, f"{username}.json")
+    jobs = []
+    if os.path.exists(fpath):
+        with open(fpath, "r") as f:
+            jobs = json.load(f)
+    scripts = {}
+    for job in jobs:
+        try:
+            video_filename = os.path.basename(job["video_path"])
+            txt_path = os.path.join(OUTPUT_BASE, username, video_filename.replace(".mp4", ".txt"))
+            if os.path.exists(txt_path):
+                with open(txt_path, "r", encoding="utf-8") as f:
+                    scripts[video_filename] = f.read()
+            else:
+                scripts[video_filename] = "No script found."
+            job["video"] = video_filename
+        except:
+            job["video"] = "unknown.mp4"
+    return render_template("scheduled.html", user=username, schedule=jobs, scripts=scripts)
+
+
+@flask_app.route("/scheduled/edit/<int:index>", methods=["POST"])
+def edit_schedule(index):
+    if "user" not in session:
+        return redirect(url_for("index"))
+    username = secure_filename(session["user"])
+    fpath = os.path.join(SCHEDULED_JOBS_DIR, f"{username}.json")
+    if not os.path.exists(fpath):
+        return redirect(url_for("list_scheduled_jobs_view"))
+
+    with open(fpath, "r") as f:
+        jobs = json.load(f)
+
+    if index >= len(jobs):
+        return redirect(url_for("list_scheduled_jobs_view"))
+
+    jobs[index]["scheduled_time"] = request.form.get("scheduled_for", jobs[index]["scheduled_time"])
+    jobs[index]["caption"] = request.form.get("caption", jobs[index].get("caption", ""))
+
+    with open(fpath, "w") as f:
+        json.dump(jobs, f, indent=2)
+
+    return redirect(url_for("list_scheduled_jobs_view"))
+
+
+@flask_app.route("/scheduled/delete/<int:index>", methods=["POST"])
+def delete_schedule(index):
+    if "user" not in session:
+        return redirect(url_for("index"))
+    username = secure_filename(session["user"])
+    fpath = os.path.join(SCHEDULED_JOBS_DIR, f"{username}.json")
+    if not os.path.exists(fpath):
+        return redirect(url_for("list_scheduled_jobs_view"))
+
+    with open(fpath, "r") as f:
+        jobs = json.load(f)
+
+    if index < len(jobs):
+        del jobs[index]
+
+    with open(fpath, "w") as f:
+        json.dump(jobs, f, indent=2)
+
+    return redirect(url_for("list_scheduled_jobs_view"))
+
+@flask_app.route('/videos/<username>/<filename>')
+def serve_video(username, filename):
+    safe_user = secure_filename(username)
+    safe_file = secure_filename(filename)
+    path = os.path.join(OUTPUT_BASE, safe_user)
+    full_path = os.path.join(path, safe_file)
+    if not os.path.exists(full_path):
+        abort(404)
+    return send_from_directory(path, safe_file, mimetype="video/mp4")
+
+# ----------------- WSGI App -----------------
 
 wsgi_app = DispatcherMiddleware(
     lambda environ, start_response: start_response("404 Not Found", []) or [b"404 Not Found"],
@@ -414,10 +415,12 @@ wsgi_app = DispatcherMiddleware(
 )
 
 
+# ----------------- Run Dev Server -----------------
+
 if __name__ == "__main__":
     os.makedirs(OUTPUT_BASE, exist_ok=True)
     Thread(target=refresh_instagram_tokens, daemon=True).start()
     Thread(target=scheduler_runner, daemon=True).start()
     port = int(os.getenv("PORT", 5000))
-    logger.info(f"🚀 Dev server running at http://127.0.0.1:{port}/reelvo.ai")
+    logger.info(f"🚀 Starting dev server on http://127.0.0.1:{port}/reelvo.ai")
     run_simple("127.0.0.1", port, wsgi_app, use_debugger=True, use_reloader=True)

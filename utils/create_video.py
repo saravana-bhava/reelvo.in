@@ -21,13 +21,13 @@ from dotenv import load_dotenv
 
 from utils.gen_text_overlay import generate_text_overlay
 from utils.gen_tts_audio import generate_tts_from_file
-from utils.gen_subtitles import generate_srt_from_audio
+from utils.subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
 from utils.video_utils import download_video
 from utils.fetch_bgm import fetch_bgm
-from progress import start_progress, update_progress, finish_progress
+from utils.progress_tracker import start_progress, update_progress, finish_progress
 from utils.translate_text import translate_to_english
 
 # Load environment
