@@ -1,0 +1,27 @@
+<!-- File: templates/schedule.html -->
+{% extends "base.html" %}
+{% block title %}Scheduled Reels{% endblock %}
+
+{% block content %}
+<h2>📅 Scheduled Reels ({{ user }})</h2>
+
+{% if schedule %}
+  {% for item in schedule %}
+    <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #ccc; border-radius: 6px; background: #fff;">
+      <video src="{{ url_for('serve_video', username=user, filename=item.video) }}" width="300" height="534" controls></video>
+      <form action="{{ url_for('edit_schedule', index=loop.index0) }}" method="POST" style="margin-top: 10px;">
+        <label><strong>📅 Scheduled Date:</strong></label>
+        <input type="date" name="scheduled_for" value="{{ item.scheduled_for }}" required />
+        <label><strong>✏️ Caption:</strong></label>
+        <textarea name="caption" rows="2">{{ scripts[item.video] or '' }}</textarea>
+        <button type="submit">💾 Save</button>
+      </form>
+      <form action="{{ url_for('delete_schedule', index=loop.index0) }}" method="POST" style="margin-top: 10px;">
+        <button type="submit" onclick="return confirm('Delete this scheduled post?')">🗑️ Delete</button>
+      </form>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No scheduled posts yet.</p>
+{% endif %}
+{% endblock %}

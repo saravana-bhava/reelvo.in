@@ -1,0 +1,45 @@
+<!-- File: templates/scheduled_posts.html -->
+{% extends "base.html" %}
+{% block title %}Scheduled Posts | Reelvo.ai{% endblock %}
+
+{% block content %}
+<h2>📅 Scheduled Reels ({{ user }})</h2>
+
+{% if scheduled and scheduled|length > 0 %}
+  <form method="post" action="{{ url_for('update_schedule') }}">
+    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; background:#fff; border-collapse: collapse;">
+      <tr style="background:#e3f2fd;">
+        <th>Video</th>
+        <th>Scheduled Date</th>
+        <th>Status</th>
+        <th>Edit Date</th>
+        <th>Delete</th>
+      </tr>
+      {% for item in scheduled %}
+      <tr>
+        <td>{{ item.video }}</td>
+        <td>{{ item.scheduled_for }}</td>
+        <td>{% if item.posted %}✅ Posted{% else %}⏳ Pending{% endif %}</td>
+        <td>
+          {% if not item.posted %}
+            <input type="date" name="reschedule_{{ loop.index0 }}" value="{{ item.scheduled_for }}" />
+            <input type="hidden" name="video_{{ loop.index0 }}" value="{{ item.video }}" />
+          {% else %}-{% endif %}
+        </td>
+        <td>
+          {% if not item.posted %}
+            <input type="checkbox" name="delete_{{ loop.index0 }}" />
+          {% else %}-{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    <br>
+    <button type="submit">💾 Save Changes</button>
+  </form>
+{% else %}
+  <p>No scheduled reels found.</p>
+{% endif %}
+
+<p><a class="button" href="{{ url_for('dashboard') }}">⬅️ Back to Dashboard</a></p>
+{% endblock %}
