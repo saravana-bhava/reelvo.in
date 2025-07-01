@@ -22,7 +22,7 @@ def create_reel():
     output_path = os.path.join("output", user)
     os.makedirs(output_path, exist_ok=True)
     videos = os.listdir(output_path)
-    return render_template("create.html", user=user, videos=videos)
+    return render_template("create_reel.html", user=user, videos=videos)
 
 
 @reels_bp.route("/create", methods=["POST"])
