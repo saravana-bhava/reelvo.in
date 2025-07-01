@@ -44,3 +44,20 @@ def update_access_token(username: str, new_token: str, new_expiry: int):
         tokens["expires_at"] = (datetime.utcnow() + timedelta(seconds=new_expiry)).isoformat()
         with open(get_user_token_path(username), "w", encoding="utf-8") as f:
             json.dump(tokens, f, indent=2)
+
+
+def get_instagram_credentials(username: str) -> Optional[dict]:
+    tokens = load_user_tokens(username)
+    if not tokens or "access_token" not in tokens:
+        return None
+    return {
+        "access_token": tokens["access_token"]
+    }
+
+
+def log_post(username: str, video_path: str, caption: str, drive_url: str = ""):
+    log_dir = os.path.join("output", username)
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "instagram_posts.log")
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(f"{datetime.utcnow().isoformat()} | {video_path} | {caption} | {drive_url or 'N/A'}\n")

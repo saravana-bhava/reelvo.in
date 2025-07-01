@@ -131,17 +131,17 @@ def connect_instagram():
     return redirect(auth_url)
 
 
-@flask_app.route('/connect-instagram')
-def connect_instagram():
-    if "user" not in session:
-        return redirect(url_for("index"))
-    state = session["user"]
-    auth_url = (
-        f"https://api.instagram.com/oauth/authorize"
-        f"?client_id={IG_APP_ID}&redirect_uri={IG_REDIRECT_URI}"
-        f"&scope=user_profile,user_media&response_type=code&state={state}"
-    )
-    return redirect(auth_url)
+#@flask_app.route('/connect-instagram')
+#def connect_instagram():
+#    if "user" not in session:
+#        return redirect(url_for("index"))
+#    state = session["user"]
+#    auth_url = (
+#        f"https://api.instagram.com/oauth/authorize"
+#        f"?client_id={IG_APP_ID}&redirect_uri={IG_REDIRECT_URI}"
+#        f"&scope=user_profile,user_media&response_type=code&state={state}"
+#    )
+#    return redirect(auth_url)
 
 
 @flask_app.route('/connect-instagram/callback')
