@@ -59,19 +59,20 @@ def fetch_pexels_video(
             params={
                 "query": category,
                 "orientation": "portrait",
-                "per_page": 30
+                "size": "large",
+                "per_page": 40
             },
             timeout=10
         )
         response.raise_for_status()
         videos = response.json().get("videos", [])
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         logger.warning(f"[❌] Failed to fetch from Pexels: {e}")
         return None
 
     for video in videos:
         duration = video.get("duration", 0)
-        if duration < min_duration:
+        if duration < min_duration or duration > 60:
             continue
 
         for file in video.get("video_files", []):
@@ -80,7 +81,9 @@ def fetch_pexels_video(
             height = file.get("height")
 
             if (
-                url and width == 1080 and height == 1920
+                url
+                and width == 1080
+                and height == 1920
                 and url not in used_urls
             ):
                 logger.info(f"[🎞️] Candidate found: {url} ({duration}s)")
@@ -96,7 +99,7 @@ def fetch_pexels_video(
                     logger.info(f"[✅] Downloaded successfully → {output_path}")
                     return url
                 else:
-                    logger.warning("[⚠️] Download failed, trying next...")
+                    logger.warning("[⚠️] Download failed, trying next candidate...")
 
-    logger.warning("[⚠️] No valid 1080x1920 portrait video found.")
+    logger.warning("[⚠️] No valid 1080x1920 portrait video found on Pexels.")
     return None

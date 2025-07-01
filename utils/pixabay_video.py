@@ -34,14 +34,14 @@ def fetch_pixabay_video(
     Searches Pixabay for a portrait (1080x1920) video matching the theme.
 
     Args:
-        theme: Category keyword like 'motivation' or 'life'
-        output_path: Where the selected video will be saved
-        used_urls: Set of URLs already used in this reel
-        min_duration: Minimum duration in seconds
-        max_duration: Maximum duration in seconds
+        theme (str): Category keyword like 'motivation' or 'life'.
+        output_path (str): Where the selected video will be saved.
+        used_urls (set): Set of URLs already used in this reel.
+        min_duration (int): Minimum duration in seconds.
+        max_duration (int): Maximum duration in seconds.
 
     Returns:
-        str | None: Downloaded URL (added to used_urls), or None on failure
+        str | None: Downloaded URL (added to used_urls), or None on failure.
     """
     if not PIXABAY_API_KEY:
         logger.error("[❌] Missing PIXABAY_API_KEY in .env")
@@ -60,7 +60,7 @@ def fetch_pixabay_video(
                 "q": theme,
                 "video_type": "film",
                 "orientation": "vertical",
-                "per_page": 30
+                "per_page": 40
             },
             timeout=10
         )
@@ -73,11 +73,12 @@ def fetch_pixabay_video(
 
         for result in hits:
             duration = result.get("duration", 0)
-            if duration < min_duration:
+            if duration < min_duration or duration > 60:
                 continue
 
+            video_options = result.get("videos", {})
             for quality in ["large", "medium", "small", "tiny"]:
-                video = result.get("videos", {}).get(quality)
+                video = video_options.get(quality)
                 if not video:
                     continue
 
@@ -109,6 +110,9 @@ def fetch_pixabay_video(
         logger.warning("[⚠️] No valid vertical 1080x1920 video found on Pixabay.")
         return None
 
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[❌] Pixabay API request failed: {e}")
     except Exception as e:
-        logger.error(f"[❌] Pixabay API exception: {e}")
-        return None
+        logger.exception(f"[❌] Unexpected error during Pixabay fetch: {e}")
+
+    return None

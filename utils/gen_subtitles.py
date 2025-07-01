@@ -23,7 +23,7 @@ from typing import Optional
 logger = logging.getLogger("subtitle_gen")
 logging.basicConfig(level=logging.INFO)
 
-# Suppress FP16 warning
+# Suppress FP16 warning on CPU
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
 # Load Whisper model
@@ -33,7 +33,7 @@ except Exception as e:
     logger.error(f"[❌] Failed to load Whisper model: {e}")
     raise
 
-# Optional real-time progress updater
+# Optional UI progress
 try:
     from progress import update_progress
 except ImportError:
@@ -60,20 +60,17 @@ def generate_srt_from_audio(
         language (str): Language code ('en', 'hi', or 'auto').
     """
     update_progress(task_id, "📝 Generating subtitles...", 50)
-    logger.info(f"[🧠] Transcribing audio for subtitles with Whisper...")
+    logger.info(f"[🧠] Transcribing audio with Whisper...")
 
-    # Auto-detect Hindi if needed
+    # Language detection from .txt if auto
     if language == "auto":
         language = "en"
-        try:
-            txt_path = audio_path.replace(".mp3", ".txt")
-            if os.path.exists(txt_path):
-                with open(txt_path, "r", encoding="utf-8") as f:
-                    raw_text = f.read()
-                    if any('\u0900' <= c <= '\u097F' for c in raw_text):
-                        language = "hi"
-        except Exception:
-            pass
+        txt_path = audio_path.replace(".mp3", ".txt")
+        if os.path.exists(txt_path):
+            with open(txt_path, "r", encoding="utf-8") as f:
+                raw_text = f.read()
+                if any('\u0900' <= c <= '\u097F' for c in raw_text):
+                    language = "hi"
 
     try:
         result = MODEL.transcribe(audio_path, word_timestamps=True, language=language)
@@ -121,7 +118,7 @@ def generate_srt_from_audio(
         index += 1
         i += words_per_line
 
-    # Append language to output filename
+    # Output filename auto-suffix
     if output_path.endswith(".srt"):
         output_path = output_path.replace(".srt", f"_{language}.srt")
 
@@ -129,26 +126,30 @@ def generate_srt_from_audio(
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
 
-    logger.info(f"[✅] Generated Whisper SRT for '{category}' → {output_path}")
+    logger.info(f"[✅] Generated Whisper SRT → {output_path}")
     update_progress(task_id, "✅ Subtitles ready (Whisper)", 55)
 
-    # Detect Hindi and convert SRT → ASS
-    all_text = " ".join(sub.content for sub in subtitles)
-    if any('\u0900' <= c <= '\u097F' for c in all_text):
+    # ASS conversion for Hindi
+    if any('\u0900' <= c <= '\u097F' for c in " ".join(sub.content for sub in subtitles)):
         ass_path = output_path.replace(".srt", ".ass")
         convert_srt_to_ass(output_path, ass_path, font="Noto Sans Devanagari")
-        logger.info(f"[🈶] Detected Hindi — ASS subtitle created: {ass_path}")
+        logger.info(f"[🈶] ASS subtitle created for Hindi: {ass_path}")
 
 
-def convert_srt_to_ass(srt_path: str, ass_path: str, font: str = "Noto Sans Devanagari", fontsize: int = 18) -> None:
+def convert_srt_to_ass(
+    srt_path: str,
+    ass_path: str,
+    font: str = "Noto Sans Devanagari",
+    fontsize: int = 18
+) -> None:
     """
-    Convert .srt subtitle file to .ass format with font support for Hindi.
+    Convert SRT to ASS format with Unicode font support.
 
     Args:
-        srt_path (str): Input SRT file path.
-        ass_path (str): Output ASS file path.
-        font (str): Font name to use.
-        fontsize (int): Font size in points.
+        srt_path (str): Input .srt file.
+        ass_path (str): Output .ass file.
+        font (str): Font name to render in.
+        fontsize (int): Font size.
     """
     with open(srt_path, "r", encoding="utf-8") as f:
         subs = list(srt.parse(f.read()))
@@ -188,7 +189,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     logger.info(f"[🈶] Converted SRT → ASS → {ass_path}")
 
 
-# CLI entry point for manual testing
+# CLI test
 if __name__ == "__main__":
     import sys
     if len(sys.argv) not in (3, 4):

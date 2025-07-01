@@ -9,7 +9,7 @@ import os
 import subprocess
 import hashlib
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 from gtts import gTTS
 from dotenv import load_dotenv
 
@@ -26,17 +26,16 @@ USE_ELEVENLABS = os.getenv("USE_ELEVENLABS", "false").lower() == "true"
 USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
 
-# API Keys
+# API keys and voice defaults
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "9BWtsMINqrJLrRacOk9x")
 GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
 
-# Optional progress UI
+# Optional: progress UI
 try:
     from app import progress_status
 except ImportError:
     progress_status = {}
-
 
 def update_progress(task_id: Optional[str], status: str, percent: int):
     if task_id and task_id in progress_status:
@@ -44,7 +43,6 @@ def update_progress(task_id: Optional[str], status: str, percent: int):
 
 
 def get_audio_duration(path: str) -> float:
-    """Returns duration in seconds using ffprobe."""
     try:
         result = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
@@ -67,13 +65,13 @@ def generate_tts_audio(
     language: str = "en",
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
-) -> tuple[str, float]:
+) -> Tuple[str, float]:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    logger.info(f"[🔊] Generating TTS for '{category}' → {output_path}")
-    update_progress(task_id, "🔊 Generating TTS...", 35)
-
     raw_path = output_path.replace(".mp3", "_raw.mp3")
     success = False
+
+    update_progress(task_id, "🔊 Generating TTS...", 35)
+    logger.info(f"[🔊] Generating TTS for '{category}' → {output_path}")
 
     # --- ElevenLabs ---
     if USE_ELEVENLABS and ELEVENLABS_API_KEY:
@@ -81,6 +79,8 @@ def generate_tts_audio(
             import requests
             logger.info("[🧠] Trying ElevenLabs...")
             update_progress(task_id, "🔊 Using ElevenLabs...", 37)
+            voice_id = tts_voice or ELEVENLABS_VOICE_ID
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
             headers = {
                 "xi-api-key": ELEVENLABS_API_KEY,
                 "Content-Type": "application/json"
@@ -90,18 +90,16 @@ def generate_tts_audio(
                 "voice_settings": {"stability": 0.75, "similarity_boost": 0.75},
                 "model_id": "eleven_multilingual_v2"
             }
-            voice_id = tts_voice or ELEVENLABS_VOICE_ID
-            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
             response = requests.post(url, headers=headers, json=payload)
-            if response.status_code == 200:
+            if response.ok:
                 with open(raw_path, "wb") as f:
                     f.write(response.content)
-                logger.info("[✅] ElevenLabs audio saved.")
                 success = True
+                logger.info("[✅] ElevenLabs audio saved.")
             else:
-                logger.warning(f"[❌] ElevenLabs API error: {response.status_code} - {response.text}")
+                logger.warning(f"[❌] ElevenLabs error: {response.status_code} - {response.text}")
         except Exception as e:
-            logger.warning(f"[❌] ElevenLabs error: {e}")
+            logger.warning(f"[❌] ElevenLabs failed: {e}")
 
     # --- Google Cloud TTS ---
     if not success and USE_GOOGLE_CLOUD:
@@ -112,7 +110,6 @@ def generate_tts_audio(
 
             lang_code = {"hi": "hi-IN", "en": "en-US"}.get(language, "en-US")
             voice_name = tts_voice or GOOGLE_CLOUD_TTS_VOICE
-
             cache_key = hashlib.md5(f"{text}|{voice_name}".encode()).hexdigest()
             cache_dir = os.path.join(ROOT_DIR, "cache", "tts")
             os.makedirs(cache_dir, exist_ok=True)
@@ -120,18 +117,13 @@ def generate_tts_audio(
 
             if cache and not DISABLE_CACHE and os.path.exists(cached_path):
                 subprocess.run(["cp", cached_path, raw_path], check=True)
-                logger.info("[📦] Using cached Google TTS")
                 success = True
+                logger.info("[📦] Using cached Google TTS audio.")
             else:
                 client = texttospeech.TextToSpeechClient()
                 synthesis_input = texttospeech.SynthesisInput(text=text)
-                voice = texttospeech.VoiceSelectionParams(
-                    language_code=lang_code,
-                    name=voice_name
-                )
-                audio_config = texttospeech.AudioConfig(
-                    audio_encoding=texttospeech.AudioEncoding.MP3
-                )
+                voice = texttospeech.VoiceSelectionParams(language_code=lang_code, name=voice_name)
+                audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
                 response = client.synthesize_speech(
                     input=synthesis_input, voice=voice, audio_config=audio_config
                 )
@@ -140,25 +132,25 @@ def generate_tts_audio(
                 if cache and not DISABLE_CACHE:
                     with open(cached_path, "wb") as f:
                         f.write(response.audio_content)
-                logger.info("[✅] Google Cloud TTS audio saved.")
                 success = True
+                logger.info("[✅] Google TTS audio saved.")
         except Exception as e:
-            logger.warning(f"[❌] Google TTS error: {e}")
+            logger.warning(f"[❌] Google Cloud TTS failed: {e}")
 
-    # --- gTTS fallback ---
+    # --- gTTS Fallback ---
     if not success:
         try:
-            logger.info("[🌍] Using gTTS fallback...")
             update_progress(task_id, "🔊 Using gTTS fallback...", 40)
+            logger.info("[🌍] Using gTTS fallback...")
             lang = "hi" if language == "hi" or any('\u0900' <= c <= '\u097F' for c in text) else "en"
-            tts = gTTS(text=text.strip(), lang=lang)
-            tts.save(raw_path)
-            logger.info("[✅] gTTS audio saved.")
+            gtts_obj = gTTS(text=text.strip(), lang=lang)
+            gtts_obj.save(raw_path)
             success = True
+            logger.info("[✅] gTTS audio saved.")
         except Exception as e:
             raise RuntimeError(f"[❌] gTTS failed: {e}")
 
-    # --- Final conversion with ffmpeg ---
+    # --- Final FFmpeg Conversion ---
     if success:
         try:
             subprocess.run([
@@ -171,7 +163,7 @@ def generate_tts_audio(
 
         duration = get_audio_duration(output_path)
         update_progress(task_id, f"✅ TTS ready ({duration:.1f}s)", 45)
-        logger.info(f"[🎯] Final audio saved: {output_path} ({duration:.1f}s)")
+        logger.info(f"[🎯] TTS audio ready: {output_path} ({duration:.1f}s)")
         return output_path, duration
     else:
         raise RuntimeError("[❌] All TTS methods failed.")
@@ -185,8 +177,7 @@ def generate_tts_from_file(
     language: str = "en",
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
-) -> tuple[str, float]:
-    """Helper to read script from file and generate TTS."""
+) -> Tuple[str, float]:
     text_path = os.path.join(output_root, username, f"{category}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Script not found: {text_path}")
@@ -195,18 +186,12 @@ def generate_tts_from_file(
         text = f.read().strip()
 
     if not text:
-        raise ValueError("[❌] Script text is empty.")
+        raise ValueError("[❌] Script is empty.")
 
     lang_suffix = f"_{language}"
     output_path = os.path.join(output_root, username, f"{category}_voice{lang_suffix}.mp3")
 
-    return generate_tts_audio(
-        category, text, output_path,
-        task_id=task_id,
-        language=language,
-        tts_voice=tts_voice,
-        cache=cache
-    )
+    return generate_tts_audio(category, text, output_path, task_id, language, tts_voice, cache)
 
 
 def generate_tts_from_text(
@@ -218,18 +203,11 @@ def generate_tts_from_text(
     language: str = "en",
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
-) -> tuple[str, float]:
-    """Generate TTS directly from text (no file read)."""
-    return generate_tts_audio(
-        category, text, output_path,
-        task_id=task_id,
-        language=language,
-        tts_voice=tts_voice,
-        cache=cache
-    )
+) -> Tuple[str, float]:
+    return generate_tts_audio(category, text, output_path, task_id, language, tts_voice, cache)
 
 
-# CLI usage for testing
+# CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 4:

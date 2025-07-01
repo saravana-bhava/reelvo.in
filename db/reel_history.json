@@ -1,0 +1,25 @@
+{
+  "demo_user": {
+    "reels": [
+      {
+        "filename": "motivation_en.mp4",
+        "script": "Push harder than yesterday if you want a different tomorrow.",
+        "timestamp": "2025-07-01T09:00:00"
+      },
+      {
+        "filename": "success_en.mp4",
+        "script": "Success is not just about luck, it's about preparation and persistence.",
+        "timestamp": "2025-07-01T10:30:00"
+      }
+    ]
+  },
+  "saravana": {
+    "reels": [
+      {
+        "filename": "life_hi.mp4",
+        "script": "ज़िंदगी हर दिन एक नया मौका है।",
+        "timestamp": "2025-07-01T11:15:00"
+      }
+    ]
+  }
+}

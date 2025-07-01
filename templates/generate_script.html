@@ -1,4 +1,3 @@
-<!-- File: templates/generate_script.html -->
 {% extends "base.html" %}
 {% block title %}Generate Reel Script - Reelvo.ai{% endblock %}
 
@@ -6,8 +5,10 @@
 <h2>🎬 Create Your Instagram Reel</h2>
 
 <form action="{{ url_for('create_reel_action') }}" method="POST" enctype="multipart/form-data">
+  <!-- Theme -->
   <label for="theme">🎯 Select Theme:</label>
   <select name="theme" id="theme" required>
+    <option value="">-- Select Theme --</option>
     <option value="motivation">Motivation</option>
     <option value="success">Success</option>
     <option value="inspiration">Inspiration</option>
@@ -16,30 +17,36 @@
     <option value="custom">Custom Product</option>
   </select>
 
+  <!-- Language -->
   <label for="language">🗣️ Script Language:</label>
   <select name="language" id="language" required>
-    <option value="en">English</option>
-    <option value="hi">Hindi</option>
+    <option value="en">🇺🇸 English</option>
+    <option value="hi">🇮🇳 Hindi</option>
   </select>
 
+  <!-- TTS Voice -->
   <label for="tts_voice">🎙️ Voice Style (for TTS):</label>
   <select name="tts_voice" id="tts_voice">
     <option value="">Auto (Default)</option>
-    <option value="en_male_neutral">Male - Neutral</option>
-    <option value="en_female_energetic">Female - Energetic</option>
+    <option value="en_male_neutral">English Male - Neutral</option>
+    <option value="en_female_energetic">English Female - Energetic</option>
     <option value="hi_male_slow">Hindi Male - Calm</option>
     <option value="hi_female_fast">Hindi Female - Fast</option>
   </select>
 
+  <!-- Optional Script -->
   <label for="script_text">📝 Custom Script (Optional):</label>
   <textarea name="script_text" id="script_text" rows="4" placeholder="Enter your custom script here if you want to override the auto-generated script..."></textarea>
 
+  <!-- Voiceover -->
   <label for="voiceover">📤 Upload Voiceover (Optional):</label>
   <input type="file" name="voiceover" id="voiceover" accept=".mp3,.wav,.m4a">
 
+  <!-- Toggles -->
   <label><input type="checkbox" name="include_subtitles" checked> Show Subtitles</label><br/>
   <label><input type="checkbox" name="include_watermark" checked> Show Watermark</label><br/>
 
+  <!-- Submit -->
   <button type="submit">🚀 Generate Reel</button>
 </form>
 

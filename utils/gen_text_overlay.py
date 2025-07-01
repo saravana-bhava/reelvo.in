@@ -10,11 +10,11 @@ import logging
 from typing import Optional
 from PIL import Image, ImageDraw, ImageFont
 
-# Logging setup
+# Logger setup
 logger = logging.getLogger("text_overlay")
 logging.basicConfig(level=logging.INFO)
 
-# Optional progress UI
+# Optional: progress UI
 try:
     from progress import update_progress
 except ImportError:
@@ -47,7 +47,7 @@ def generate_text_overlay(
     update_progress(task_id, "🖋️ Generating text overlay...", 35)
     logger.info(f"[🖋️] Rendering text overlay → {output_path}")
 
-    # Step 1: Font discovery
+    # Font resolution
     if not font_path:
         possible_fonts = (
             [
@@ -71,16 +71,16 @@ def generate_text_overlay(
 
     font = ImageFont.truetype(font_path, font_size)
 
-    # Adjust output path to be language-specific if it ends in _text.png
+    # Optional filename suffix based on language
     if output_path.endswith("_text.png"):
-        base = output_path[:-9]  # remove "_text.png"
+        base = output_path[:-9]
         output_path = f"{base}_text_{language}.png"
 
-    # Step 2: Create transparent RGBA canvas
+    # Create canvas
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
 
-    # Step 3: Word wrap
+    # Word-wrap into lines
     words = text.strip().split()
     lines = []
     line = ""
@@ -88,28 +88,27 @@ def generate_text_overlay(
     for word in words:
         test_line = f"{line} {word}".strip()
         bbox = draw.textbbox((0, 0), test_line, font=font)
-        if bbox[2] <= width - 100:  # 50px side padding
+        if bbox[2] <= width - 100:
             line = test_line
         else:
-            if line:
-                lines.append(line)
+            lines.append(line)
             line = word
     if line:
         lines.append(line)
 
-    # Step 4: Vertical centering
+    # Compute total height for vertical centering
     line_height = draw.textbbox((0, 0), "A", font=font)[3] + 15
-    total_height = line_height * len(lines)
-    y = (height - total_height) // 2
+    total_text_height = line_height * len(lines)
+    y = (height - total_text_height) // 2
 
-    # Step 5: Draw each line
+    # Draw lines centered horizontally
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         x = (width - bbox[2]) // 2
         draw.text((x, y), line, font=font, fill="white")
         y += line_height
 
-    # Step 6: Save to file
+    # Save image
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     image.convert("RGB").save(output_path)
     logger.info(f"[✅] Overlay image saved → {output_path}")

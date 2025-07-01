@@ -7,6 +7,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>{% block title %}Reelvo.ai{% endblock %}</title>
 
+  <!-- Optional: SEO and favicon -->
+  <meta name="description" content="Generate Instagram Reels with AI - Reelvo.ai" />
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+
   <style>
     body {
       margin: 0;
@@ -41,6 +45,26 @@
     nav a:hover {
       text-decoration: underline;
       opacity: 0.9;
+    }
+
+    .logout-form {
+      display: inline;
+      margin-left: 10px;
+    }
+
+    .logout-form button {
+      background: transparent;
+      color: #fff;
+      border: 1px solid #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .logout-form button:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .container {
@@ -110,8 +134,8 @@
   <a href="{{ url_for('create_reel') }}">Create Reel</a>
   <a href="{{ url_for('list_reels') }}">Reel History</a>
   {% if session.user %}
-    <form action="{{ url_for('disconnect_instagram') }}" method="post" style="display:inline;">
-      <button type="submit" style="margin-left:10px;">Disconnect Instagram</button>
+    <form action="{{ url_for('disconnect_instagram') }}" method="post" class="logout-form">
+      <button type="submit">Disconnect Instagram</button>
     </form>
     <a href="{{ url_for('logout') }}" style="margin-left:10px;">Logout</a>
   {% else %}

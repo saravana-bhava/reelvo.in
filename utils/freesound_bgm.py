@@ -13,6 +13,7 @@ load_dotenv()
 FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY")
 FREESOUND_API_URL = "https://freesound.org/apiv2/search/text/"
 logger = logging.getLogger("freesound_bgm")
+logging.basicConfig(level=logging.INFO)
 
 HEADERS = {
     "Authorization": f"Token {FREESOUND_API_KEY}"
@@ -22,17 +23,17 @@ HEADERS = {
 def search_freesound(query: str, language: str = "en") -> Optional[str]:
     """
     Search Freesound.org for background music using a keyword,
-    and return the URL to a high-quality preview MP3 if found.
+    and return the path to a high-quality preview MP3 if found.
 
     Args:
         query (str): Keyword for search (e.g., 'success', 'motivation').
         language (str): Language hint for filename suffix ('en', 'hi').
 
     Returns:
-        Optional[str]: Downloaded preview MP3 file path or None.
+        Optional[str]: Downloaded MP3 file path or None if failed.
     """
     if not FREESOUND_API_KEY:
-        logger.warning("[⚠️] FREESOUND_API_KEY not set. Cannot fetch BGM.")
+        logger.warning("[⚠️] FREESOUND_API_KEY not set. Skipping BGM.")
         return None
 
     encoded_query = quote(f"music {query}")
@@ -51,36 +52,38 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
 
         results = response.json().get("results", [])
         if not results:
-            logger.warning(f"[❌] No Freesound results found for: '{query}'")
+            logger.warning(f"[❌] No Freesound results for: '{query}'")
             return None
 
         top_result = results[0]
         previews = top_result.get("previews", {})
         preview_url = previews.get("preview-hq-mp3")
 
-        if preview_url:
-            os.makedirs("assets/bgm_cache", exist_ok=True)
-            file_name = f"{query.lower().replace(' ', '_')}_{language}.mp3"
-            dest_path = os.path.join("assets/bgm_cache", file_name)
+        if not preview_url:
+            logger.warning("[⚠️] No high-quality preview found.")
+            return None
 
-            if os.path.exists(dest_path):
-                logger.info(f"[📦] Using cached BGM: {dest_path}")
-                return dest_path
+        os.makedirs("assets/bgm_cache", exist_ok=True)
+        file_name = f"{query.lower().replace(' ', '_')}_{language}.mp3"
+        dest_path = os.path.join("assets/bgm_cache", file_name)
 
-            logger.info(f"[⬇️] Downloading BGM preview → {dest_path}")
-            with requests.get(preview_url, stream=True, timeout=15) as r:
-                r.raise_for_status()
-                with open(dest_path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
+        if os.path.exists(dest_path):
+            logger.info(f"[📦] Using cached BGM: {dest_path}")
             return dest_path
 
-        logger.warning("[⚠️] No preview MP3 found in top result.")
+        logger.info(f"[⬇️] Downloading BGM → {dest_path}")
+        with requests.get(preview_url, stream=True, timeout=15) as r:
+            r.raise_for_status()
+            with open(dest_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        return dest_path
 
     except requests.RequestException as e:
-        logger.warning(f"[❌] Freesound API request error: {e}")
+        logger.warning(f"[❌] Freesound API error: {e}")
     except Exception as e:
-        logger.warning(f"[❌] Unexpected error while querying Freesound: {e}")
+        logger.warning(f"[❌] Unexpected Freesound error: {e}")
 
     return None
 

@@ -15,10 +15,20 @@ os.makedirs(USER_DB_DIR, exist_ok=True)
 
 
 def get_user_token_path(username: str) -> str:
+    """Returns the path to the user's token JSON file."""
     return os.path.join(USER_DB_DIR, f"{username}.json")
 
 
 def save_user_tokens(username: str, access_token: str, refresh_token: str, expires_in: int):
+    """
+    Save user's Instagram access & refresh tokens.
+
+    Args:
+        username (str): Unique user ID.
+        access_token (str): Access token from Instagram API.
+        refresh_token (str): Long-lived refresh token (if available).
+        expires_in (int): Expiration in seconds.
+    """
     path = get_user_token_path(username)
     data = {
         "access_token": access_token,
@@ -30,6 +40,15 @@ def save_user_tokens(username: str, access_token: str, refresh_token: str, expir
 
 
 def load_user_tokens(username: str) -> Optional[dict]:
+    """
+    Load tokens from file.
+
+    Args:
+        username (str): Unique user ID.
+
+    Returns:
+        dict or None: Token dict or None if not found.
+    """
     path = get_user_token_path(username)
     if not os.path.exists(path):
         return None
@@ -38,6 +57,14 @@ def load_user_tokens(username: str) -> Optional[dict]:
 
 
 def update_access_token(username: str, new_token: str, new_expiry: int):
+    """
+    Update user's access token and expiry time.
+
+    Args:
+        username (str): User ID.
+        new_token (str): New access token.
+        new_expiry (int): New expiry in seconds.
+    """
     tokens = load_user_tokens(username)
     if tokens:
         tokens["access_token"] = new_token
@@ -47,15 +74,31 @@ def update_access_token(username: str, new_token: str, new_expiry: int):
 
 
 def get_instagram_credentials(username: str) -> Optional[dict]:
+    """
+    Get access token for use with Instagram Graph API.
+
+    Args:
+        username (str): User ID.
+
+    Returns:
+        dict or None: {"access_token": str} or None.
+    """
     tokens = load_user_tokens(username)
     if not tokens or "access_token" not in tokens:
         return None
-    return {
-        "access_token": tokens["access_token"]
-    }
+    return {"access_token": tokens["access_token"]}
 
 
 def log_post(username: str, video_path: str, caption: str, drive_url: str = ""):
+    """
+    Append a post log entry.
+
+    Args:
+        username (str): User ID.
+        video_path (str): Path to local MP4 file.
+        caption (str): Reel caption.
+        drive_url (str): Optional Google Drive share URL.
+    """
     log_dir = os.path.join("output", username)
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "instagram_posts.log")

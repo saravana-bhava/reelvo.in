@@ -1,14 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Reel History{% endblock %}
+
 {% block content %}
 <h2>📂 Reel History ({{ user }})</h2>
-{% for vid in videos %}
-  <div style="margin-bottom:20px;">
-    <video width="320" height="568" controls src="{{ url_for('serve_video', username=user, filename=vid) }}"></video><br/>
-    <strong>{{ vid }}</strong>
-    <pre style="background:#f0f0f0; padding:10px;">{{ scripts[vid] }}</pre>
-  </div>
+
+{% if videos %}
+  {% for vid in videos %}
+    <div style="margin-bottom: 30px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+      <video width="320" height="568" controls style="border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" src="{{ url_for('serve_video', username=user, filename=vid) }}"></video>
+      <div style="margin-top: 10px;">
+        <strong>{{ vid }}</strong>
+        <pre style="background: #f8f9fa; padding: 12px; border-radius: 6px; overflow-x: auto;">{{ scripts[vid] }}</pre>
+      </div>
+    </div>
+  {% endfor %}
 {% else %}
   <p>No videos found yet.</p>
-{% endfor %}
+{% endif %}
 {% endblock %}
