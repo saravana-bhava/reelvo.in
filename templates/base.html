@@ -7,7 +7,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>{% block title %}Reelvo.ai{% endblock %}</title>
 
-  <!-- Optional: SEO and favicon -->
+  <!-- SEO & Favicon -->
   <meta name="description" content="Generate Instagram Reels with AI - Reelvo.ai" />
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
 
@@ -29,10 +29,11 @@
     nav {
       background: #1565c0;
       display: flex;
-      justify-content: center;
-      gap: 20px;
-      padding: 10px 0;
       flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
     }
 
     nav a {
@@ -49,7 +50,6 @@
 
     .logout-form {
       display: inline;
-      margin-left: 10px;
     }
 
     .logout-form button {
@@ -76,7 +76,8 @@
     textarea,
     input[type="text"],
     input[type="file"],
-    select {
+    select,
+    input[type="date"] {
       width: 100%;
       margin: 10px 0 20px;
       padding: 12px;
@@ -126,31 +127,34 @@
   </style>
 </head>
 <body>
-<header>
-  <h1>🎞️ Reelvo.ai</h1>
-</header>
-<nav>
-  <a href="{{ url_for('dashboard') }}">Dashboard</a>
-  <a href="{{ url_for('create_reel') }}">Create Reel</a>
-  <a href="{{ url_for('list_reels') }}">Reel History</a>
-  {% if session.user %}
-    <form action="{{ url_for('disconnect_instagram') }}" method="post" class="logout-form">
-      <button type="submit">Disconnect Instagram</button>
-    </form>
-    <a href="{{ url_for('logout') }}" style="margin-left:10px;">Logout</a>
-  {% else %}
-    <a href="{{ url_for('login') }}">Login</a>
-  {% endif %}
-</nav>
-<div class="container">
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for msg in messages %}
-        <div class="flash">{{ msg }}</div>
-      {% endfor %}
+  <header>
+    <h1>🎞️ Reelvo.ai</h1>
+  </header>
+
+  <nav>
+    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('create_reel') }}">Create Reel</a>
+    <a href="{{ url_for('list_reels') }}">Reel History</a>
+    <a href="{{ url_for('view_schedule') }}">Scheduled Reels</a>
+    {% if session.user %}
+      <form action="{{ url_for('disconnect_instagram') }}" method="post" class="logout-form">
+        <button type="submit">Disconnect Instagram</button>
+      </form>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
     {% endif %}
-  {% endwith %}
-  {% block content %}{% endblock %}
-</div>
+  </nav>
+
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="flash">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
 </body>
 </html>

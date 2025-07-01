@@ -1,20 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Reel History{% endblock %}
+{% block title %}Reel History | Reelvo.ai{% endblock %}
 
 {% block content %}
-<h2>📂 Reel History ({{ user }})</h2>
+  <h2>📂 Reel History for <span style="color:#007BFF">{{ user }}</span></h2>
 
-{% if videos %}
-  {% for vid in videos %}
-    <div style="margin-bottom: 30px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-      <video width="320" height="568" controls style="border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" src="{{ url_for('serve_video', username=user, filename=vid) }}"></video>
-      <div style="margin-top: 10px;">
-        <strong>{{ vid }}</strong>
-        <pre style="background: #f8f9fa; padding: 12px; border-radius: 6px; overflow-x: auto;">{{ scripts[vid] }}</pre>
+  {% if videos %}
+    {% for vid in videos %}
+      <div style="margin-bottom: 30px; padding: 15px; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.1);">
+        <video width="320" height="568" controls style="border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+          <source src="{{ url_for('serve_video', username=user, filename=vid) }}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <div style="margin-top: 12px;">
+          <strong>{{ vid }}</strong>
+          <pre style="background: #f1f3f5; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word;">{{ scripts[vid] }}</pre>
+        </div>
       </div>
-    </div>
-  {% endfor %}
-{% else %}
-  <p>No videos found yet.</p>
-{% endif %}
+    {% endfor %}
+  {% else %}
+    <p style="margin-top: 20px; font-size: 16px;">❌ No reels found yet.</p>
+  {% endif %}
+
+  <p style="margin-top: 40px;">
+    <a class="button" href="{{ url_for('dashboard') }}">⬅️ Back to Dashboard</a>
+  </p>
 {% endblock %}

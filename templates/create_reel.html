@@ -6,20 +6,20 @@
 
 <form id="reelForm" method="post" action="{{ url_for('create_reel_action') }}" enctype="multipart/form-data">
   <!-- Theme/topic selection -->
-  <label for="theme">Select Theme:</label>
+  <label for="theme"><strong>🎯 Select Theme:</strong></label>
   <select name="theme" id="theme">
     <option value="">-- Choose theme --</option>
-    <option>motivation</option>
-    <option>gym</option>
-    <option>life</option>
-    <option>success</option>
+    <option value="motivation">Motivation</option>
+    <option value="gym">Gym</option>
+    <option value="life">Life</option>
+    <option value="success">Success</option>
   </select>
 
-  <label for="custom_topic">Or Custom Topic/Product:</label>
-  <input name="custom_topic" id="custom_topic" placeholder="e.g. Protein Powder" />
+  <label for="custom_topic"><strong>💡 Or Custom Topic/Product:</strong></label>
+  <input type="text" name="custom_topic" id="custom_topic" placeholder="e.g. Protein Powder" />
 
   <!-- Language selection -->
-  <label for="language">Language:</label>
+  <label for="language"><strong>🌐 Language:</strong></label>
   <select name="language" id="language" required>
     <option value="en">🇺🇸 English</option>
     <option value="hi">🇮🇳 Hindi</option>
@@ -27,18 +27,19 @@
 
   <!-- Script generation -->
   <button type="button" onclick="generateScript()">📝 Generate Script</button>
+  <div id="script-status" style="margin-top: 8px; color: #555;"></div>
 
-  <label for="script">Edit Script:</label>
-  <textarea name="script" id="script" rows="5" required>{{ script or '' }}</textarea>
+  <label for="script"><strong>✏️ Edit Script:</strong></label>
+  <textarea name="script" id="script" rows="6" required>{{ script or '' }}</textarea>
 
   <!-- Voice selection -->
-  <label for="voice_option">Voiceover Option:</label>
+  <label for="voice_option"><strong>🎙️ Voiceover Option:</strong></label>
   <select name="voice_option" id="voice_option">
     <option value="tts">Use AI Voice (TTS)</option>
-    <option value="upload">Upload my voice</option>
+    <option value="upload">Upload My Voice</option>
   </select>
 
-  <label for="voice_artist">TTS Voice:</label>
+  <label for="voice_artist"><strong>🔊 TTS Voice:</strong></label>
   <select name="voice_artist" id="voice_artist">
     <option value="en_male_energetic">English Male (Energetic)</option>
     <option value="en_female_neutral">English Female (Neutral)</option>
@@ -46,12 +47,12 @@
     <option value="hi_female_friendly">Hindi Female (Friendly)</option>
   </select>
 
-  <label for="custom_voice">Upload Voiceover:</label>
+  <label for="custom_voice"><strong>📁 Upload Voiceover (MP3/WAV):</strong></label>
   <input type="file" name="custom_voice" id="custom_voice" accept=".mp3,.wav" />
 
   <!-- Options -->
   <label><input type="checkbox" name="subtitles" checked /> Include Subtitles</label><br>
-  <label><input type="checkbox" name="watermark" checked /> Include Watermark</label><br>
+  <label><input type="checkbox" name="watermark" checked /> Include Watermark</label><br><br>
 
   <button type="submit">📦 Create Reel</button>
 </form>
@@ -62,23 +63,37 @@
     const theme = document.getElementById('theme').value.trim();
     const topic = document.getElementById('custom_topic').value.trim();
     const lang = document.getElementById('language').value;
+    const statusDiv = document.getElementById('script-status');
+    statusDiv.textContent = '⏳ Generating script...';
 
-    const res = await fetch('{{ url_for("generate_script_ajax") }}', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ theme, custom_topic: topic, language: lang })
-    });
+    try {
+      const res = await fetch('{{ url_for("generate_script_ajax") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme, custom_topic: topic, language: lang })
+      });
 
-    const data = await res.json();
-    document.getElementById('script').value = data.script || data.error || 'Error generating script.';
+      const data = await res.json();
+      if (data.script) {
+        document.getElementById('script').value = data.script;
+        statusDiv.textContent = '✅ Script loaded.';
+      } else {
+        document.getElementById('script').value = '';
+        statusDiv.textContent = data.error || '❌ Error generating script.';
+      }
+    } catch (err) {
+      statusDiv.textContent = '❌ Script generation failed. Try again.';
+    }
   }
 </script>
 
+<hr />
+
 <!-- Previous reels -->
-<h3>Your Previous Reels</h3>
+<h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-    <li><a href="{{ url_for('serve_video', username=user, filename=v) }}">{{ v }}</a></li>
+    <li><a href="{{ url_for('serve_video', username=user, filename=v) }}" target="_blank">{{ v }}</a></li>
   {% else %}
     <li>No reels found.</li>
   {% endfor %}
