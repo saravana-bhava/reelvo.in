@@ -1,4 +1,4 @@
-# File: utils/gen_text_overlay.py
+# File: utils/generate_text_overlay.py
 
 """
 Generate a text overlay image centered in a vertical canvas.
@@ -119,7 +119,7 @@ def generate_text_overlay(
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 3:
-        print("Usage: python utils/gen_text_overlay.py '<text>' <output_path> [language]")
+        print("Usage: python utils/generate_text_overlay.py '<text>' <output_path> [language]")
     else:
         text = sys.argv[1]
         output = sys.argv[2]

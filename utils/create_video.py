@@ -19,8 +19,8 @@ import srt
 import re
 from dotenv import load_dotenv
 
-from utils.gen_text_overlay import generate_text_overlay
-from utils.gen_tts_audio import generate_tts_from_file
+from utils.generate_text_overlay import generate_text_overlay
+from utils.generate_tts_audio import generate_tts_from_file
 from utils.subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video

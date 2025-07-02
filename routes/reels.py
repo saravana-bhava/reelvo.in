@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 from utils.generate_script import generate_script_for_user
 from utils.create_video import create_video_for_category
 from utils.google_drive import upload_to_google_drive
-from utils.gen_tts_audio import generate_tts_audio
+from utils.generate_tts_audio import generate_tts_audio
 from utils.instagram import post_to_instagram
 from utils.subtitles import generate_srt_from_audio
 

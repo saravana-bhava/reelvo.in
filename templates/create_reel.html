@@ -52,25 +52,36 @@
 </form>
 
 <script>
+const generateBtn = document.getElementById('generateBtn');
+const themeInput = document.getElementById('theme');
+const topicInput = document.getElementById('custom_topic');
+const scriptTextarea = document.getElementById('script');
+const statusDiv = document.getElementById('script-status');
+
 function checkPromptFilled() {
-  const theme = document.getElementById('theme').value.trim();
-  const topic = document.getElementById('custom_topic').value.trim();
-  document.getElementById('generateBtn').disabled = !(theme || topic);
+  const theme = themeInput.value.trim();
+  const topic = topicInput.value.trim();
+  generateBtn.disabled = !(theme || topic);
 }
 
+// Attach listeners
+themeInput.addEventListener('change', checkPromptFilled);
+topicInput.addEventListener('input', checkPromptFilled);
+
 async function generateScript() {
-  const theme = document.getElementById('theme').value.trim();
-  const topic = document.getElementById('custom_topic').value.trim();
+  const theme = themeInput.value.trim();
+  const topic = topicInput.value.trim();
   const lang = document.getElementById('language').value;
-  const statusDiv = document.getElementById('script-status');
 
   if (!theme && !topic) {
     statusDiv.textContent = '❌ Please enter a theme or topic.';
     return;
   }
 
+  // Disable button immediately
+  generateBtn.disabled = true;
+  generateBtn.textContent = '⏳ Generating...';
   statusDiv.textContent = '⏳ Generating script...';
-  document.getElementById('generateBtn').disabled = true;
 
   try {
     const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
@@ -78,23 +89,23 @@ async function generateScript() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme, custom_topic: topic, language: lang })
     });
+
     const data = await res.json();
-    document.getElementById('generateBtn').disabled = false;
 
     if (data.script) {
-      document.getElementById('script').value = data.script;
+      scriptTextarea.value = data.script;
       statusDiv.textContent = '✅ Script generated.';
     } else {
       statusDiv.textContent = data.error || '❌ Generation failed.';
     }
   } catch (err) {
-    document.getElementById('generateBtn').disabled = false;
     statusDiv.textContent = '❌ Request failed. Try again.';
+  } finally {
+    // Re-enable the button in all cases
+    generateBtn.disabled = false;
+    generateBtn.textContent = '📝 Generate Script';
   }
 }
-
-document.getElementById('theme').addEventListener('change', checkPromptFilled);
-document.getElementById('custom_topic').addEventListener('input', checkPromptFilled);
 </script>
 
 <hr />

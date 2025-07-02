@@ -1,4 +1,4 @@
-# File: utils/gen_tts_audio.py
+# File: utils/generate_tts_audio.py
 
 """
 Generates TTS audio using ElevenLabs, Google Cloud TTS, or gTTS (fallback).
@@ -58,7 +58,7 @@ def get_audio_duration(path: str) -> float:
 
 
 def generate_tts_audio(
-    category: str,
+    theme: str,
     text: str,
     output_path: str,
     task_id: Optional[str] = None,
@@ -71,7 +71,7 @@ def generate_tts_audio(
     success = False
 
     update_progress(task_id, "🔊 Generating TTS...", 35)
-    logger.info(f"[🔊] Generating TTS for '{category}' → {output_path}")
+    logger.info(f"[🔊] Generating TTS for '{theme}' → {output_path}")
 
     # --- ElevenLabs ---
     if USE_ELEVENLABS and ELEVENLABS_API_KEY:
@@ -170,7 +170,7 @@ def generate_tts_audio(
 
 
 def generate_tts_from_file(
-    category: str,
+    theme: str,
     username: str,
     scripts_path: str = "output/scripts",
     tts_path: str = "output/tts",
@@ -179,7 +179,7 @@ def generate_tts_from_file(
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
 ) -> Tuple[str, float]:
-    text_path = os.path.join(scripts_path, username, f"{category}_text.txt")
+    text_path = os.path.join(scripts_path, username, f"{theme}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Script not found: {text_path}")
 
@@ -190,22 +190,22 @@ def generate_tts_from_file(
         raise ValueError("[❌] Script is empty.")
 
     lang_suffix = f"_{language}"
-    output_path = os.path.join(tts_path, username, f"{category}_voice{lang_suffix}.mp3")
+    output_path = os.path.join(tts_path, username, f"{theme}_voice{lang_suffix}.mp3")
 
-    return generate_tts_audio(category, text, output_path, task_id, language, tts_voice, cache)
+    return generate_tts_audio(theme, text, output_path, task_id, language, tts_voice, cache)
 
 
 def generate_tts_from_text(
     text: str,
     username: str,
     output_path: str,
-    category: str = "custom",
+    theme: str = "custom",
     task_id: Optional[str] = None,
     language: str = "en",
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
 ) -> Tuple[str, float]:
-    return generate_tts_audio(category, text, output_path, task_id, language, tts_voice, cache)
+    return generate_tts_audio(theme, text, output_path, task_id, language, tts_voice, cache)
 
 
 # CLI usage
@@ -216,4 +216,4 @@ if __name__ == "__main__":
     elif len(sys.argv) == 3:
         generate_tts_from_file(sys.argv[1], sys.argv[2])
     else:
-        print("Usage: python utils/gen_tts_audio.py <category> <username> [language]")
+        print("Usage: python utils/generate_tts_audio.py <theme> <username> [language]")

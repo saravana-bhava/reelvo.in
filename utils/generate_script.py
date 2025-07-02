@@ -75,6 +75,11 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
         try:
             response_data = response.json()
             script = response_data["choices"][0]["message"]["content"].strip()
+            # Remove leading/trailing quotes if present
+            if script.startswith('"') and script.endswith('"'):
+                script = script[1:-1].strip()
+            elif script.startswith("“") and script.endswith("”"):
+                script = script[1:-1].strip()
             return script
         except json.JSONDecodeError:
             logger.error(f"[❌] Failed to decode JSON. Raw response: {response.text}")
