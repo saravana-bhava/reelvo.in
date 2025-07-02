@@ -2,11 +2,9 @@
 
 import os
 import logging
-import time
 from flask import Flask
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.serving import run_simple
 from threading import Thread
+from waitress import serve  # For production server
 
 from utils.scheduler import scheduler_runner
 from utils.instagram_token_refresher import refresh_instagram_tokens
@@ -17,10 +15,13 @@ from routes.progress import progress_bp
 from routes.instagram import instagram_bp
 from routes.schedule import schedule_bp
 
-# ----------------- App Setup -----------------
+# ----------------- Logging Setup -----------------
 
-logging.basicConfig(level=logging.INFO)
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("reelvo")
+
+# ----------------- Flask App Setup -----------------
 
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
@@ -33,19 +34,23 @@ flask_app.register_blueprint(progress_bp)
 flask_app.register_blueprint(instagram_bp)
 flask_app.register_blueprint(schedule_bp)
 
-# ----------------- WSGI Setup -----------------
+# ----------------- Background Threads -----------------
 
-wsgi_app = DispatcherMiddleware(
-    lambda environ, start_response: start_response("404 Not Found", []) or [b"404 Not Found"],
-    {"/reelvo.ai": flask_app}
-)
+def start_background_tasks():
+    Thread(target=refresh_instagram_tokens, daemon=True).start()
+    Thread(target=scheduler_runner, daemon=True).start()
 
 # ----------------- Start Server -----------------
 
-if __name__ == "__main__":
+def run():
     os.makedirs("output", exist_ok=True)
-    Thread(target=refresh_instagram_tokens, daemon=True).start()
-    Thread(target=scheduler_runner, daemon=True).start()
+    start_background_tasks()
+
     port = int(os.getenv("PORT", 5000))
-    logger.info(f"🚀 Dev server running at http://127.0.0.1:{port}/reelvo.ai")
-    run_simple("127.0.0.1", port, wsgi_app, use_debugger=True, use_reloader=True)
+    host = os.getenv("HOST", "0.0.0.0")
+    logger.info(f"🚀 Production server starting at http://{host}:{port}")
+
+    serve(flask_app, host=host, port=port)  # Use Waitress instead of Flask dev server
+
+if __name__ == "__main__":
+    run()

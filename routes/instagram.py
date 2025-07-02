@@ -11,7 +11,7 @@ instagram_bp = Blueprint("instagram", __name__)
 
 INSTAGRAM_APP_ID = os.getenv("IG_APP_ID", "")
 INSTAGRAM_APP_SECRET = os.getenv("IG_APP_SECRET", "")
-REDIRECT_URI = os.getenv("IG_REDIRECT_URI", "http://localhost:5000/reelvo.ai/instagram/callback")
+REDIRECT_URI = os.getenv("IG_REDIRECT_URI", "https://reelvo-ai.dev.sazm.in/instagram/callback")
 
 GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 

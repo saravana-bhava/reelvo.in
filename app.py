@@ -43,7 +43,7 @@ POST_TO_IG = os.getenv("POST_TO_IG", "false").lower() == "true"
 UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
 IG_APP_ID = os.getenv("IG_APP_ID")
 IG_APP_SECRET = os.getenv("IG_APP_SECRET")
-IG_REDIRECT_URI = os.getenv("IG_REDIRECT_URI", "http://localhost:5000/reelvo.ai/connect-instagram/callback")
+IG_REDIRECT_URI = os.getenv("IG_REDIRECT_URI", "https://reelvo-ai.dev.sazm.in/connect-instagram/callback")
 
 # ----------------- Token Refresher -----------------
 
@@ -411,7 +411,7 @@ def serve_video(username, filename):
 
 wsgi_app = DispatcherMiddleware(
     lambda environ, start_response: start_response("404 Not Found", []) or [b"404 Not Found"],
-    {"/reelvo.ai": flask_app}
+    {"/": flask_app}
 )
 
 
@@ -422,5 +422,5 @@ if __name__ == "__main__":
     Thread(target=refresh_instagram_tokens, daemon=True).start()
     Thread(target=scheduler_runner, daemon=True).start()
     port = int(os.getenv("PORT", 5000))
-    logger.info(f"🚀 Starting dev server on http://127.0.0.1:{port}/reelvo.ai")
+    logger.info(f"🚀 Starting dev server on http://127.0.0.1:{port}")
     run_simple("127.0.0.1", port, wsgi_app, use_debugger=True, use_reloader=True)
