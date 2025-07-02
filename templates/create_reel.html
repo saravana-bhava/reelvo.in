@@ -36,11 +36,21 @@
 
   <label for="voice_artist"><strong>🔊 TTS Voice:</strong></label>
   <select id="voice_artist" name="voice_artist">
-    <option value="en_male_energetic">English Male (Energetic)</option>
-    <option value="en_female_neutral">English Female (Neutral)</option>
-    <option value="hi_male_deep">Hindi Male (Deep)</option>
-    <option value="hi_female_friendly">Hindi Female (Friendly)</option>
-  </select>
+    <optgroup label="English">
+        <option value="en-US-Wavenet-A">English Male (Calm)</option>
+        <option value="en-US-Wavenet-B">English Male (Deep)</option>
+        <option value="en-US-Wavenet-C">English Female (Warm)</option>
+        <option value="en-US-Wavenet-D">English Male (Energetic)</option>
+        <option value="en-US-Wavenet-E">English Female (Upbeat)</option>
+        <option value="en-US-Wavenet-F">English Female (Neutral)</option>
+    </optgroup>
+    <optgroup label="Hindi">
+        <option value="hi-IN-Wavenet-A">Hindi Male (Deep)</option>
+        <option value="hi-IN-Wavenet-B">Hindi Male (Warm)</option>
+        <option value="hi-IN-Wavenet-C">Hindi Female (Friendly)</option>
+        <option value="hi-IN-Wavenet-D">Hindi Female (Polite)</option>
+    </optgroup>
+</select>
 
   <label for="custom_voice"><strong>📁 Upload Voiceover:</strong></label>
   <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" />
