@@ -93,9 +93,12 @@ def create_reel_action():
 def generate_script_ajax():
     """AJAX endpoint to generate script dynamically."""
     data = request.get_json()
-    topic = data.get("custom_topic", "")
+    topic = data.get("custom_topic", "").strip()
     theme = data.get("theme")
     language = data.get("language", "en")
+
+    if not theme and not topic:
+        return jsonify({"error": "Please provide a theme or custom topic."}), 400
 
     try:
         script = generate_script_for_user(theme, topic, language)

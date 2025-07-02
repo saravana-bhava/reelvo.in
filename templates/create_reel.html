@@ -7,7 +7,7 @@
 <form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data">
   <!-- Theme/topic selection -->
   <label for="theme"><strong>🎯 Select Theme:</strong></label>
-  <select name="theme" id="theme">
+  <select name="theme" id="theme" onchange="checkPromptFilled()">
     <option value="">-- Choose theme --</option>
     <option value="motivation">Motivation</option>
     <option value="gym">Gym</option>
@@ -16,7 +16,7 @@
   </select>
 
   <label for="custom_topic"><strong>💡 Or Custom Topic/Product:</strong></label>
-  <input type="text" name="custom_topic" id="custom_topic" placeholder="e.g. Protein Powder" />
+  <input type="text" name="custom_topic" id="custom_topic" placeholder="e.g. Protein Powder" oninput="checkPromptFilled()" />
 
   <!-- Language selection -->
   <label for="language"><strong>🌐 Language:</strong></label>
@@ -26,10 +26,8 @@
   </select>
 
   <!-- Script generation -->
-  <div style="margin: 16px 0;">
-    <button type="button" onclick="generateScript()">📝 Generate Script</button>
-    <div id="script-status" role="status" aria-live="polite" style="margin-top: 8px; color: #555;"></div>
-  </div>
+  <button type="button" id="generateBtn" onclick="generateScript()" disabled>📝 Generate Script</button>
+  <div id="script-status" style="margin-top: 8px; color: #555;"></div>
 
   <label for="script"><strong>✏️ Edit Script:</strong></label>
   <textarea name="script" id="script" rows="6" required>{{ script or '' }}</textarea>
@@ -59,16 +57,26 @@
   <button type="submit">📦 Create Reel</button>
 </form>
 
+<!-- Script AJAX handler -->
 <script>
+  function checkPromptFilled() {
+    const theme = document.getElementById("theme").value.trim();
+    const topic = document.getElementById("custom_topic").value.trim();
+    document.getElementById("generateBtn").disabled = !(theme || topic);
+  }
+
   async function generateScript() {
     const theme = document.getElementById('theme').value.trim();
     const topic = document.getElementById('custom_topic').value.trim();
     const lang = document.getElementById('language').value;
     const statusDiv = document.getElementById('script-status');
-    const scriptField = document.getElementById('script');
+
+    if (!theme && !topic) {
+      statusDiv.textContent = '❌ Please enter a theme or topic to generate a script.';
+      return;
+    }
 
     statusDiv.textContent = '⏳ Generating script...';
-    scriptField.disabled = true;
 
     try {
       const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
@@ -79,26 +87,25 @@
 
       const data = await res.json();
       if (data.script) {
-        scriptField.value = data.script;
+        document.getElementById('script').value = data.script;
         statusDiv.textContent = '✅ Script loaded.';
       } else {
-        scriptField.value = '';
+        document.getElementById('script').value = '';
         statusDiv.textContent = data.error || '❌ Error generating script.';
       }
     } catch (err) {
-      statusDiv.textContent = '❌ Script generation failed. Please try again.';
-    } finally {
-      scriptField.disabled = false;
+      statusDiv.textContent = '❌ Script generation failed. Try again.';
     }
   }
 </script>
 
 <hr />
 
+<!-- Previous reels -->
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-    <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank" rel="noopener noreferrer">{{ v }}</a></li>
+    <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank">{{ v }}</a></li>
   {% else %}
     <li>No reels found.</li>
   {% endfor %}
