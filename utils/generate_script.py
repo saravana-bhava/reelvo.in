@@ -2,7 +2,7 @@
 
 """
 Generates short Instagram reel scripts using OpenAI or fallback.
-Saves output to: output/{username}/{theme}_{lang}_text.txt
+Saves output to: output/scripts/{username}/{theme}_{lang}_text.txt
 Supports: English and Hindi
 """
 
@@ -25,16 +25,16 @@ logging.basicConfig(level=logging.INFO)
 # Constants
 USE_OPENAI = os.getenv("USE_OPENAI", "true").lower() == "true"
 API_KEY = os.getenv("OPENAI_API_KEY")
-FALLBACK_JSON_PATH = os.path.join(ROOT_DIR, "fallback_scripts.json")
+THEME_JSON_PATH = os.path.join(ROOT_DIR, "theme.json")
 
-# Load fallback scripts
+# Load theme scripts
 try:
-    with open(FALLBACK_JSON_PATH, "r", encoding="utf-8") as f:
-        FALLBACKS = json.load(f)
-    logger.info("[🗂️] Fallback scripts loaded.")
+    with open(THEME_JSON_PATH, "r", encoding="utf-8") as f:
+        THEMES = json.load(f)
+    logger.info("[🗂️] Theme scripts loaded.")
 except FileNotFoundError:
-    logger.warning("[⚠️] Fallback scripts file not found.")
-    FALLBACKS = {}
+    logger.warning("[⚠️] Theme scripts file not found.")
+    THEMES = {}
 
 # Initialize OpenAI client
 if USE_OPENAI:
@@ -76,7 +76,7 @@ def generate_script(theme: str, task_id: Optional[str] = None, language: str = "
     update_progress(task_id, "🧠 Generating script...", 10)
 
     def fallback_script() -> str:
-        return FALLBACKS.get(theme_norm, {}).get(language_norm, f"[Fallback script for '{theme_norm}' in '{language_norm}']")
+        return THEMES.get(theme_norm, {}).get(language_norm, f"[Theme script for '{theme_norm}' in '{language_norm}']")
 
     # Use predefined prompt template if available
     if theme_norm in PROMPT_TEMPLATES and language_norm in PROMPT_TEMPLATES[theme_norm]:
@@ -107,8 +107,8 @@ def generate_script(theme: str, task_id: Optional[str] = None, language: str = "
             logger.error(f"[❌] Unexpected error: {e}")
 
     # Fallback
-    update_progress(task_id, "⚠️ Using fallback script", 12)
-    logger.info(f"[⚠️] Using fallback script for '{theme}' in '{language}'")
+    update_progress(task_id, "⚠️ Using theme script", 12)
+    logger.info(f"[⚠️] Using theme script for '{theme}' in '{language}'")
     return fallback_script()
 
 
@@ -116,11 +116,11 @@ def generate_script_for_user(
     theme: str,
     username: str,
     language: str = "en",
-    output_root: str = "output",
+    output_root: str = "output/scripts",
     task_id: Optional[str] = None
 ) -> str:
     """
-    Generate and save a script for a user under: output/{username}/
+    Generate and save a script for a user under: output/scripts/{username}/
 
     Returns:
         str: Full path to saved script file.

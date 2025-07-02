@@ -5,109 +5,106 @@
 <h2>🎬 Create Your AI Reel ({{ user }})</h2>
 
 <form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data">
-  <!-- Theme/topic selection -->
   <label for="theme"><strong>🎯 Select Theme:</strong></label>
-  <select name="theme" id="theme" onchange="checkPromptFilled()">
+  <select id="theme" name="theme" onchange="checkPromptFilled()">
     <option value="">-- Choose theme --</option>
-    <option value="motivation">Motivation</option>
-    <option value="gym">Gym</option>
-    <option value="life">Life</option>
-    <option value="success">Success</option>
+    {% for t in themes %}
+      <option value="{{ t }}">{{ t|capitalize }}</option>
+    {% endfor %}
   </select>
 
   <label for="custom_topic"><strong>💡 Or Custom Topic/Product:</strong></label>
-  <input type="text" name="custom_topic" id="custom_topic" placeholder="e.g. Protein Powder" oninput="checkPromptFilled()" />
+  <input type="text" id="custom_topic" name="custom_topic" placeholder="e.g. Protein Powder" oninput="checkPromptFilled()" />
 
-  <!-- Language selection -->
   <label for="language"><strong>🌐 Language:</strong></label>
-  <select name="language" id="language" required>
+  <select id="language" name="language" required>
     <option value="en">🇺🇸 English</option>
     <option value="hi">🇮🇳 Hindi</option>
   </select>
 
-  <!-- Script generation -->
   <button type="button" id="generateBtn" onclick="generateScript()" disabled>📝 Generate Script</button>
   <div id="script-status" style="margin-top: 8px; color: #555;"></div>
 
   <label for="script"><strong>✏️ Edit Script:</strong></label>
-  <textarea name="script" id="script" rows="6" required>{{ script or '' }}</textarea>
+  <textarea id="script" name="script" rows="6" required>{{ script }}</textarea>
 
-  <!-- Voice selection -->
   <label for="voice_option"><strong>🎙️ Voiceover Option:</strong></label>
-  <select name="voice_option" id="voice_option">
+  <select id="voice_option" name="voice_option">
     <option value="tts">Use AI Voice (TTS)</option>
     <option value="upload">Upload My Voice</option>
   </select>
 
   <label for="voice_artist"><strong>🔊 TTS Voice:</strong></label>
-  <select name="voice_artist" id="voice_artist">
+  <select id="voice_artist" name="voice_artist">
     <option value="en_male_energetic">English Male (Energetic)</option>
     <option value="en_female_neutral">English Female (Neutral)</option>
     <option value="hi_male_deep">Hindi Male (Deep)</option>
     <option value="hi_female_friendly">Hindi Female (Friendly)</option>
   </select>
 
-  <label for="custom_voice"><strong>📁 Upload Voiceover (MP3/WAV):</strong></label>
-  <input type="file" name="custom_voice" id="custom_voice" accept=".mp3,.wav" />
+  <label for="custom_voice"><strong>📁 Upload Voiceover:</strong></label>
+  <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" />
 
-  <!-- Options -->
   <label><input type="checkbox" name="subtitles" checked /> Include Subtitles</label><br>
   <label><input type="checkbox" name="watermark" checked /> Include Watermark</label><br><br>
 
   <button type="submit">📦 Create Reel</button>
 </form>
 
-<!-- Script AJAX handler -->
 <script>
-  function checkPromptFilled() {
-    const theme = document.getElementById("theme").value.trim();
-    const topic = document.getElementById("custom_topic").value.trim();
-    document.getElementById("generateBtn").disabled = !(theme || topic);
+function checkPromptFilled() {
+  const theme = document.getElementById('theme').value.trim();
+  const topic = document.getElementById('custom_topic').value.trim();
+  document.getElementById('generateBtn').disabled = !(theme || topic);
+}
+
+async function generateScript() {
+  const theme = document.getElementById('theme').value.trim();
+  const topic = document.getElementById('custom_topic').value.trim();
+  const lang = document.getElementById('language').value;
+  const statusDiv = document.getElementById('script-status');
+
+  if (!theme && !topic) {
+    statusDiv.textContent = '❌ Please enter a theme or topic.';
+    return;
   }
 
-  async function generateScript() {
-    const theme = document.getElementById('theme').value.trim();
-    const topic = document.getElementById('custom_topic').value.trim();
-    const lang = document.getElementById('language').value;
-    const statusDiv = document.getElementById('script-status');
+  statusDiv.textContent = '⏳ Generating script...';
+  document.getElementById('generateBtn').disabled = true;
 
-    if (!theme && !topic) {
-      statusDiv.textContent = '❌ Please enter a theme or topic to generate a script.';
-      return;
+  try {
+    const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme, custom_topic: topic, language: lang })
+    });
+    const data = await res.json();
+    document.getElementById('generateBtn').disabled = false;
+
+    if (data.script) {
+      document.getElementById('script').value = data.script;
+      statusDiv.textContent = '✅ Script generated.';
+    } else {
+      statusDiv.textContent = data.error || '❌ Generation failed.';
     }
-
-    statusDiv.textContent = '⏳ Generating script...';
-
-    try {
-      const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme, custom_topic: topic, language: lang })
-      });
-
-      const data = await res.json();
-      if (data.script) {
-        document.getElementById('script').value = data.script;
-        statusDiv.textContent = '✅ Script loaded.';
-      } else {
-        document.getElementById('script').value = '';
-        statusDiv.textContent = data.error || '❌ Error generating script.';
-      }
-    } catch (err) {
-      statusDiv.textContent = '❌ Script generation failed. Try again.';
-    }
+  } catch (err) {
+    document.getElementById('generateBtn').disabled = false;
+    statusDiv.textContent = '❌ Request failed. Try again.';
   }
+}
+
+document.getElementById('theme').addEventListener('change', checkPromptFilled);
+document.getElementById('custom_topic').addEventListener('input', checkPromptFilled);
 </script>
 
 <hr />
 
-<!-- Previous reels -->
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-    <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank">{{ v }}</a></li>
+  <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank" rel="noopener">{{ v }}</a></li>
   {% else %}
-    <li>No reels found.</li>
+  <li>No reels found.</li>
   {% endfor %}
 </ul>
 {% endblock %}
