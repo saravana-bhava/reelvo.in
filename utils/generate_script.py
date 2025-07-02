@@ -2,7 +2,7 @@
 
 """
 Generates short Instagram reel scripts using OpenAI or fallback.
-Saves output to: output/scripts/{username}/{theme}_{lang}_text.txt
+Saves output to: output/{username}/scripts/{theme}_{lang}_text.txt
 Supports: English and Hindi
 """
 
@@ -131,13 +131,13 @@ def generate_script_for_user(
     theme: str,
     username: str,
     language: str = "en",
-    output_root: str = "output/scripts",
+    output_root: str = "output",
     task_id: Optional[str] = None
 ) -> str:
     """
-    Generate and save a script for a user under: output/scripts/{username}/
+    Generate and save a script for a user under: output/{username}/scripts/
     """
-    output_dir = os.path.join(output_root, username)
+    output_dir = os.path.join(output_root, username, "scripts")
     os.makedirs(output_dir, exist_ok=True)
 
     lang_suffix = "_hi" if language == "hi" else "_en"

@@ -172,14 +172,13 @@ def generate_tts_audio(
 def generate_tts_from_file(
     theme: str,
     username: str,
-    scripts_path: str = "output/scripts",
-    tts_path: str = "output/tts",
+    output_root: str = "output",
     task_id: Optional[str] = None,
     language: str = "en",
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
 ) -> Tuple[str, float]:
-    text_path = os.path.join(scripts_path, username, f"{theme}_text.txt")
+    text_path = os.path.join(output_root, username, "scripts", f"{theme}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Script not found: {text_path}")
 
@@ -190,7 +189,7 @@ def generate_tts_from_file(
         raise ValueError("[❌] Script is empty.")
 
     lang_suffix = f"_{language}"
-    output_path = os.path.join(tts_path, username, f"{theme}_voice{lang_suffix}.mp3")
+    output_path = os.path.join(output_root, username, "tts", f"{theme}_voice{lang_suffix}.mp3")
 
     return generate_tts_audio(theme, text, output_path, task_id, language, tts_voice, cache)
 

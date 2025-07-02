@@ -29,7 +29,7 @@ def create_reel():
 
     # Load latest saved script
     script = ""
-    user_script_dir = os.path.join("output/scripts", user)
+    user_script_dir = os.path.join("output", user, "scripts")
     os.makedirs(user_script_dir, exist_ok=True)
     scripts = sorted(
         [f for f in os.listdir(user_script_dir) if f.endswith(".txt")],
@@ -78,7 +78,7 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     # Save script to file
-    script_dir = os.path.join("output/scripts", user)
+    script_dir = os.path.join("output", user, "scripts")
     os.makedirs(script_dir, exist_ok=True)
     script_filename = f"script_{language}_{user}_{len(os.listdir(script_dir)) + 1}.txt"
     script_path = os.path.join(script_dir, secure_filename(script_filename))
