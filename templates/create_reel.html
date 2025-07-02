@@ -28,8 +28,8 @@
   <label for="script"><strong>✏️ Edit Script:</strong></label>
   <textarea id="script" name="script" rows="6" required>{{ script }}</textarea>
 
-  <label for="voice_option"><strong>🎙️ Voiceover Option:</strong></label>
-  <select id="voice_option" name="voice_option">
+  <label for="voice_option" style="display: none;"><strong>🎙️ Voiceover Option:</strong></label>
+  <select id="voice_option" name="voice_option" style="display: none;">
     <option value="tts">Use AI Voice (TTS)</option>
     <option value="upload">Upload My Voice</option>
   </select>
@@ -52,8 +52,8 @@
     </optgroup>
 </select>
 
-  <label for="custom_voice"><strong>📁 Upload Voiceover:</strong></label>
-  <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" />
+  <label for="custom_voice" style="display: none;"><strong>📁 Upload Voiceover:</strong></label>
+  <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" style="display: none;" />
 
   <label><input type="checkbox" name="subtitles" checked /> Include Subtitles</label><br>
   <label><input type="checkbox" name="watermark" checked /> Include Watermark</label><br><br>

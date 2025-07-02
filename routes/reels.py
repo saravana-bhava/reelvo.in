@@ -80,23 +80,24 @@ def create_reel_action():
     # Save script to file
     script_dir = os.path.join("output", username, "scripts")
     os.makedirs(script_dir, exist_ok=True)
-    script_filename = f"script_{language}_{username}_{len(os.listdir(script_dir)) + 1}.txt"
+
+    script_filename = f"{theme or custom_topic}_{language}_text.txt"
     script_path = os.path.join(script_dir, secure_filename(script_filename))
+
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script)
 
-    video_filename = f"{theme or custom_topic}_{language}_{username}.mp4"
+    video_filename = f"{theme or custom_topic}_{language}_video.mp4"
     video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
 
     # TTS Audio or Uploaded Voice
     audio_path = None
     if use_tts:
-        lang_suffix = f"_{language}"
-        audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}{lang_suffix}_voice.mp3")
+        audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}_{language}_voice.mp3")
         audio_path = generate_tts_from_text(script, username, audio_path, theme or custom_topic, None, language, voice)
     elif custom_voice_file:
         filename = secure_filename(custom_voice_file.filename)
-        audio_path = os.path.join(output_dir, filename)
+        audio_path = os.path.join(output_dir, "tts", filename)
         custom_voice_file.save(audio_path)
     else:
         flash("You must upload a voice file or choose TTS.", "error")
