@@ -1,4 +1,4 @@
-# render.yaml — Render deployment config for reelvo.ai
+# File: render.yaml — Render deployment config for reelvo.ai
 
 services:
   - type: web
@@ -14,15 +14,15 @@ services:
       pip install -r requirements.txt
 
     # ───────────────────────────────────────────────
-    # 🚀 Start command (Gunicorn + Flask + DispatcherMiddleware)
+    # 🚀 Start command (Gunicorn + Flask)
     # ───────────────────────────────────────────────
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn main:flask_app --bind 0.0.0.0:$PORT
 
     # ───────────────────────────────────────────────
     # ⚙️ Deploy settings
     # ───────────────────────────────────────────────
     autoDeploy: true
-    plan: free  # Change to 'standard' or 'pro' for higher limits
+    plan: free  # Upgrade to 'standard' or 'pro' for production use
 
     # ───────────────────────────────────────────────
     # 🔐 Environment variables (define securely via dashboard)
@@ -39,7 +39,7 @@ services:
       - key: USE_GOOGLE_CLOUD_TTS
         value: false
 
-      # API keys (supply securely in Render dashboard)
+      # API keys (keep secrets in dashboard, not in repo)
       - key: OPENAI_API_KEY
         sync: false
       - key: ELEVENLABS_API_KEY
@@ -51,6 +51,6 @@ services:
       - key: GOOGLE_CLOUD_TTS_VOICE
         value: en-US-Wavenet-D
 
-      # Google Cloud credentials path (adjust path per deployment environment)
+      # Google Cloud credentials path (adjust for runtime env)
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: /var/www/html/SazM/reelvo.ai/secure/credentials.json

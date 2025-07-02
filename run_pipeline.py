@@ -7,10 +7,13 @@ for a given category and username using create_video_for_category().
 
 import sys
 import logging
-from create_video import create_video_for_category
+from utils.create_video import create_video_for_category
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 logger = logging.getLogger("run_pipeline")
 
 

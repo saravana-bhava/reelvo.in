@@ -26,8 +26,10 @@
   </select>
 
   <!-- Script generation -->
-  <button type="button" onclick="generateScript()">📝 Generate Script</button>
-  <div id="script-status" style="margin-top: 8px; color: #555;"></div>
+  <div style="margin: 16px 0;">
+    <button type="button" onclick="generateScript()">📝 Generate Script</button>
+    <div id="script-status" role="status" aria-live="polite" style="margin-top: 8px; color: #555;"></div>
+  </div>
 
   <label for="script"><strong>✏️ Edit Script:</strong></label>
   <textarea name="script" id="script" rows="6" required>{{ script or '' }}</textarea>
@@ -57,14 +59,16 @@
   <button type="submit">📦 Create Reel</button>
 </form>
 
-<!-- Script AJAX handler -->
 <script>
   async function generateScript() {
     const theme = document.getElementById('theme').value.trim();
     const topic = document.getElementById('custom_topic').value.trim();
     const lang = document.getElementById('language').value;
     const statusDiv = document.getElementById('script-status');
+    const scriptField = document.getElementById('script');
+
     statusDiv.textContent = '⏳ Generating script...';
+    scriptField.disabled = true;
 
     try {
       const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
@@ -75,25 +79,26 @@
 
       const data = await res.json();
       if (data.script) {
-        document.getElementById('script').value = data.script;
+        scriptField.value = data.script;
         statusDiv.textContent = '✅ Script loaded.';
       } else {
-        document.getElementById('script').value = '';
+        scriptField.value = '';
         statusDiv.textContent = data.error || '❌ Error generating script.';
       }
     } catch (err) {
-      statusDiv.textContent = '❌ Script generation failed. Try again.';
+      statusDiv.textContent = '❌ Script generation failed. Please try again.';
+    } finally {
+      scriptField.disabled = false;
     }
   }
 </script>
 
 <hr />
 
-<!-- Previous reels -->
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-    <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank">{{ v }}</a></li>
+    <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank" rel="noopener noreferrer">{{ v }}</a></li>
   {% else %}
     <li>No reels found.</li>
   {% endfor %}

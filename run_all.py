@@ -15,7 +15,10 @@ from run_pipeline import run_pipeline
 load_dotenv()
 
 # Logger setup
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 logger = logging.getLogger("run_all")
 
 # Constants
@@ -52,5 +55,9 @@ def run_all_categories(username: str) -> None:
 
 
 if __name__ == "__main__":
-    user_arg = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_USERNAME
-    run_all_categories(user_arg)
+    try:
+        user_arg = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_USERNAME
+        run_all_categories(user_arg)
+    except Exception as e:
+        logger.exception(f"Fatal error in batch runner: {e}")
+        sys.exit(1)

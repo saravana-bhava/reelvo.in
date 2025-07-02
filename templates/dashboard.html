@@ -5,46 +5,52 @@
 {% block content %}
   <h2 style="margin-bottom: 20px;">👋 Welcome, <span style="color: #007BFF;">{{ user }}</span></h2>
 
-  <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 30px;">
+  <section style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 30px;">
     {% if connected %}
       <p style="margin-bottom: 10px;">✅ Instagram is connected to your account.</p>
       <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
         <button type="submit"
-                style="padding: 8px 14px; background-color: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                style="padding: 10px 16px; background-color: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;"
+                aria-label="Disconnect Instagram">
           ❌ Disconnect Instagram
         </button>
       </form>
     {% else %}
       <a href="{{ url_for('instagram.connect_instagram') }}"
-         style="padding: 10px 16px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 6px;">
+         style="display: inline-block; padding: 10px 16px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 6px;"
+         role="button" aria-label="Connect Instagram">
         🔗 Connect Instagram
       </a>
     {% endif %}
-  </div>
+  </section>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+  <section style="display: flex; flex-wrap: wrap; gap: 12px;">
     <a class="button"
        href="{{ url_for('reels.create_reel') }}"
-       style="padding: 12px 18px; background-color: #28a745; color: white; border-radius: 6px; text-decoration: none;">
+       style="padding: 12px 18px; background-color: #28a745; color: white; border-radius: 6px; text-decoration: none;"
+       role="button" aria-label="Create New Reel">
       🎬 Create New Reel
     </a>
 
     <a class="button"
        href="{{ url_for('reels.list_reels') }}"
-       style="padding: 12px 18px; background-color: #17a2b8; color: white; border-radius: 6px; text-decoration: none;">
+       style="padding: 12px 18px; background-color: #17a2b8; color: white; border-radius: 6px; text-decoration: none;"
+       role="button" aria-label="View Reel History">
       📂 View Reel History
     </a>
 
     <a class="button"
        href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
-       style="padding: 12px 18px; background-color: #ffc107; color: black; border-radius: 6px; text-decoration: none;">
+       style="padding: 12px 18px; background-color: #ffc107; color: black; border-radius: 6px; text-decoration: none;"
+       role="button" aria-label="View Scheduled Reels">
       🕓 Scheduled Reels
     </a>
 
     <a class="button"
        href="{{ url_for('auth.logout') }}"
-       style="padding: 12px 18px; background-color: #6c757d; color: white; border-radius: 6px; text-decoration: none;">
+       style="padding: 12px 18px; background-color: #6c757d; color: white; border-radius: 6px; text-decoration: none;"
+       role="button" aria-label="Logout">
       🚪 Logout
     </a>
-  </div>
+  </section>
 {% endblock %}

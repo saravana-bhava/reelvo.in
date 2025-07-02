@@ -1,14 +1,18 @@
 # File: routes/reels.py
 
 import os
-from flask import Blueprint, request, render_template, session, redirect, url_for, flash, jsonify, send_from_directory
+from flask import (
+    Blueprint, request, render_template, session, redirect,
+    url_for, flash, jsonify, send_from_directory
+)
+from werkzeug.utils import secure_filename
+
 from utils.generate_script import generate_script_for_user
 from utils.create_video import create_video_for_category
 from utils.google_drive import upload_to_google_drive
 from utils.gen_tts_audio import generate_tts_audio
 from utils.instagram import post_to_instagram
 from utils.subtitles import generate_srt_from_audio
-from werkzeug.utils import secure_filename
 
 reels_bp = Blueprint("reels", __name__)
 
@@ -22,6 +26,7 @@ def create_reel():
     output_path = os.path.join("output", user)
     os.makedirs(output_path, exist_ok=True)
     videos = os.listdir(output_path)
+
     return render_template("create_reel.html", user=user, videos=videos)
 
 
@@ -40,9 +45,7 @@ def create_reel_action():
     voice = request.form.get("voice_artist")
     subtitles_enabled = "subtitles" in request.form
     watermark_enabled = "watermark" in request.form
-
     custom_voice_file = request.files.get("custom_voice")
-    custom_voice_path = None
 
     output_dir = os.path.join("output", user)
     os.makedirs(output_dir, exist_ok=True)
@@ -54,15 +57,14 @@ def create_reel_action():
     video_filename = f"{theme or custom_topic}_{language}_{user}.mp4"
     video_path = os.path.join(output_dir, secure_filename(video_filename))
 
-    # TTS Audio
+    # TTS Audio or Uploaded Voice
+    audio_path, marks_path = None, None
     if use_tts:
         audio_path, marks_path = generate_tts_audio(script, language, voice, output_dir)
     elif custom_voice_file:
         filename = secure_filename(custom_voice_file.filename)
-        custom_voice_path = os.path.join(output_dir, filename)
-        custom_voice_file.save(custom_voice_path)
-        audio_path = custom_voice_path
-        marks_path = None
+        audio_path = os.path.join(output_dir, filename)
+        custom_voice_file.save(audio_path)
     else:
         flash("You must upload a voice file or choose TTS.", "error")
         return redirect(url_for("reels.create_reel"))
@@ -80,10 +82,10 @@ def create_reel_action():
         username=user,
     )
 
-    # Upload to Drive
+    # Upload to Google Drive
     upload_url = upload_to_google_drive(video_path, user)
-
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
+
     return redirect(url_for("reels.create_reel"))
 
 
@@ -116,8 +118,7 @@ def list_reels():
 
     user = session["user"]
     video_folder = os.path.join("output", user)
-    if not os.path.exists(video_folder):
-        os.makedirs(video_folder)
+    os.makedirs(video_folder, exist_ok=True)
 
     videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
     return render_template("reels.html", user=user, videos=videos)

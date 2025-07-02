@@ -4,6 +4,7 @@ from flask import Blueprint, request, redirect, session, flash, url_for, jsonify
 from datetime import datetime, timedelta
 import requests
 import os
+
 from utils.user_db import save_user_tokens, get_instagram_credentials, log_post
 from utils.instagram import post_to_instagram
 
@@ -41,9 +42,9 @@ def instagram_callback():
         return redirect(url_for("dashboard.dashboard"))
 
     try:
-        # Step 1: Exchange code for short-lived access token
+        # Step 1: Exchange code for short-lived token
         token_res = requests.get(
-            f"https://graph.facebook.com/v19.0/oauth/access_token",
+            f"{GRAPH_API_BASE}/oauth/access_token",
             params={
                 "client_id": INSTAGRAM_APP_ID,
                 "client_secret": INSTAGRAM_APP_SECRET,
@@ -53,8 +54,7 @@ def instagram_callback():
             timeout=15
         )
         token_res.raise_for_status()
-        short_token_data = token_res.json()
-        short_access_token = short_token_data.get("access_token")
+        short_access_token = token_res.json().get("access_token")
 
         if not short_access_token:
             flash("❌ Failed to get short-lived access token.", "error")
@@ -62,7 +62,7 @@ def instagram_callback():
 
         # Step 2: Exchange for long-lived token
         long_token_res = requests.get(
-            "https://graph.facebook.com/v19.0/oauth/access_token",
+            f"{GRAPH_API_BASE}/oauth/access_token",
             params={
                 "grant_type": "fb_exchange_token",
                 "client_id": INSTAGRAM_APP_ID,
@@ -72,9 +72,9 @@ def instagram_callback():
             timeout=10
         )
         long_token_res.raise_for_status()
-        long_token_data = long_token_res.json()
-        long_access_token = long_token_data["access_token"]
-        expires_in = long_token_data.get("expires_in", 60 * 60 * 24 * 60)  # default 60 days
+        long_data = long_token_res.json()
+        long_access_token = long_data["access_token"]
+        expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)  # default 60 days
 
         # Step 3: Get Facebook pages
         pages_res = requests.get(
@@ -104,13 +104,12 @@ def instagram_callback():
             flash("❌ Instagram business account not linked to Page.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Step 5: Save to user_tokens
+        # Step 5: Save tokens
         username = session.get("user")
         if username:
             save_user_tokens(username, long_access_token, "", expires_in)
-
-        session["connected"] = True
-        flash("✅ Instagram account connected successfully!", "success")
+            session["connected"] = True
+            flash("✅ Instagram account connected successfully!", "success")
 
     except Exception as e:
         print("[OAuth ERROR]", e)
@@ -128,10 +127,9 @@ def disconnect_instagram():
     if not username:
         return redirect(url_for("auth.index"))
 
-    # Clear token file
-    path = f"user_tokens/{username}.json"
-    if os.path.exists(path):
-        os.remove(path)
+    token_path = f"user_tokens/{username}.json"
+    if os.path.exists(token_path):
+        os.remove(token_path)
 
     session["connected"] = False
     flash("ℹ️ Instagram disconnected.", "info")
@@ -141,7 +139,7 @@ def disconnect_instagram():
 @instagram_bp.route("/api/post-reel", methods=["POST"])
 def api_post_reel():
     """
-    Posts a Reel via JSON API. Needs: video_path, caption, video_url.
+    Posts a Reel via JSON API. Requires: video_path, caption, video_url.
     """
     data = request.get_json()
     video_path = data.get("video_path")

@@ -2,56 +2,60 @@
 {% block title %}Scheduled Posts | Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 style="margin-bottom: 20px;">📅 Scheduled Reels for <span style="color: #007BFF;">{{ user }}</span></h2>
+  <h2 style="margin-bottom: 24px;">📅 Scheduled Reels for <span style="color: #007BFF;">{{ user }}</span></h2>
 
   {% if scheduled and scheduled|length > 0 %}
     <form method="post" action="{{ url_for('schedule.update_schedule') }}">
-      <table style="width: 100%; background: #ffffff; border-collapse: collapse; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-        <thead>
-          <tr style="background: #e3f2fd;">
-            <th style="padding: 10px; border-bottom: 1px solid #ddd;">🎞️ Video</th>
-            <th style="padding: 10px; border-bottom: 1px solid #ddd;">📆 Scheduled Date</th>
-            <th style="padding: 10px; border-bottom: 1px solid #ddd;">📌 Status</th>
-            <th style="padding: 10px; border-bottom: 1px solid #ddd;">✏️ Reschedule</th>
-            <th style="padding: 10px; border-bottom: 1px solid #ddd;">🗑️ Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in scheduled %}
-            <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding: 10px;">{{ item.video }}</td>
-              <td style="padding: 10px;">{{ item.scheduled_for }}</td>
-              <td style="padding: 10px;">
-                {% if item.posted %}
-                  ✅ Posted
-                {% else %}
-                  ⏳ Pending
-                {% endif %}
-              </td>
-              <td style="padding: 10px;">
-                {% if not item.posted %}
-                  <input type="date" name="reschedule_{{ loop.index0 }}" value="{{ item.scheduled_for }}"
-                         style="padding: 6px; border: 1px solid #ccc; border-radius: 5px;" />
-                  <input type="hidden" name="video_{{ loop.index0 }}" value="{{ item.video }}">
-                {% else %}
-                  <span style="color: #888;">—</span>
-                {% endif %}
-              </td>
-              <td style="padding: 10px; text-align: center;">
-                {% if not item.posted %}
-                  <input type="checkbox" name="delete_{{ loop.index0 }}">
-                {% else %}
-                  <span style="color: #888;">—</span>
-                {% endif %}
-              </td>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden;">
+          <thead style="background-color: #e3f2fd;">
+            <tr>
+              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: left;">🎞️ Video</th>
+              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: left;">📆 Scheduled Date</th>
+              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: center;">📌 Status</th>
+              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: center;">✏️ Reschedule</th>
+              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: center;">🗑️ Delete</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for item in scheduled %}
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px;">{{ item.video }}</td>
+                <td style="padding: 12px;">{{ item.scheduled_for }}</td>
+                <td style="padding: 12px; text-align: center;">
+                  {% if item.posted %}
+                    ✅ Posted
+                  {% else %}
+                    ⏳ Pending
+                  {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                  {% if not item.posted %}
+                    <input type="date"
+                           name="reschedule_{{ loop.index0 }}"
+                           value="{{ item.scheduled_for }}"
+                           style="padding: 6px; border: 1px solid #ccc; border-radius: 5px;" />
+                    <input type="hidden" name="video_{{ loop.index0 }}" value="{{ item.video }}">
+                  {% else %}
+                    <span style="color: #888;">—</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                  {% if not item.posted %}
+                    <input type="checkbox" name="delete_{{ loop.index0 }}" aria-label="Delete {{ item.video }}">
+                  {% else %}
+                    <span style="color: #888;">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-      <div style="margin-top: 20px;">
+      <div style="margin-top: 24px;">
         <button type="submit"
-                style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 15px; cursor: pointer;">
+                style="padding: 12px 24px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;">
           💾 Save Changes
         </button>
       </div>
@@ -60,7 +64,7 @@
     <p style="font-size: 16px; color: #555;">⚠️ No scheduled reels found.</p>
   {% endif %}
 
-  <p style="margin-top: 30px;">
+  <div style="margin-top: 30px;">
     <a class="button" href="{{ url_for('dashboard.dashboard') }}">⬅️ Back to Dashboard</a>
-  </p>
+  </div>
 {% endblock %}

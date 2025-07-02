@@ -1,22 +1,25 @@
+# File: requirements.txt
+
 # ========================
 # reelvo.ai Requirements
 # ========================
 
 # ------------------------
-# Web framework
+# Web Framework
 # ------------------------
 flask
+waitress  # WSGI server for production
 
 # ------------------------
-# AI integration (OpenAI)
+# AI Integration (OpenAI)
 # ------------------------
 openai>=1.0.0
 
 # ------------------------
-# HTTP clients
+# HTTP Clients
 # ------------------------
 requests
-httpx<0.26  # Prevent breaking change in async handling
+httpx<0.26  # Prevents breaking changes in async handling
 
 # ------------------------
 # Text-to-Speech
@@ -25,7 +28,7 @@ google-cloud-texttospeech>=2.27.0
 gTTS
 
 # ------------------------
-# Audio / Video processing
+# Audio / Video Processing
 # ------------------------
 ffmpeg-python
 freesound-python
@@ -44,10 +47,10 @@ srt
 # Utilities
 # ------------------------
 tqdm
-python-dotenv
+python-dotenv  # Loads environment variables from .env
 
 # ------------------------
-# Whisper for subtitle alignment (includes torch)
+# Whisper for Subtitle Alignment (includes torch)
 # ------------------------
 git+https://github.com/openai/whisper.git
 
@@ -59,11 +62,11 @@ google-auth
 google-auth-oauthlib
 
 # ------------------------
-# Optional: Torch installation overrides
-# Uncomment if Whisper fails to install torch
+# Optional: Torch Installation Overrides
+# If Whisper fails due to torch install issues, uncomment one:
 
-# For CPU-only systems:
+# CPU-only:
 # torch==2.2.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-# For GPU systems:
-# torch==2.2.1  # Install manually if needed
+# GPU:
+# torch==2.2.1

@@ -2,26 +2,34 @@
 {% block title %}Reel History | Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2>📂 Reel History for <span style="color:#007BFF">{{ user }}</span></h2>
+  <h2 style="margin-bottom: 24px;">📂 Reel History for <span style="color:#007BFF">{{ user }}</span></h2>
 
   {% if videos %}
-    {% for vid in videos %}
-      <div style="margin-bottom: 30px; padding: 15px; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.1);">
-        <video width="320" height="568" controls style="border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-          <source src="{{ url_for('reels.serve_video', username=user, filename=vid) }}" type="video/mp4">
-          Your browser does not support the video tag.
-        </video>
-        <div style="margin-top: 12px;">
-          <strong>{{ vid }}</strong>
-          <pre style="background: #f1f3f5; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word;">{{ scripts[vid] }}</pre>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+      {% for vid in videos %}
+        <div style="background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
+          <video width="100%" height="auto" controls
+                 style="border-radius: 6px; max-height: 600px;"
+                 aria-label="Reel: {{ vid }}">
+            <source src="{{ url_for('reels.serve_video', username=user, filename=vid) }}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <div style="margin-top: 12px;">
+            <strong>{{ vid }}</strong>
+            {% if scripts and scripts[vid] %}
+              <pre style="background: #f8f9fa; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; margin-top: 8px; font-size: 14px;">
+{{ scripts[vid] }}
+              </pre>
+            {% endif %}
+          </div>
         </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
   {% else %}
     <p style="margin-top: 20px; font-size: 16px;">❌ No reels found yet.</p>
   {% endif %}
 
-  <p style="margin-top: 40px;">
+  <div style="margin-top: 40px;">
     <a class="button" href="{{ url_for('dashboard.dashboard') }}">⬅️ Back to Dashboard</a>
-  </p>
+  </div>
 {% endblock %}

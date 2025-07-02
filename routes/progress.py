@@ -12,11 +12,15 @@ def get_progress(task_id):
     Called periodically from the frontend while generating a reel.
     """
     status = progress_status.get(task_id)
+
     if status:
         return jsonify({
             "status": status.get("status", "unknown"),
             "message": status.get("message", ""),
             "percent": status.get("percent", 0),
         })
-    else:
-        return jsonify({"status": "not_found", "message": "No progress available for this task."}), 404
+
+    return jsonify({
+        "status": "not_found",
+        "message": "No progress available for this task."
+    }), 404

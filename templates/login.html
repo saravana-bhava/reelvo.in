@@ -6,18 +6,24 @@
 
   <form method="post"
         action="{{ url_for('auth.login') }}"
-        style="max-width: 400px; margin: 30px auto; background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        style="max-width: 400px; margin: 30px auto; background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+        aria-label="Login Form">
 
-    <label for="username" style="display:block; margin-bottom: 8px; font-weight: bold;">👤 Your Name</label>
+    <label for="username"
+           style="display:block; margin-bottom: 8px; font-weight: bold;"
+           aria-label="Enter your name">👤 Your Name</label>
+
     <input type="text"
            id="username"
            name="username"
            placeholder="Enter your name..."
            required
+           autocomplete="username"
            style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 20px;" />
 
     <button type="submit"
-            style="width: 100%; padding: 12px; background-color: #007BFF; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;">
+            style="width: 100%; padding: 12px; background-color: #007BFF; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;"
+            aria-label="Login to your account">
       🚀 Login
     </button>
   </form>

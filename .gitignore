@@ -1,26 +1,38 @@
-# Python bytecode
+# File: .gitignore
+
+# ─────────────────────────────────────────────
+# Python Bytecode
+# ─────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
+# ─────────────────────────────────────────────
+# Virtual Environments
+# ─────────────────────────────────────────────
 .venv/
 env/
 venv/
 
-# Environment variables and secrets
+# ─────────────────────────────────────────────
+# Environment Variables & Secrets
+# ─────────────────────────────────────────────
 .env
 *.env
 .env.*
 secure/
 
-# Editor and IDE settings
+# ─────────────────────────────────────────────
+# IDE & Editor Settings
+# ─────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Output media and generated assets
+# ─────────────────────────────────────────────
+# Output Media & Generated Assets
+# ─────────────────────────────────────────────
 output/
 *.mp4
 *.avi
@@ -33,47 +45,67 @@ output/
 *.jsonl
 *.marks.json
 
-# Build artifacts
+# ─────────────────────────────────────────────
+# Build Artifacts
+# ─────────────────────────────────────────────
 build/
 dist/
 *.egg-info/
-*.spec     # PyInstaller
+*.spec  # PyInstaller
 
-# Logs and temporary files
+# ─────────────────────────────────────────────
+# Logs & Temporary Files
+# ─────────────────────────────────────────────
 *.log
 *.tmp
 *.bak
 
-# System files
+# ─────────────────────────────────────────────
+# System-Specific Files
+# ─────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# Jupyter
+# ─────────────────────────────────────────────
+# Jupyter Notebooks
+# ─────────────────────────────────────────────
 .ipynb_checkpoints/
 
-# Apache / Nginx config
+# ─────────────────────────────────────────────
+# Web Server Configs
+# ─────────────────────────────────────────────
 .htaccess
 
-# Test utilities
+# ─────────────────────────────────────────────
+# Test Utilities & Fixtures
+# ─────────────────────────────────────────────
 test/
 tests/
 __tests__/
 
-# Python testing
+# ─────────────────────────────────────────────
+# Python Testing Tools
+# ─────────────────────────────────────────────
 .pytest_cache/
 
-# Caching
+# ─────────────────────────────────────────────
+# Caching & Temporary
+# ─────────────────────────────────────────────
 cache/
 temp/
 docs/
 
-# FFmpeg temp/intermediate files
+# ─────────────────────────────────────────────
+# FFmpeg Intermediate Files
+# ─────────────────────────────────────────────
 *.ffmpeg.*
 *.part
 *.ts
 *.mkv
 
-# Node / frontend (if React frontend involved)
+# ─────────────────────────────────────────────
+# Frontend (Node, Next.js, etc.)
+# ─────────────────────────────────────────────
 node_modules/
 .next/
 *.lock
