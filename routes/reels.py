@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 from utils.generate_script import generate_script_for_user
 from utils.create_video import create_video_for_category
 from utils.google_drive import upload_to_google_drive
-from utils.generate_tts_audio import generate_tts_audio
+from utils.generate_tts_audio import generate_tts_from_text
 from utils.instagram import post_to_instagram
 from utils.subtitles import generate_srt_from_audio
 
@@ -59,7 +59,7 @@ def create_reel_action():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user = session["user"]
+    username = session["user"]
     theme = request.form.get("theme")
     custom_topic = request.form.get("custom_topic", "").strip()
     language = request.form.get("language", "en")
@@ -70,7 +70,7 @@ def create_reel_action():
     watermark_enabled = "watermark" in request.form
     custom_voice_file = request.files.get("custom_voice")
 
-    output_dir = os.path.join("output", user)
+    output_dir = os.path.join("output", username)
     os.makedirs(output_dir, exist_ok=True)
 
     if not script:
@@ -78,20 +78,22 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     # Save script to file
-    script_dir = os.path.join("output", user, "scripts")
+    script_dir = os.path.join("output", username, "scripts")
     os.makedirs(script_dir, exist_ok=True)
-    script_filename = f"script_{language}_{user}_{len(os.listdir(script_dir)) + 1}.txt"
+    script_filename = f"script_{language}_{username}_{len(os.listdir(script_dir)) + 1}.txt"
     script_path = os.path.join(script_dir, secure_filename(script_filename))
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script)
 
-    video_filename = f"{theme or custom_topic}_{language}_{user}.mp4"
-    video_path = os.path.join(output_dir, secure_filename(video_filename))
+    video_filename = f"{theme or custom_topic}_{language}_{username}.mp4"
+    video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
 
     # TTS Audio or Uploaded Voice
-    audio_path, marks_path = None, None
+    audio_path = None
     if use_tts:
-        audio_path, marks_path = generate_tts_audio(script, language, voice, output_dir)
+        lang_suffix = f"_{language}"
+        audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}{lang_suffix}_voice.mp3")
+        audio_path = generate_tts_from_text(script, username, audio_path, theme or custom_topic, None, language, voice)
     elif custom_voice_file:
         filename = secure_filename(custom_voice_file.filename)
         audio_path = os.path.join(output_dir, filename)
@@ -101,20 +103,21 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     # Create Reel
-    create_video_for_category(
-        category=theme or "custom",
-        script_text=script,
-        audio_path=audio_path,
-        output_path=video_path,
-        language=language,
-        include_subtitles=subtitles_enabled,
-        include_watermark=watermark_enabled,
-        tts_marks_path=marks_path,
-        username=user,
-    )
+#    create_video_for_category(
+#        category=theme or "custom",
+#        username=username,
+#        include_watermark=watermark_enabled,
+#        bgm_path=None,
+#        language=language,
+#        task_id=None,
+#        script_text=script,
+#        voiceover_path=audio_path,
+#        tts_voice=voice,
+#        include_subtitles=subtitles_enabled,
+#    )
 
     # Upload to Google Drive
-    upload_url = upload_to_google_drive(video_path, user)
+    upload_url = upload_to_google_drive(video_path, username)
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
     return redirect(url_for("reels.create_reel"))
