@@ -12,8 +12,7 @@ import logging
 from textwrap import dedent
 from dotenv import load_dotenv
 from typing import Optional
-import openai
-from openai import OpenAIError, RateLimitError
+import httpx
 
 # Setup
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -24,10 +23,13 @@ logging.basicConfig(level=logging.INFO)
 
 # Constants
 USE_OPENAI = os.getenv("USE_OPENAI", "true").lower() == "true"
+PROVIDER = os.getenv("PROVIDER", "openai").lower()
 API_KEY = os.getenv("OPENAI_API_KEY")
+BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 THEME_JSON_PATH = os.path.join(ROOT_DIR, "theme.json")
 
-# Load theme scripts
+# Load fallback theme scripts
 try:
     with open(THEME_JSON_PATH, "r", encoding="utf-8") as f:
         THEMES = json.load(f)
@@ -36,39 +38,60 @@ except FileNotFoundError:
     logger.warning("[⚠️] Theme scripts file not found.")
     THEMES = {}
 
-# Initialize OpenAI client
-if USE_OPENAI:
-    if not API_KEY:
-        raise EnvironmentError("[❌] Missing OPENAI_API_KEY in .env")
-    client = openai.OpenAI(api_key=API_KEY)
-else:
-    client = None
-
 # Optional progress UI support
 try:
     from progress import update_progress
 except ImportError:
     def update_progress(task_id, status, percent): pass
 
-# Custom prompt overrides
-PROMPT_TEMPLATES = {
-    "posturefix pro": {
-        "hi": "Write a catchy, 20–30s Hindi Instagram ad script for PostureFix Pro, a smart posture corrector. Focus on pain relief, alert feature, and emotional appeal. Use emojis and clear CTAs."
-    }
-}
+
+def generate_script_via_api(prompt: str) -> Optional[str]:
+    """
+    Generates text using OpenAI-compatible APIs (OpenAI or OpenRouter).
+    Returns None if generation fails.
+    """
+    try:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        if PROVIDER == "openrouter":
+            headers["HTTP-Referer"] = "https://yourdomain.com/"
+            headers["X-Title"] = "Reel Script Generator"
+
+        url = f"{BASE_URL.rstrip('/')}/chat/completions"
+
+        payload = {
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7
+        }
+
+        logger.info(f"[📡] Sending request to {url} via {PROVIDER}...")
+        response = httpx.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+
+        try:
+            response_data = response.json()
+            script = response_data["choices"][0]["message"]["content"].strip()
+            return script
+        except json.JSONDecodeError:
+            logger.error(f"[❌] Failed to decode JSON. Raw response: {response.text}")
+        except KeyError as e:
+            logger.error(f"[❌] Missing expected field {e} in response: {response.text}")
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"[❌] Error generating via API: {e}")
+    except Exception as e:
+        logger.error(f"[❌] Unexpected error during script generation: {e}")
+
+    return None
 
 
 def generate_script(theme: str, task_id: Optional[str] = None, language: str = "en") -> str:
     """
     Generate a 30-second Instagram script using OpenAI or fallback.
-
-    Args:
-        theme (str): Script category (e.g., "motivation").
-        task_id (str): Optional task ID for UI updates.
-        language (str): "en" or "hi".
-
-    Returns:
-        str: Script text.
     """
     theme_norm = theme.strip().lower()
     language_norm = language.strip().lower()
@@ -78,37 +101,24 @@ def generate_script(theme: str, task_id: Optional[str] = None, language: str = "
     def fallback_script() -> str:
         return THEMES.get(theme_norm, {}).get(language_norm, f"[Theme script for '{theme_norm}' in '{language_norm}']")
 
-    # Use predefined prompt template if available
-    if theme_norm in PROMPT_TEMPLATES and language_norm in PROMPT_TEMPLATES[theme_norm]:
-        prompt = PROMPT_TEMPLATES[theme_norm][language_norm]
-    else:
-        prompt = (
-            f"Write a short, impactful Instagram reel script about '{theme}' "
-            f"{'in Hindi' if language_norm == 'hi' else 'in English'}. "
-            "Keep it under 30 seconds, using 4–5 emotional and punchy lines for voiceover."
-        )
+    prompt = (
+        f"Write only the voiceover lines (no scene descriptions, no headers, no visuals, no call-to-action). "
+        f"The topic is '{theme}', "
+        f"{'in Hindi' if language_norm == 'hi' else 'in English'}. "
+        "Make it under 30 seconds, and keep it emotional, energetic, and impactful. "
+        "Do not include any headings, bullet points, emojis, or visual cues — just the plain script lines."
+    )
 
-    if USE_OPENAI and client:
-        try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7
-            )
-            script = response.choices[0].message.content.strip()
-            logger.info(f"[✅] OpenAI script generated for '{theme}' ({language})")
+    if USE_OPENAI:
+        script = generate_script_via_api(prompt)
+        if script:
+            logger.info(f"[✅] Script generated for '{theme}' ({language})")
             update_progress(task_id, "✅ Script generated", 15)
             return script
-        except RateLimitError:
-            logger.warning("⚠️ OpenAI rate limit hit. Using fallback.")
-        except OpenAIError as e:
-            logger.error(f"[❌] OpenAI error: {e}")
-        except Exception as e:
-            logger.error(f"[❌] Unexpected error: {e}")
 
     # Fallback
+    logger.info(f"[⚠️] Using fallback script for '{theme}' ({language})")
     update_progress(task_id, "⚠️ Using theme script", 12)
-    logger.info(f"[⚠️] Using theme script for '{theme}' in '{language}'")
     return fallback_script()
 
 
@@ -121,9 +131,6 @@ def generate_script_for_user(
 ) -> str:
     """
     Generate and save a script for a user under: output/scripts/{username}/
-
-    Returns:
-        str: Full path to saved script file.
     """
     output_dir = os.path.join(output_root, username)
     os.makedirs(output_dir, exist_ok=True)
