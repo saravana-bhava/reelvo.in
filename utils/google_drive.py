@@ -134,7 +134,7 @@ def upload_to_google_drive(
         ).execute()
 
         file_id = uploaded["id"]
-        public_url = f"https://drive.google.com/file/d/{file_id}/view"
+        public_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
         update_progress(task_id, "✅ Upload complete", 90)
         logger.info(f"[✅] File URL: {public_url}")
