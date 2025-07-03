@@ -199,4 +199,4 @@ if __name__ == "__main__":
         audio_file = sys.argv[2]
         lang = sys.argv[3] if len(sys.argv) == 4 else "auto"
         output_srt = os.path.splitext(audio_file)[0] + f"_{lang}.srt"
-        generate_srt_from_audio(category, audio_file, output_srt, language=lang)
+        generate_srt_from_audio(category, audio_file, output_srt, 6, None, language=lang)

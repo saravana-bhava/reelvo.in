@@ -15,13 +15,13 @@ def index():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    username = request.form.get("username", "").strip()
+    user_name = request.form.get("user_name", "").strip()
 
-    if not username:
-        flash("Username is required.", "warning")
+    if not user_name:
+        flash("user_name is required.", "warning")
         return redirect(url_for("auth.index"))
 
-    session["user"] = secure_filename(username)
+    session["user"] = secure_filename(user_name)
     return redirect(url_for("dashboard.dashboard"))
 
 

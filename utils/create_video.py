@@ -137,7 +137,7 @@ def concatenate_clips(clips, output_path):
 
 def create_video_for_theme(
     theme,
-    username,
+    user_name,
     include_watermark=True,
     bgm_path=None,
     language="en",
@@ -147,17 +147,17 @@ def create_video_for_theme(
     tts_voice=None,
     include_subtitles=True
 ):
-    logger.info(f"🎬 Starting reel for: {theme.upper()} | User: {username} | Lang: {language}")
+    logger.info(f"🎬 Starting reel for: {theme.upper()} | User: {user_name} | Lang: {language}")
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
-    base_output = os.path.join("output", username)
+    base_output = os.path.join("output", user_name)
     os.makedirs(base_output, exist_ok=True)
 
     if task_id:
         start_progress(task_id)
 
     if not script_text:
-        text_path = generate_script_for_user(theme, username, language=language)
+        text_path = generate_script_for_user(theme, user_name, language=language)
         with open(text_path, "r", encoding="utf-8") as f:
             script_text = f.read().strip()
 
@@ -181,7 +181,7 @@ def create_video_for_theme(
         else:
             if task_id: update_progress(task_id, "🔊 Generating TTS...", 40)
             audio_path, audio_duration = generate_tts_from_file(
-                theme, username, output_root="output", task_id=task_id,
+                theme, user_name, output_root="output", task_id=task_id,
                 language=language, tts_voice=tts_voice
             )
 
@@ -281,13 +281,13 @@ def create_video_for_theme(
 if __name__ == "__main__":
     import sys
     if len(sys.argv) >= 3:
-        theme, username = sys.argv[1], sys.argv[2]
+        theme, user_name = sys.argv[1], sys.argv[2]
         include_watermark = sys.argv[3].lower() == "true" if len(sys.argv) >= 4 else True
         bgm_path = sys.argv[4] if len(sys.argv) >= 5 else None
         language = sys.argv[5] if len(sys.argv) >= 6 else "en"
         create_video_for_theme(
-            theme, username, include_watermark=include_watermark,
+            theme, user_name, include_watermark=include_watermark,
             bgm_path=bgm_path, language=language
         )
     else:
-        print("Usage: python create_video.py <theme> <username> [include_watermark=True] [bgm_path] [language=en]")
+        print("Usage: python create_video.py <theme> <user_name> [include_watermark=True] [bgm_path] [language=en]")

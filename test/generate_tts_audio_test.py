@@ -48,7 +48,7 @@ def test_generate_tts_audio_from_text(setup_output_file):
     out_path = setup_output_file
     path, duration = generate_tts_from_text(
         text=text,
-        username=TEST_USERNAME,
+        user_name=TEST_USERNAME,
         output_path=out_path,
         theme="motivation",
         task_id=None,
@@ -65,7 +65,7 @@ def test_generate_tts_audio_hindi(setup_output_file):
     out_path = setup_output_file
     path, duration = generate_tts_from_text(
         text=text,
-        username=TEST_USERNAME,
+        user_name=TEST_USERNAME,
         output_path=out_path,
         theme="motivation",
         task_id=None,
@@ -80,7 +80,7 @@ def test_generate_tts_audio_hindi(setup_output_file):
 def test_generate_tts_audio_from_file(setup_input_script, cleanup_voice_file):
     path, duration = generate_tts_from_file(
         theme="motivation",
-        username=TEST_USERNAME,
+        user_name=TEST_USERNAME,
         output_root=OUTPUT_ROOT,
         task_id=None,
         language="en",

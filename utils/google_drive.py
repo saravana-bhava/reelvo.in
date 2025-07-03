@@ -49,13 +49,13 @@ def get_drive_service():
     return build("drive", "v3", credentials=creds)
 
 
-def get_or_create_user_folder(service, username: str) -> str:
+def get_or_create_user_folder(service, user_name: str) -> str:
     """
     Get or create a subfolder for a user in the main Google Drive folder.
 
     Args:
         service: Google Drive API client.
-        username: App username (used as folder name).
+        user_name: App user_name (used as folder name).
 
     Returns:
         str: Folder ID.
@@ -63,9 +63,9 @@ def get_or_create_user_folder(service, username: str) -> str:
     if not GDRIVE_FOLDER_ID:
         raise EnvironmentError("[❌] GOOGLE_DRIVE_PARENT_FOLDER_ID not set in .env")
 
-    logger.info(f"[📁] Checking folder for user: {username}")
+    logger.info(f"[📁] Checking folder for user: {user_name}")
     query = (
-        f"'{GDRIVE_FOLDER_ID}' in parents and name = '{username}' "
+        f"'{GDRIVE_FOLDER_ID}' in parents and name = '{user_name}' "
         f"and mimeType = '{FOLDER_MIME_TYPE}' and trashed = false"
     )
     results = service.files().list(q=query, fields="files(id)").execute()
@@ -76,9 +76,9 @@ def get_or_create_user_folder(service, username: str) -> str:
         logger.info(f"[✅] Existing folder ID: {folder_id}")
         return folder_id
 
-    logger.info(f"[📂] Creating folder for user: {username}")
+    logger.info(f"[📂] Creating folder for user: {user_name}")
     metadata = {
-        "name": username,
+        "name": user_name,
         "mimeType": FOLDER_MIME_TYPE,
         "parents": [GDRIVE_FOLDER_ID]
     }
@@ -89,7 +89,7 @@ def get_or_create_user_folder(service, username: str) -> str:
 
 def upload_to_google_drive(
     local_path: str,
-    username: str,
+    user_name: str,
     task_id: Optional[str] = None
 ) -> Tuple[Optional[str], Optional[str]]:
     """
@@ -97,7 +97,7 @@ def upload_to_google_drive(
 
     Args:
         local_path (str): Path to the video file.
-        username (str): App user name (used for Drive folder).
+        user_name (str): App user name (used for Drive folder).
         task_id (str): Optional task ID for UI progress.
 
     Returns:
@@ -111,7 +111,7 @@ def upload_to_google_drive(
         service = get_drive_service()
 
         update_progress(task_id, "📂 Preparing user folder...", 82)
-        folder_id = get_or_create_user_folder(service, username)
+        folder_id = get_or_create_user_folder(service, user_name)
 
         filename = os.path.basename(local_path)
         mime_type = mimetypes.guess_type(local_path)[0] or "video/mp4"
@@ -149,7 +149,7 @@ def upload_to_google_drive(
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 3:
-        print("Usage: python utils/google_drive.py <local_path> <username>")
+        print("Usage: python utils/google_drive.py <local_path> <user_name>")
         sys.exit(1)
 
     path, user = sys.argv[1], sys.argv[2]

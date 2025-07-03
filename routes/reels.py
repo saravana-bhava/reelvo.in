@@ -13,6 +13,8 @@ from utils.generate_script import generate_script_for_user
 from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_from_text
 from utils.subtitles import generate_srt_from_audio
+from utils.translate_text import translate_to_english
+from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video_for_theme
 from utils.google_drive import upload_to_google_drive
 from utils.instagram import post_to_instagram
@@ -33,8 +35,8 @@ def create_reel():
     os.makedirs(output_path, exist_ok=True)
     videos = os.listdir(output_path)
 
-    # Load latest saved script
-    script = ""
+    # Load latest saved script_text
+    script_text = ""
     user_script_dir = os.path.join("output", user, "scripts")
     os.makedirs(user_script_dir, exist_ok=True)
     scripts = sorted(
@@ -43,7 +45,7 @@ def create_reel():
     )
     if scripts:
         with open(os.path.join(user_script_dir, scripts[0]), "r", encoding="utf-8") as f:
-            script = f.read()
+            script_text = f.read()
 
     # Load themes from theme.json
     theme_path = os.path.join("theme.json")
@@ -55,7 +57,7 @@ def create_reel():
         "create_reel.html",
         user=user,
         videos=videos,
-        script=script,
+        script_text=script_text,
         themes=themes
     )
 
@@ -65,39 +67,40 @@ def create_reel_action():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    username = session["user"]
+    user_name = session["user"]
     theme = request.form.get("theme")
     custom_topic = request.form.get("custom_topic", "").strip()
     language = request.form.get("language", "en")
-    script = request.form.get("script", "").strip()
+    script_text = request.form.get("script", "").strip()
     use_tts = request.form.get("voice_option") == "tts"
     voice = request.form.get("voice_artist")
     subtitles_enabled = "subtitles" in request.form
     watermark_enabled = "watermark" in request.form
     custom_voice_file = request.files.get("custom_voice")
+    theme_name = custom_topic if custom_topic else theme
 
-    output_dir = os.path.join("output", username)
+    output_dir = os.path.join("output", user_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    if not script:
+    if not script_text:
         flash("Script is required.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    logger.info(f"🎬 Starting reel for: {theme.upper() or custom_topic.upper()} | User: {username} | Lang: {language}")
+    logger.info(f"🎬 Starting reel for: User: {user_name} | Theme: {theme_name} | Lang: {language}")
 
-    # Save script to file
-    script_dir = os.path.join("output", username, "scripts")
+    # Save script_text to file
+    script_dir = os.path.join("output", user_name, "scripts")
     os.makedirs(script_dir, exist_ok=True)
 
     script_filename = f"{theme or custom_topic}_{language}_text.txt"
     script_path = os.path.join(script_dir, secure_filename(script_filename))
 
     with open(script_path, "w", encoding="utf-8") as f:
-        f.write(script)
+        f.write(script_text)
 
     logger.info(f"🖼️ Generating overlay...")
     text_image_path = os.path.join(output_dir, "image", f"{theme or custom_topic}_{language}_text_image.png")
-    generate_text_overlay(script, text_image_path, language=language)
+    generate_text_overlay(script_text, text_image_path, language=language)
 
     video_filename = f"{theme or custom_topic}_{language}_video.mp4"
     video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
@@ -106,7 +109,7 @@ def create_reel_action():
     logger.info(f"🔊 Generating TTS...")
     audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}_{language}_voice.mp3")
     if use_tts:
-        audio_path = generate_tts_from_text(script, username, audio_path, theme or custom_topic, None, language, voice)
+        audio_path, audio_duration = generate_tts_from_text(script_text, user_name, audio_path, theme or custom_topic, None, language, voice)
     elif custom_voice_file:
         logger.info("[🔊] Using uploaded voiceover...")
         filename = secure_filename(custom_voice_file.filename)
@@ -124,25 +127,51 @@ def create_reel_action():
     if subtitles_enabled:
         logger.info(f"📝 Generating subtitles...")
         srt_path = os.path.join(output_dir, "srt", f"{theme or custom_topic}_{language}_srt.srt")
-        logger.info(audio_path)
         generate_srt_from_audio(theme or custom_topic, audio_path, srt_path, 6, None, language=language)
+
+    english_script_text = translate_to_english(script_text)
+
+    clips = fetch_multiple_clips(
+        user_name=user_name,
+        folder_name="temp",
+        theme_name=theme_name,
+        language=language,
+        script_text=english_script_text,
+        target_duration=audio_duration
+    )
+    if not clips:
+        logger.error("[❌] No video clips found.")
+        flash("[❌] No video clips found.", "error")
+        return redirect(url_for("reels.create_reel"))
+
+    combined_video_path = concatenate_clips(
+        user_name=user_name,
+        folder_name="temp",
+        theme_name=theme_name,
+        language=language,
+        clips=clips
+    )
+    if not combined_video_path:
+        logger.error("[❌] Video clips could not be combined.")
+        flash("[❌] Video clips could not be combined.", "error")
+        return redirect(url_for("reels.create_reel"))
 
     # Create Reel
 #    create_video_for_theme(
 #        category=theme or "custom",
-#        username=username,
+#        user_name=user_name,
 #        include_watermark=watermark_enabled,
 #        bgm_path=None,
 #        language=language,
 #        task_id=None,
-#        script_text=script,
+#        script_text=script_text,
 #        voiceover_path=audio_path,
 #        tts_voice=voice,
 #        include_subtitles=subtitles_enabled,
 #    )
 
     # Upload to Google Drive
-    upload_url = upload_to_google_drive(video_path, username)
+    upload_url = upload_to_google_drive(video_path, user_name)
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
     return redirect(url_for("reels.create_reel"))
@@ -152,27 +181,33 @@ def create_reel_action():
 def generate_script_ajax():
     """AJAX endpoint to generate script dynamically."""
     data = request.get_json()
+    user_name = session["user"]
     topic = data.get("custom_topic", "").strip()
     theme = data.get("theme")
     language = data.get("language", "en")
-    username = session["user"]
 
     if not theme and not topic:
         return jsonify({"error": "Please provide a theme or custom topic."}), 400
 
     try:
-        script_path = generate_script_for_user(topic if topic else theme, username, language)
+        script_path = generate_script_for_user(
+            user_name = user_name,
+            folder_name = "scripts",
+            theme_name = topic if topic else theme,
+            language = language,
+            prompt = topic if topic else theme
+        )
         with open(script_path, "r", encoding="utf-8") as f:
-            script = f.read().strip()
-        return jsonify({"script": script})
+            script_text = f.read().strip()
+        return jsonify({"script_text": script_text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@reels_bp.route("/videos/<username>/<filename>")
-def serve_video(username, filename):
+@reels_bp.route("/videos/<user_name>/<filename>")
+def serve_video(user_name, filename):
     """Serve previously generated video to user."""
-    return send_from_directory(os.path.join("output", username), filename)
+    return send_from_directory(os.path.join("output", user_name), filename)
 
 
 @reels_bp.route("/reels", methods=["GET"])

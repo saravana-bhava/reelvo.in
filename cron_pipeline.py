@@ -25,19 +25,19 @@ DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "demo")
 SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "5"))  # Delay between categories (in seconds)
 
 
-def run_all_categories_for_user(username: str):
+def run_all_categories_for_user(user_name: str):
     """
     Run reel generation for all predefined categories for a given user.
 
     Args:
-        username (str): Username for whom to generate reels.
+        user_name (str): Username for whom to generate reels.
     """
-    logger.info(f"🌀 Starting CRON reel generation for user: {username}")
+    logger.info(f"🌀 Starting CRON reel generation for user: {user_name}")
 
     for category in CATEGORIES:
         try:
             logger.info(f"🕒 Generating reel for category: {category}")
-            output_path = run_pipeline(category, username)
+            output_path = run_pipeline(category, user_name)
 
             if output_path:
                 logger.info(f"[✅] Completed: {output_path}")

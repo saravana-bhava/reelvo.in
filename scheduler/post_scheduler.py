@@ -23,14 +23,14 @@ def run_scheduler():
         if not user_file.endswith(".json"):
             continue
 
-        username = user_file.replace(".json", "")
+        user_name = user_file.replace(".json", "")
         user_path = os.path.join(SCHEDULE_DIR, user_file)
 
         try:
             with open(user_path, "r", encoding="utf-8") as f:
                 reels = json.load(f)
         except Exception as e:
-            print(f"[{username}] ❌ Failed to load schedule: {e}")
+            print(f"[{user_name}] ❌ Failed to load schedule: {e}")
             continue
 
         updated = False
@@ -45,9 +45,9 @@ def run_scheduler():
                 and scheduled_date == today
                 and scheduled_time == SCHEDULED_HOUR
             ):
-                token_info = get_user_token(username)
+                token_info = get_user_token(user_name)
                 if not token_info:
-                    print(f"[{username}] ⚠️ Missing Instagram token. Skipping reel.")
+                    print(f"[{user_name}] ⚠️ Missing Instagram token. Skipping reel.")
                     continue
 
                 try:
@@ -59,9 +59,9 @@ def run_scheduler():
                     reel["status"] = "posted"
                     reel["posted_at"] = now.isoformat()
                     updated = True
-                    print(f"[{username}] ✅ Posted reel: {reel['video_path']}")
+                    print(f"[{user_name}] ✅ Posted reel: {reel['video_path']}")
                 except Exception as e:
-                    print(f"[{username}] ❌ Error posting reel: {e}")
+                    print(f"[{user_name}] ❌ Error posting reel: {e}")
                     # Optionally:
                     # reel["status"] = "failed"
 
@@ -69,9 +69,9 @@ def run_scheduler():
             try:
                 with open(user_path, "w", encoding="utf-8") as f:
                     json.dump(reels, f, indent=2, ensure_ascii=False)
-                print(f"[{username}] 💾 Schedule file updated.")
+                print(f"[{user_name}] 💾 Schedule file updated.")
             except Exception as e:
-                print(f"[{username}] ❌ Failed to update schedule: {e}")
+                print(f"[{user_name}] ❌ Failed to update schedule: {e}")
 
 
 if __name__ == "__main__":

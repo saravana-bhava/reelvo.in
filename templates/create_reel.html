@@ -102,8 +102,8 @@ async function generateScript() {
 
     const data = await res.json();
 
-    if (data.script) {
-      scriptTextarea.value = data.script;
+    if (data.script_text) {
+      scriptTextarea.value = data.script_text;
       statusDiv.textContent = '✅ Script generated.';
     } else {
       statusDiv.textContent = data.error || '❌ Generation failed.';
@@ -123,7 +123,7 @@ async function generateScript() {
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-  <li><a href="{{ url_for('reels.serve_video', username=user, filename=v) }}" target="_blank" rel="noopener">{{ v }}</a></li>
+  <li><a href="{{ url_for('reels.serve_video', user_name=user, filename=v) }}" target="_blank" rel="noopener">{{ v }}</a></li>
   {% else %}
   <li>No reels found.</li>
   {% endfor %}

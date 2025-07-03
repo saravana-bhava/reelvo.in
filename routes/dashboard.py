@@ -10,7 +10,7 @@ def dashboard():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    username = session["user"]
+    user_name = session["user"]
     connected = session.get("connected", False)
 
-    return render_template("dashboard.html", user=username, connected=connected)
+    return render_template("dashboard.html", user=user_name, connected=connected)

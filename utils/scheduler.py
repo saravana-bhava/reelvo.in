@@ -26,12 +26,12 @@ def scheduler_runner():
                 for job in jobs:
                     try:
                         if job["status"] == "pending" and datetime.now().isoformat() >= job["scheduled_time"]:
-                            logger.info(f"📤 Posting scheduled reel for {job['username']}...")
+                            logger.info(f"📤 Posting scheduled reel for {job['user_name']}...")
 
                             post_result = post_to_instagram(
                                 video_path=job["video_path"],
                                 caption=job.get("caption", "Scheduled post"),
-                                username=job["username"]
+                                user_name=job["user_name"]
                             )
 
                             job["status"] = "posted"

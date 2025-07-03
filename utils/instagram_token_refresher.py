@@ -14,8 +14,8 @@ def refresh_instagram_tokens():
     logger.info("🔄 Starting Instagram token refresher thread...")
 
     while True:
-        for username in os.listdir(OUTPUT_BASE):
-            user_dir = os.path.join(OUTPUT_BASE, username)
+        for user_name in os.listdir(OUTPUT_BASE):
+            user_dir = os.path.join(OUTPUT_BASE, user_name)
             tokens_path = os.path.join(user_dir, "tokens.json")
 
             if not os.path.exists(tokens_path):
@@ -42,9 +42,9 @@ def refresh_instagram_tokens():
                     with open(tokens_path, "w") as f:
                         json.dump(tokens, f, indent=2)
 
-                    logger.info(f"[✅] Refreshed token for {username}")
+                    logger.info(f"[✅] Refreshed token for {user_name}")
 
             except Exception as e:
-                logger.warning(f"[❌] Token refresh error for {username}: {e}")
+                logger.warning(f"[❌] Token refresh error for {user_name}: {e}")
 
         time.sleep(24 * 3600)  # Run once per day

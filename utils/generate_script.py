@@ -2,7 +2,7 @@
 
 """
 Generates short Instagram reel scripts using OpenAI or fallback.
-Saves output to: output/{username}/scripts/{theme}_{lang}_text.txt
+Saves output to: output/{user_name}/scripts/{theme_name}_{language}_text.txt
 Supports: English and Hindi
 """
 
@@ -72,97 +72,101 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
         response = httpx.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
 
-        try:
-            response_data = response.json()
-            script = response_data["choices"][0]["message"]["content"].strip()
-            # Remove leading/trailing quotes if present
-            if script.startswith('"') and script.endswith('"'):
-                script = script[1:-1].strip()
-            elif script.startswith("“") and script.endswith("”"):
-                script = script[1:-1].strip()
-            return script
-        except json.JSONDecodeError:
-            logger.error(f"[❌] Failed to decode JSON. Raw response: {response.text}")
-        except KeyError as e:
-            logger.error(f"[❌] Missing expected field {e} in response: {response.text}")
+        response_data = response.json()
+        if "choices" not in response_data or not response_data["choices"]:
+            logger.error("[❌] No choices returned in response.")
+            return None
+
+        script = response_data["choices"][0]["message"]["content"].strip()
+        # Remove leading/trailing quotes if present
+        if (script.startswith('"') and script.endswith('"')) or (script.startswith("“") and script.endswith("”")):
+            script = script[1:-1].strip()
+        return script
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"[❌] Error generating via API: {e}")
+        logger.error(f"[❌] HTTP error during API call: {e}")
     except Exception as e:
         logger.error(f"[❌] Unexpected error during script generation: {e}")
-
     return None
 
 
-def generate_script(theme: str, task_id: Optional[str] = None, language: str = "en") -> str:
+def generate_script(prompt: str, language: str = "en") -> str:
     """
     Generate a 30-second Instagram script using OpenAI or fallback.
     """
-    theme_norm = theme.strip().lower()
+    prompt_norm = prompt.strip().lower()
     language_norm = language.strip().lower()
 
-    update_progress(task_id, "🧠 Generating script...", 10)
-
     def fallback_script() -> str:
-        return THEMES.get(theme_norm, {}).get(language_norm, f"[Theme script for '{theme_norm}' in '{language_norm}']")
+        return THEMES.get(prompt_norm, {}).get(language_norm, f"[Theme script for '{prompt_norm}' in '{language_norm}']")
 
-    prompt = (
+    chat_prompt = (
         f"Write only the voiceover lines (no scene descriptions, no headers, no visuals, no call-to-action). "
-        f"The topic is '{theme}', "
+        f"The topic is '{prompt_norm}', "
         f"{'in Hindi' if language_norm == 'hi' else 'in English'}. "
         "Make it under 30 seconds, and keep it emotional, energetic, and impactful. "
         "Do not include any headings, bullet points, emojis, or visual cues — just the plain script lines."
     )
 
     if USE_OPENAI:
-        script = generate_script_via_api(prompt)
+        script = generate_script_via_api(chat_prompt)
         if script:
-            logger.info(f"[✅] Script generated for '{theme}' ({language})")
-            update_progress(task_id, "✅ Script generated", 15)
+            logger.info(f"[✅] Script generated for '{prompt}' ({language})")
             return script
 
     # Fallback
-    logger.info(f"[⚠️] Using fallback script for '{theme}' ({language})")
-    update_progress(task_id, "⚠️ Using theme script", 12)
+    logger.info(f"[⚠️] Using fallback script for '{prompt}' ({language})")
     return fallback_script()
 
 
 def generate_script_for_user(
-    theme: str,
-    username: str,
+    user_name: str,
+    folder_name: str,
+    theme_name: str,
     language: str = "en",
-    output_root: str = "output",
-    task_id: Optional[str] = None
+    prompt: str = ""
 ) -> str:
     """
-    Generate and save a script for a user under: output/{username}/scripts/
+    Wrapper to generate and store script for a user.
     """
-    output_dir = os.path.join(output_root, username, "scripts")
+    logger.info(f"[📝] Generating script for User: '{user_name}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
+
+    output_dir = os.path.join("output", user_name, folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    lang_suffix = "_hi" if language == "hi" else "_en"
-    output_path = os.path.join(output_dir, f"{theme}{lang_suffix}_text.txt")
+    script_path = os.path.join(output_dir, f"{theme_name}_{language}_text.txt")
 
-    if os.path.exists(output_path):
-        logger.info(f"[📝] Script already exists → {output_path}")
-        return output_path
+    if os.path.exists(script_path):
+        logger.info(f"[📝] Script already exists → {script_path}")
+        return script_path
 
-    script = generate_script(theme, task_id, language=language)
-    with open(output_path, "w", encoding="utf-8") as f:
+    script = generate_script(prompt=prompt, language=language)
+    with open(script_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
 
-    logger.info(f"[📄] Script saved → {output_path}")
-    return output_path
+    logger.info(f"[📄] Script saved → {script_path}")
+    return script_path
 
 
 # CLI support
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 3:
-        print("Usage: python utils/generate_script.py <theme> <username> [language=en]")
-    else:
-        theme = sys.argv[1]
-        username = sys.argv[2]
-        language = sys.argv[3] if len(sys.argv) > 3 else "en"
-        path = generate_script_for_user(theme, username, language)
-        print(f"✅ Saved: {path}")
+
+    if len(sys.argv) < 6:
+        print("Usage: python utils/generate_script.py <user_name> <folder_name> <theme_name> <language> <prompt>")
+        sys.exit(1)
+
+    user_name = sys.argv[1]
+    folder_name = sys.argv[2]
+    theme_name = sys.argv[3]
+    language = sys.argv[4]
+    prompt = sys.argv[5]
+
+    script_path = generate_script_for_user(
+        user_name=user_name,
+        folder_name=folder_name,
+        theme_name=theme_name,
+        language=language,
+        prompt=prompt
+    )
+    print(f"✅ Saved: {script_path}")

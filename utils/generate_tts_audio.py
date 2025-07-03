@@ -171,14 +171,14 @@ def generate_tts_audio(
 
 def generate_tts_from_file(
     theme: str,
-    username: str,
+    user_name: str,
     output_root: str = "output",
     task_id: Optional[str] = None,
     language: str = "en",
     tts_voice: str = "en-US-Wavenet-D",
     cache: bool = True
 ) -> Tuple[str, float]:
-    text_path = os.path.join(output_root, username, "scripts", f"{theme}_{language}_text.txt")
+    text_path = os.path.join(output_root, user_name, "scripts", f"{theme}_{language}_text.txt")
     if not os.path.exists(text_path):
         raise FileNotFoundError(f"[❌] Script not found: {text_path}")
 
@@ -189,14 +189,14 @@ def generate_tts_from_file(
         raise ValueError("[❌] Script is empty.")
 
     lang_suffix = f"_{language}"
-    output_path = os.path.join(output_root, username, "tts", f"{theme}{lang_suffix}_voice.mp3")
+    output_path = os.path.join(output_root, user_name, "tts", f"{theme}{lang_suffix}_voice.mp3")
 
     return generate_tts_audio(theme, text, output_path, task_id, language, tts_voice, cache)
 
 
 def generate_tts_from_text(
     text: str,
-    username: str,
+    user_name: str,
     output_path: str,
     theme: str = "custom",
     task_id: Optional[str] = None,
@@ -215,4 +215,4 @@ if __name__ == "__main__":
     elif len(sys.argv) == 3:
         generate_tts_from_file(sys.argv[1], sys.argv[2])
     else:
-        print("Usage: python utils/generate_tts_audio.py <theme> <username> [language]")
+        print("Usage: python utils/generate_tts_audio.py <theme> <user_name> [language]")

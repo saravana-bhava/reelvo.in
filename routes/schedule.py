@@ -12,19 +12,19 @@ schedule_bp = Blueprint("schedule", __name__)
 SCHEDULE_DIR = "scheduled_jobs"
 
 
-def load_user_schedule(username: str) -> list:
+def load_user_schedule(user_name: str) -> list:
     """Load the user's scheduled posts from JSON file."""
-    filepath = os.path.join(SCHEDULE_DIR, f"{username}.json")
+    filepath = os.path.join(SCHEDULE_DIR, f"{user_name}.json")
     if os.path.exists(filepath):
         with open(filepath, "r") as f:
             return json.load(f)
     return []
 
 
-def save_user_schedule(username: str, data: list) -> None:
+def save_user_schedule(user_name: str, data: list) -> None:
     """Save the updated schedule for the user."""
     os.makedirs(SCHEDULE_DIR, exist_ok=True)
-    filepath = os.path.join(SCHEDULE_DIR, f"{username}.json")
+    filepath = os.path.join(SCHEDULE_DIR, f"{user_name}.json")
     with open(filepath, "w") as f:
         json.dump(data, f, indent=2)
 
@@ -35,9 +35,9 @@ def list_scheduled_jobs_view():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    username = session["user"]
-    scheduled = load_user_schedule(username)
-    return render_template("scheduled.html", user=username, scheduled=scheduled)
+    user_name = session["user"]
+    scheduled = load_user_schedule(user_name)
+    return render_template("scheduled.html", user=user_name, scheduled=scheduled)
 
 
 @schedule_bp.route("/scheduled", methods=["POST"])
@@ -46,8 +46,8 @@ def update_schedule():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    username = session["user"]
-    scheduled = load_user_schedule(username)
+    user_name = session["user"]
+    scheduled = load_user_schedule(user_name)
     updated_schedule = []
 
     for i, item in enumerate(scheduled):
@@ -71,6 +71,6 @@ def update_schedule():
 
         updated_schedule.append(item)
 
-    save_user_schedule(username, updated_schedule)
+    save_user_schedule(user_name, updated_schedule)
     flash("✅ Schedule updated successfully.")
     return redirect(url_for("schedule.list_scheduled_jobs_view"))

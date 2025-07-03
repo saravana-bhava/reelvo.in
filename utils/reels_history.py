@@ -25,19 +25,19 @@ def save_reel_history(history: Dict[str, Dict[str, str]]) -> None:
         json.dump(history, f, indent=2, ensure_ascii=False)
 
 
-def add_reel_to_history(username: str, filename: str, script: str) -> None:
+def add_reel_to_history(user_name: str, filename: str, script: str) -> None:
     history = load_reel_history()
-    if username not in history:
-        history[username] = {}
-    history[username][filename] = script.strip()
+    if user_name not in history:
+        history[user_name] = {}
+    history[user_name][filename] = script.strip()
     save_reel_history(history)
 
 
-def list_user_reels(username: str) -> List[str]:
+def list_user_reels(user_name: str) -> List[str]:
     history = load_reel_history()
-    return list(history.get(username, {}).keys())
+    return list(history.get(user_name, {}).keys())
 
 
-def get_user_script(username: str, filename: str) -> str:
+def get_user_script(user_name: str, filename: str) -> str:
     history = load_reel_history()
-    return history.get(username, {}).get(filename, "")
+    return history.get(user_name, {}).get(filename, "")

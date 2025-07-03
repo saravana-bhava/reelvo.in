@@ -105,9 +105,9 @@ def instagram_callback():
             return redirect(url_for("dashboard.dashboard"))
 
         # Step 5: Save tokens
-        username = session.get("user")
-        if username:
-            save_user_tokens(username, long_access_token, "", expires_in)
+        user_name = session.get("user")
+        if user_name:
+            save_user_tokens(user_name, long_access_token, "", expires_in)
             session["connected"] = True
             flash("✅ Instagram account connected successfully!", "success")
 
@@ -123,11 +123,11 @@ def disconnect_instagram():
     """
     Clears user's Instagram token file.
     """
-    username = session.get("user")
-    if not username:
+    user_name = session.get("user")
+    if not user_name:
         return redirect(url_for("auth.index"))
 
-    token_path = f"user_tokens/{username}.json"
+    token_path = f"user_tokens/{user_name}.json"
     if os.path.exists(token_path):
         os.remove(token_path)
 
@@ -146,8 +146,8 @@ def api_post_reel():
     caption = data.get("caption", "")
     video_url = data.get("video_url")
 
-    username = session.get("user")
-    if not username:
+    user_name = session.get("user")
+    if not user_name:
         return jsonify({"error": "User not logged in"}), 401
 
     if not video_path or not video_url:
@@ -157,7 +157,7 @@ def api_post_reel():
         result_html = post_to_instagram(
             video_path=video_path,
             caption=caption,
-            username=username,
+            user_name=user_name,
             video_url=video_url
         )
         return jsonify({"success": True, "message": result_html})

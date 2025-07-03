@@ -17,7 +17,7 @@ INSTAGRAM_API_URL = "https://graph.facebook.com/v19.0"
 def post_to_instagram(
     video_path: str,
     caption: str,
-    username: str,
+    user_name: str,
     video_url: str = "",
     task_id: str = None
 ) -> str:
@@ -25,7 +25,7 @@ def post_to_instagram(
     Uploads a Reel to Instagram via Graph API using a pre-hosted video URL.
     Returns result message (HTML safe).
     """
-    creds = get_instagram_credentials(username)
+    creds = get_instagram_credentials(user_name)
     if not creds:
         return "❌ No Instagram credentials found for user."
 
@@ -80,7 +80,7 @@ def post_to_instagram(
                 permalink = r3.json().get("permalink", permalink)
 
         # ✅ Log the post
-        log_post(username, video_path=video_path, caption=caption, drive_url=permalink)
+        log_post(user_name, video_path=video_path, caption=caption, drive_url=permalink)
 
         if "http" in permalink:
             return f"📤 Reel posted successfully: <a href='{permalink}' target='_blank'>View</a>"

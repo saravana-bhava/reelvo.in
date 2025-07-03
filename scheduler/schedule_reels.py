@@ -30,15 +30,15 @@ def save_json(path: str, data: dict) -> None:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def schedule_reels_for_user(username: str) -> None:
+def schedule_reels_for_user(user_name: str) -> None:
     """
     Schedule all unscheduled reels for a given user, one per day.
     """
     history = load_json(REEL_HISTORY_PATH)
     schedule = load_json(SCHEDULE_PATH)
 
-    user_history = history.get(username, {})
-    user_schedule = schedule.get(username, {})
+    user_history = history.get(user_name, {})
+    user_schedule = schedule.get(user_name, {})
 
     already_scheduled = set(user_schedule.keys())
 
@@ -60,10 +60,10 @@ def schedule_reels_for_user(username: str) -> None:
         post_date += timedelta(days=1)  # Next reel → next day
 
     # Save updated schedule
-    schedule[username] = user_schedule
+    schedule[user_name] = user_schedule
     save_json(SCHEDULE_PATH, schedule)
 
-    print(f"✅ Scheduled {len(user_schedule)} reels for user: {username}")
+    print(f"✅ Scheduled {len(user_schedule)} reels for user: {user_name}")
 
 
 if __name__ == "__main__":

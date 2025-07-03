@@ -27,19 +27,19 @@ DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "demo")
 SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "2"))  # Delay (seconds) between reels
 
 
-def run_all_categories(username: str) -> None:
+def run_all_categories(user_name: str) -> None:
     """
     Generate reels for all defined categories for a given user.
 
     Args:
-        username (str): Target username.
+        user_name (str): Target user_name.
     """
-    logger.info(f"🚀 Starting batch reel generation for user: {username}")
+    logger.info(f"🚀 Starting batch reel generation for user: {user_name}")
 
     for category in CATEGORIES:
         try:
             logger.info(f"🔹 Generating reel for category: {category}")
-            result = run_pipeline(category, username)
+            result = run_pipeline(category, user_name)
 
             if result:
                 logger.info(f"[✅] {category.capitalize()} reel saved at: {result}")
@@ -51,7 +51,7 @@ def run_all_categories(username: str) -> None:
 
         time.sleep(SLEEP_BETWEEN)
 
-    logger.info(f"✅ Finished processing all categories for user: {username}")
+    logger.info(f"✅ Finished processing all categories for user: {user_name}")
 
 
 if __name__ == "__main__":

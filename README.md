@@ -13,7 +13,7 @@ Users choose a niche, AI writes a script, TTS converts it to voice, FFmpeg build
 - 🗣️ Text-to-Speech via **ElevenLabs**, **Google TTS**, or **gTTS**
 - 🎞️ Video generation using **FFmpeg** (with optional VEED fallback)
 - 🎬 Subtitles (auto-generated from TTS and overlaid via SRT)
-- 💾 Videos saved to `/output/<username>/`
+- 💾 Videos saved to `/output/<user_name>/`
 - ☁️ Upload to Google Drive (public sharable link)
 - 📲 Auto-post to Instagram Reels (Graph API integration)
 - ⏱️ Scheduler-ready (via cron or BullMQ-compatible)
