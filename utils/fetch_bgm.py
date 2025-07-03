@@ -58,6 +58,7 @@ def fetch_bgm(
     language: str = "en",
     fallback_category: Optional[str] = None
 ) -> Optional[str]:
+
     """
     Fetch background music matching the script content.
 

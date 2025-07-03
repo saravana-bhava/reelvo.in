@@ -3,6 +3,7 @@
 import os
 import json
 import logging
+import subprocess
 from flask import (
     Blueprint, request, render_template, session, redirect,
     url_for, flash, jsonify, send_from_directory
@@ -14,8 +15,9 @@ from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_audio
 from utils.generate_srt_from_audio import generate_srt_from_audio
 from utils.translate_text import translate_to_english
+from utils.fetch_bgm import fetch_bgm
 from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
-from utils.create_video import create_video_for_theme
+from utils.create_video import create_video
 from utils.google_drive import upload_to_google_drive
 from utils.instagram import post_to_instagram
 
@@ -150,6 +152,20 @@ def create_reel_action():
 
     temp_dir = os.path.join(output_dir, "temp")
     os.makedirs(temp_dir, exist_ok=True)
+
+    bgm_path = fetch_bgm(english_script_text, "en", "default") or "assets/music/default.mp3"
+
+    mixed_filename = f"{theme_name}_{language}_mixed.m4a"
+    mixed_audio_path = os.path.join(temp_dir, secure_filename(mixed_filename))
+    audio_to_use = audio_path
+    if bgm_path and os.path.exists(bgm_path):
+        subprocess.run([
+            "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
+            "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
+            "-c:a", "aac", "-b:a", "192k", mixed_audio_path
+        ], check=True)
+        audio_to_use = mixed_audio_path
+
     clips = fetch_multiple_clips(
         temp_dir=temp_dir,
         theme_name=theme_name,
@@ -173,29 +189,69 @@ def create_reel_action():
         flash("[❌] Video clips could not be combined.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    # Create Reel
-#    video_filename = f"{theme or custom_topic}_{language}_video.mp4"
-#    video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
+    # Final render
+    inputs = ["-i", combined_video_path, "-i", audio_to_use]
+    input_index = 2
+    logo_index = None
 
-#    create_video_for_theme(
-#        category=theme or "custom",
-#        user_name=user_name,
-#        include_watermark=watermark_enabled,
-#        bgm_path=None,
-#        language=language,
-#        task_id=None,
-#        script_text=script_text,
-#        voiceover_path=audio_path,
-#        tts_voice=voice,
-#        include_subtitles=subtitles_enabled,
-#    )
+    if watermark_enabled:
+        logger.info("[🌐] Adding watermark...")
+        watermark_dir = os.path.join(output_dir, "watermark")
+        os.makedirs(watermark_dir, exist_ok=True)
+        watermark_filename = f"logo.png"
+        watermark_path = os.path.join(watermark_dir, secure_filename(watermark_filename))
+
+        inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
+        logo_index = input_index
+        input_index += 1
+
+    filters = [
+        f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
+        f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
+        f"fade=t=in:st=0:d=1,fade=t=out:st={max(audio_duration - 1, 1)}:d=1[bg]"
+    ]
+    base = "[bg]"
+
+    if logo_index is not None:
+        filters.append(f"{base}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
+        base = "[wm]"
+
+    if subtitles_enabled:
+        logger.info("[🌐] Adding subtitles...")
+        subtitle_style = (
+            "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
+            "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
+            "BorderStyle=3,Outline=2,MarginV=10"
+        )
+        filters.append(f"{base}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
+        map_video = "[outv]"
+    else:
+        map_video = base
+
+    # Create Reel
+    videos_dir = os.path.join(output_dir, "videos")
+    os.makedirs(videos_dir, exist_ok=True)
+    video_filename = f"{theme_name}_{language}_video.mp4"
+    video_path = os.path.join(videos_dir, secure_filename(video_filename))
+
+    video_path = create_video(
+        video_path=video_path,
+        inputs=inputs,
+        audio_duration=audio_duration,
+        filters=filters,
+        map_video=map_video
+    )
+    if not video_path:
+        logger.error("[❌] Video could not be generated.")
+        flash("[❌] Video could not be generated.", "error")
+        return redirect(url_for("reels.create_reel"))
 
     # Upload to Google Drive
-#    upload_url = upload_to_google_drive(video_path, user_name)
-#    flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
+    logger.info("[🌐] Upload to google drive...")
+    upload_url = upload_to_google_drive(video_path, user_name)
+    flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
-#    return redirect(url_for("reels.create_reel"))
-    return "Done"
+    return redirect(url_for("reels.create_reel"))
 
 @reels_bp.route("/generate-script", methods=["POST"])
 def generate_script_ajax():
