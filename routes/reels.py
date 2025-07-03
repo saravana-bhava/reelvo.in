@@ -27,6 +27,7 @@ reels_bp = Blueprint("reels", __name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_reel")
 
+
 @reels_bp.route("/create", methods=["GET"])
 def create_reel():
     if "user" not in session:
@@ -37,7 +38,6 @@ def create_reel():
     os.makedirs(output_path, exist_ok=True)
     videos = os.listdir(output_path)
 
-    # Load latest saved script_text
     script_text = ""
     user_script_dir = os.path.join("output", user, "scripts")
     os.makedirs(user_script_dir, exist_ok=True)
@@ -49,7 +49,6 @@ def create_reel():
         with open(os.path.join(user_script_dir, scripts[0]), "r", encoding="utf-8") as f:
             script_text = f.read()
 
-    # Load themes from theme.json
     theme_path = os.path.join("theme.json")
     with open(theme_path, "r", encoding="utf-8") as f:
         theme_data = json.load(f)
@@ -63,9 +62,9 @@ def create_reel():
         themes=themes
     )
 
+
 @reels_bp.route("/create", methods=["POST"])
 def create_reel_action():
-    """Handle reel generation and processing."""
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
@@ -79,7 +78,7 @@ def create_reel_action():
     custom_voice_file = request.files.get("custom_voice")
     subtitles_enabled = "subtitles" in request.form
     watermark_enabled = "watermark" in request.form
-    theme_name = custom_topic if custom_topic else theme
+    theme_name = secure_filename(custom_topic if custom_topic else theme)
 
     if not script_text:
         flash("Script is required.", "error")
@@ -90,24 +89,19 @@ def create_reel_action():
     output_dir = os.path.join("output", user_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Save script_text to file
     scripts_dir = os.path.join(output_dir, "scripts")
     os.makedirs(scripts_dir, exist_ok=True)
     script_filename = f"{theme_name}_{language}_text.txt"
     script_path = os.path.join(scripts_dir, secure_filename(script_filename))
-
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_text)
 
-    # Generate Text Image Overlay
     images_dir = os.path.join(output_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
     text_image_filename = f"{theme_name}_{language}_text_image.png"
     text_image_path = os.path.join(images_dir, secure_filename(text_image_filename))
-
     generate_text_overlay(text_image_path, language, script_text)
 
-    # TTS Audio or Uploaded Voice
     tts_dir = os.path.join(output_dir, "tts")
     os.makedirs(tts_dir, exist_ok=True)
     tts_filename = f"{theme_name}_{language}_voice.mp3"
@@ -125,14 +119,18 @@ def create_reel_action():
         logger.info("[🔊] Using uploaded voiceover...")
         filename = secure_filename(custom_voice_file.filename)
         audio_path = os.path.join(output_dir, "tts", filename)
-        voiceover_path.save(audio_path)
+        custom_voice_file.save(audio_path)
         audio_duration = float(subprocess.check_output([
             "ffprobe", "-v", "error", "-show_entries",
             "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
             audio_path
-        ]).strip())
+        ]).decode().strip())
     else:
         flash("You must upload a voice file or choose TTS.", "error")
+        return redirect(url_for("reels.create_reel"))
+
+    if audio_duration < 2.0:
+        flash("Audio too short. Must be at least 2 seconds.", "error")
         return redirect(url_for("reels.create_reel"))
 
     if subtitles_enabled:
@@ -189,7 +187,6 @@ def create_reel_action():
         flash("[❌] Video clips could not be combined.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    # Final render
     inputs = ["-i", combined_video_path, "-i", audio_to_use]
     input_index = 2
     logo_index = None
@@ -198,9 +195,8 @@ def create_reel_action():
         logger.info("[🌐] Adding watermark...")
         watermark_dir = os.path.join(output_dir, "watermark")
         os.makedirs(watermark_dir, exist_ok=True)
-        watermark_filename = f"logo.png"
+        watermark_filename = "logo.png"
         watermark_path = os.path.join(watermark_dir, secure_filename(watermark_filename))
-
         inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
         logo_index = input_index
         input_index += 1
@@ -223,12 +219,12 @@ def create_reel_action():
             "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
             "BorderStyle=3,Outline=2,MarginV=10"
         )
-        filters.append(f"{base}subtitles='{srt_path}':force_style='{subtitle_style}'[outv]")
+        escaped_srt_path = srt_path.replace('\\', '\\\\').replace(":", "\\:").replace("'", "\\'")
+        filters.append(f"{base}subtitles='{escaped_srt_path}':force_style='{subtitle_style}'[outv]")
         map_video = "[outv]"
     else:
         map_video = base
 
-    # Create Reel
     videos_dir = os.path.join(output_dir, "videos")
     os.makedirs(videos_dir, exist_ok=True)
     video_filename = f"{theme_name}_{language}_video.mp4"
@@ -246,16 +242,15 @@ def create_reel_action():
         flash("[❌] Video could not be generated.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    # Upload to Google Drive
     logger.info("[🌐] Upload to google drive...")
     upload_url = upload_to_google_drive(video_path, user_name)
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
     return redirect(url_for("reels.create_reel"))
 
+
 @reels_bp.route("/generate-script", methods=["POST"])
 def generate_script_ajax():
-    """AJAX endpoint to generate script dynamically."""
     data = request.get_json()
     user_name = session["user"]
     topic = data.get("custom_topic", "").strip()
@@ -267,11 +262,11 @@ def generate_script_ajax():
 
     try:
         script_path = generate_script_for_user(
-            user_name = user_name,
-            folder_name = "scripts",
-            theme_name = topic if topic else theme,
-            language = language,
-            prompt = topic if topic else theme
+            user_name=user_name,
+            folder_name="scripts",
+            theme_name=topic if topic else theme,
+            language=language,
+            prompt=topic if topic else theme
         )
         with open(script_path, "r", encoding="utf-8") as f:
             script_text = f.read().strip()
@@ -282,13 +277,11 @@ def generate_script_ajax():
 
 @reels_bp.route("/videos/<user_name>/<filename>")
 def serve_video(user_name, filename):
-    """Serve previously generated video to user."""
     return send_from_directory(os.path.join("output", user_name), filename)
 
 
 @reels_bp.route("/reels", methods=["GET"])
 def list_reels():
-    """List all previously generated reels."""
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
