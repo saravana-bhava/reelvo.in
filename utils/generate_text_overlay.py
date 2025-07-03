@@ -14,114 +14,101 @@ from PIL import Image, ImageDraw, ImageFont
 logger = logging.getLogger("text_overlay")
 logging.basicConfig(level=logging.INFO)
 
-# Optional: progress UI
-try:
-    from progress import update_progress
-except ImportError:
-    def update_progress(task_id: Optional[str], status: str, percent: int): pass
+# Constants
+CANVAS_WIDTH = 1080
+CANVAS_HEIGHT = 1920
+FONT_SIZE = 60
+MARGIN = 100
 
 
 def generate_text_overlay(
-    text: str,
-    output_path: str,
-    width: int = 1080,
-    height: int = 1920,
-    font_size: int = 60,
-    font_path: Optional[str] = None,
-    task_id: Optional[str] = None,
-    language: str = "en"
+    text_image_path: str,
+    language: str,
+    script_text: str
 ) -> None:
     """
     Generate a vertically centered overlay image with word-wrapped multiline text.
 
     Args:
-        text (str): Text content to render.
-        output_path (str): Path to save the generated .png/.jpg.
-        width (int): Canvas width (default 1080).
-        height (int): Canvas height (default 1920).
-        font_size (int): Font size for text rendering.
-        font_path (Optional[str]): Optional path to a custom .ttf font.
-        task_id (Optional[str]): Optional task ID for progress updates.
+        text_image_path (str): Path to save the generated .png/.jpg.
         language (str): Language hint ('en' or 'hi') to auto-select fallback font.
+        script_text (str): Text content to render.
     """
-    update_progress(task_id, "🖋️ Generating text overlay...", 35)
-    logger.info(f"[🖋️] Rendering text overlay → {output_path}")
+
+    logger.info(f"[🖋️] Rendering text overlay → {text_image_path}")
 
     # Font resolution
+    font_path = None
+    if language == "hi":
+        possible_fonts = [
+            "assets/fonts/NotoSansDevanagari-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+            "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf"
+        ]
+    else:
+        possible_fonts = [
+            "assets/fonts/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/local/share/fonts/DejaVuSans-Bold.ttf"
+        ]
+
+    for path in possible_fonts:
+        if os.path.exists(path):
+            font_path = path
+            break
+
     if not font_path:
-        possible_fonts = (
-            [
-                "assets/fonts/NotoSansDevanagari-Regular.ttf",
-                "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
-                "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf"
-            ] if language == "hi" else [
-                "assets/fonts/DejaVuSans-Bold.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                "/usr/local/share/fonts/DejaVuSans-Bold.ttf"
-            ]
-        )
-        for path in possible_fonts:
-            if os.path.exists(path):
-                font_path = path
-                break
+        logger.error(f"[❌] No suitable font found. Tried:\n" + "\n".join(possible_fonts))
+        raise FileNotFoundError("No suitable font found. Please install or provide one manually.")
 
-    if not font_path or not os.path.exists(font_path):
-        logger.error(f"[❌] No suitable font found. Tried:\n{possible_fonts}")
-        raise FileNotFoundError("No suitable font found. Please install or set path manually.")
+    font = ImageFont.truetype(font_path, FONT_SIZE)
 
-    font = ImageFont.truetype(font_path, font_size)
-
-    # Optional filename suffix based on language
-    if output_path.endswith("_text.png"):
-        base = output_path[:-9]
-        output_path = f"{base}_text_{language}.png"
-
-    # Create canvas
-    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    # Create transparent RGBA canvas
+    image = Image.new("RGBA", (CANVAS_WIDTH, CANVAS_HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
 
     # Word-wrap into lines
-    words = text.strip().split()
+    words = script_text.strip().split()
     lines = []
-    line = ""
+    current_line = ""
 
     for word in words:
-        test_line = f"{line} {word}".strip()
+        test_line = f"{current_line} {word}".strip()
         bbox = draw.textbbox((0, 0), test_line, font=font)
-        if bbox[2] <= width - 100:
-            line = test_line
+        if bbox[2] <= CANVAS_WIDTH - MARGIN:
+            current_line = test_line
         else:
-            lines.append(line)
-            line = word
-    if line:
-        lines.append(line)
+            lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
 
-    # Compute total height for vertical centering
+    # Compute vertical centering
     line_height = draw.textbbox((0, 0), "A", font=font)[3] + 15
     total_text_height = line_height * len(lines)
-    y = (height - total_text_height) // 2
+    y = (CANVAS_HEIGHT - total_text_height) // 2
 
-    # Draw lines centered horizontally
+    # Draw lines
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
-        x = (width - bbox[2]) // 2
+        x = (CANVAS_WIDTH - bbox[2]) // 2
         draw.text((x, y), line, font=font, fill="white")
         y += line_height
 
     # Save image
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    image.convert("RGB").save(output_path)
-    logger.info(f"[✅] Overlay image saved → {output_path}")
-    update_progress(task_id, "🖼️ Text overlay ready", 38)
+    image.convert("RGB").save(text_image_path)
+    logger.info(f"[✅] Overlay image saved → {text_image_path}")
 
 
-# CLI usage for testing
+# CLI usage
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 3:
-        print("Usage: python utils/generate_text_overlay.py '<text>' <output_path> [language]")
-    else:
-        text = sys.argv[1]
-        output = sys.argv[2]
-        lang = sys.argv[3] if len(sys.argv) > 3 else "en"
-        generate_text_overlay(text, output, language=lang)
+
+    if len(sys.argv) < 4:
+        print("Usage: python utils/generate_text_overlay.py <text_image_path> <language> <script_text>")
+        sys.exit(1)
+
+    text_image_path = sys.argv[1]
+    language = sys.argv[2]
+    script_text = " ".join(sys.argv[3:])  # Allows multi-word input
+    generate_text_overlay(text_image_path, language, script_text)

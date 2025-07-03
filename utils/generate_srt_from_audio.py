@@ -1,14 +1,11 @@
-# File: utils/subtitles.py
+# File: utils/generate_srt_from_audio.py
 
 """
-Subtitle generator using Whisper fallback.
-
-Priority:
-1. Use OpenAI Whisper model for transcription if Google TTS marks are unavailable.
+Subtitle generator using Whisper.
 
 Generates:
-- .srt subtitle file for overlay on Instagram Reels.
-- Automatically converts .srt → .ass for proper Hindi (Devanagari) subtitle rendering.
+- .srt subtitle file for Instagram Reels.
+- Automatically converts .srt → .ass for Hindi (Devanagari) subtitle support.
 """
 
 import os
@@ -17,7 +14,6 @@ import whisper
 import warnings
 import logging
 from datetime import timedelta
-from typing import Optional
 
 # Logging setup
 logger = logging.getLogger("subtitle_gen")
@@ -26,51 +22,30 @@ logging.basicConfig(level=logging.INFO)
 # Suppress FP16 warning on CPU
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
-# Load Whisper model
+# Load Whisper model (once)
 try:
     MODEL = whisper.load_model("small")
 except Exception as e:
     logger.error(f"[❌] Failed to load Whisper model: {e}")
-    raise
-
-# Optional UI progress
-try:
-    from progress import update_progress
-except ImportError:
-    def update_progress(task_id: str, status: str, percent: int): pass
+    raise RuntimeError("Whisper model loading failed.")
 
 
 def generate_srt_from_audio(
-    category: str,
+    srt_path: str,
+    language: str,
     audio_path: str,
-    output_path: str,
-    words_per_line: int = 6,
-    task_id: Optional[str] = None,
-    language: str = "auto"
+    words_per_line: int = 6
 ) -> None:
     """
-    Generate SRT subtitles using OpenAI Whisper.
+    Generate SRT subtitle using Whisper transcription.
 
     Args:
-        category (str): Video category (e.g., 'motivation').
-        audio_path (str): Path to the audio file (mp3).
-        output_path (str): Where to save the .srt file.
+        srt_path (str): Path to save .srt file.
+        language (str): 'en', 'hi', or 'auto'.
+        audio_path (str): Input audio path.
         words_per_line (int): Number of words per subtitle line.
-        task_id (Optional[str]): Optional task ID for progress updates.
-        language (str): Language code ('en', 'hi', or 'auto').
     """
-    update_progress(task_id, "📝 Generating subtitles...", 50)
-    logger.info(f"[🧠] Transcribing audio with Whisper...")
-
-    # Language detection from .txt if auto
-    if language == "auto":
-        language = "en"
-        txt_path = audio_path.replace(".mp3", ".txt")
-        if os.path.exists(txt_path):
-            with open(txt_path, "r", encoding="utf-8") as f:
-                raw_text = f.read()
-                if any('\u0900' <= c <= '\u097F' for c in raw_text):
-                    language = "hi"
+    logger.info(f"[🧠] Transcribing audio with Whisper → {audio_path}")
 
     try:
         result = MODEL.transcribe(audio_path, word_timestamps=True, language=language)
@@ -118,22 +93,17 @@ def generate_srt_from_audio(
         index += 1
         i += words_per_line
 
-    # Output filename auto-suffix
-    if output_path.endswith(".srt"):
-        output_path = output_path.replace(".srt", f"_{language}.srt")
-
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(srt_path), exist_ok=True)
+    with open(srt_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
 
-    logger.info(f"[✅] Generated Whisper SRT → {output_path}")
-    update_progress(task_id, "✅ Subtitles ready (Whisper)", 55)
+    logger.info(f"[✅] SRT saved: {srt_path}")
 
-    # ASS conversion for Hindi
+    # Convert to ASS if Hindi detected
     if any('\u0900' <= c <= '\u097F' for c in " ".join(sub.content for sub in subtitles)):
-        ass_path = output_path.replace(".srt", ".ass")
-        convert_srt_to_ass(output_path, ass_path, font="Noto Sans Devanagari")
-        logger.info(f"[🈶] ASS subtitle created for Hindi: {ass_path}")
+        ass_path = srt_path.replace(".srt", ".ass")
+        convert_srt_to_ass(srt_path, ass_path, font="Noto Sans Devanagari")
+        logger.info(f"[🈶] ASS generated for Hindi: {ass_path}")
 
 
 def convert_srt_to_ass(
@@ -143,13 +113,13 @@ def convert_srt_to_ass(
     fontsize: int = 18
 ) -> None:
     """
-    Convert SRT to ASS format with Unicode font support.
+    Convert .srt subtitles to .ass for Unicode (e.g., Hindi) support.
 
     Args:
-        srt_path (str): Input .srt file.
-        ass_path (str): Output .ass file.
-        font (str): Font name to render in.
-        fontsize (int): Font size.
+        srt_path (str): Input SRT file.
+        ass_path (str): Output ASS file.
+        font (str): Font to use (default for Hindi).
+        fontsize (int): Size of font.
     """
     with open(srt_path, "r", encoding="utf-8") as f:
         subs = list(srt.parse(f.read()))
@@ -186,17 +156,23 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     with open(ass_path, "w", encoding="utf-8") as f:
         f.write(ass_header + ass_events)
 
-    logger.info(f"[🈶] Converted SRT → ASS → {ass_path}")
+    logger.info(f"[🈶] Converted {srt_path} → {ass_path}")
 
 
-# CLI test
+# CLI usage
 if __name__ == "__main__":
     import sys
     if len(sys.argv) not in (3, 4):
-        print("Usage: python utils/subtitles.py <category> <audio_path> [language]")
-    else:
-        category = sys.argv[1]
-        audio_file = sys.argv[2]
-        lang = sys.argv[3] if len(sys.argv) == 4 else "auto"
-        output_srt = os.path.splitext(audio_file)[0] + f"_{lang}.srt"
-        generate_srt_from_audio(category, audio_file, output_srt, 6, None, language=lang)
+        print("Usage: python utils/generate_srt_from_audio.py <audio_path> <srt_output_path> [language]")
+        sys.exit(1)
+
+    audio_path = sys.argv[1]
+    srt_output_path = sys.argv[2]
+    language = sys.argv[3] if len(sys.argv) == 4 else "auto"
+
+    generate_srt_from_audio(
+        srt_path=srt_output_path,
+        language=language,
+        audio_path=audio_path,
+        words_per_line=6
+    )

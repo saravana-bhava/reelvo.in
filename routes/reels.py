@@ -11,8 +11,8 @@ from werkzeug.utils import secure_filename
 
 from utils.generate_script import generate_script_for_user
 from utils.generate_text_overlay import generate_text_overlay
-from utils.generate_tts_audio import generate_tts_from_text
-from utils.subtitles import generate_srt_from_audio
+from utils.generate_tts_audio import generate_tts_audio
+from utils.generate_srt_from_audio import generate_srt_from_audio
 from utils.translate_text import translate_to_english
 from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video_for_theme
@@ -23,7 +23,7 @@ reels_bp = Blueprint("reels", __name__)
 
 # Logger
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("create_video")
+logger = logging.getLogger("create_reel")
 
 @reels_bp.route("/create", methods=["GET"])
 def create_reel():
@@ -74,42 +74,51 @@ def create_reel_action():
     script_text = request.form.get("script", "").strip()
     use_tts = request.form.get("voice_option") == "tts"
     voice = request.form.get("voice_artist")
+    custom_voice_file = request.files.get("custom_voice")
     subtitles_enabled = "subtitles" in request.form
     watermark_enabled = "watermark" in request.form
-    custom_voice_file = request.files.get("custom_voice")
     theme_name = custom_topic if custom_topic else theme
-
-    output_dir = os.path.join("output", user_name)
-    os.makedirs(output_dir, exist_ok=True)
 
     if not script_text:
         flash("Script is required.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    logger.info(f"🎬 Starting reel for: User: {user_name} | Theme: {theme_name} | Lang: {language}")
+    logger.info(f"🎬 Starting reel for: User: {user_name} | Theme: {theme_name} | Language: {language}")
+
+    output_dir = os.path.join("output", user_name)
+    os.makedirs(output_dir, exist_ok=True)
 
     # Save script_text to file
-    script_dir = os.path.join("output", user_name, "scripts")
-    os.makedirs(script_dir, exist_ok=True)
-
-    script_filename = f"{theme or custom_topic}_{language}_text.txt"
-    script_path = os.path.join(script_dir, secure_filename(script_filename))
+    scripts_dir = os.path.join(output_dir, "scripts")
+    os.makedirs(scripts_dir, exist_ok=True)
+    script_filename = f"{theme_name}_{language}_text.txt"
+    script_path = os.path.join(scripts_dir, secure_filename(script_filename))
 
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_text)
 
-    logger.info(f"🖼️ Generating overlay...")
-    text_image_path = os.path.join(output_dir, "image", f"{theme or custom_topic}_{language}_text_image.png")
-    generate_text_overlay(script_text, text_image_path, language=language)
+    # Generate Text Image Overlay
+    images_dir = os.path.join(output_dir, "images")
+    os.makedirs(images_dir, exist_ok=True)
+    text_image_filename = f"{theme_name}_{language}_text_image.png"
+    text_image_path = os.path.join(images_dir, secure_filename(text_image_filename))
 
-    video_filename = f"{theme or custom_topic}_{language}_video.mp4"
-    video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
+    generate_text_overlay(text_image_path, language, script_text)
 
     # TTS Audio or Uploaded Voice
-    logger.info(f"🔊 Generating TTS...")
-    audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}_{language}_voice.mp3")
+    tts_dir = os.path.join(output_dir, "tts")
+    os.makedirs(tts_dir, exist_ok=True)
+    tts_filename = f"{theme_name}_{language}_voice.mp3"
+    audio_path = os.path.join(tts_dir, secure_filename(tts_filename))
+
     if use_tts:
-        audio_path, audio_duration = generate_tts_from_text(script_text, user_name, audio_path, theme or custom_topic, None, language, voice)
+        audio_path, audio_duration = generate_tts_audio(
+            tts_path=audio_path,
+            language=language,
+            script_text=script_text,
+            tts_voice=voice,
+            cache=True
+        )
     elif custom_voice_file:
         logger.info("[🔊] Using uploaded voiceover...")
         filename = secure_filename(custom_voice_file.filename)
@@ -125,15 +134,24 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     if subtitles_enabled:
-        logger.info(f"📝 Generating subtitles...")
-        srt_path = os.path.join(output_dir, "srt", f"{theme or custom_topic}_{language}_srt.srt")
-        generate_srt_from_audio(theme or custom_topic, audio_path, srt_path, 6, None, language=language)
+        srt_dir = os.path.join(output_dir, "srt")
+        os.makedirs(srt_dir, exist_ok=True)
+        srt_filename = f"{theme_name}_{language}_srt.srt"
+        srt_path = os.path.join(srt_dir, secure_filename(srt_filename))
+
+        generate_srt_from_audio(
+            srt_path=srt_path,
+            language=language,
+            audio_path=audio_path,
+            words_per_line=6
+        )
 
     english_script_text = translate_to_english(script_text)
 
+    temp_dir = os.path.join(output_dir, "temp")
+    os.makedirs(temp_dir, exist_ok=True)
     clips = fetch_multiple_clips(
-        user_name=user_name,
-        folder_name="temp",
+        temp_dir=temp_dir,
         theme_name=theme_name,
         language=language,
         script_text=english_script_text,
@@ -145,8 +163,7 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     combined_video_path = concatenate_clips(
-        user_name=user_name,
-        folder_name="temp",
+        temp_dir=temp_dir,
         theme_name=theme_name,
         language=language,
         clips=clips
@@ -157,6 +174,9 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     # Create Reel
+#    video_filename = f"{theme or custom_topic}_{language}_video.mp4"
+#    video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
+
 #    create_video_for_theme(
 #        category=theme or "custom",
 #        user_name=user_name,
@@ -171,11 +191,11 @@ def create_reel_action():
 #    )
 
     # Upload to Google Drive
-    upload_url = upload_to_google_drive(video_path, user_name)
-    flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
+#    upload_url = upload_to_google_drive(video_path, user_name)
+#    flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
-    return redirect(url_for("reels.create_reel"))
-
+#    return redirect(url_for("reels.create_reel"))
+    return "Done"
 
 @reels_bp.route("/generate-script", methods=["POST"])
 def generate_script_ajax():

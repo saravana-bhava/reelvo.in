@@ -2,10 +2,6 @@
 
 """
 Generates a full Instagram Reel from a script:
-1. Overlay image from script
-2. TTS audio (or uploaded)
-3. Subtitle (SRT)
-4. Background video clips (Pixabay/Pexels/fallback)
 5. Background music mix
 6. Watermark (optional)
 7. Output high-quality 1080x1920 MP4
@@ -26,9 +22,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
-from utils.generate_text_overlay import generate_text_overlay
-from utils.generate_tts_audio import generate_tts_from_file
-from utils.subtitles import generate_srt_from_audio
 from utils.generate_script import generate_script_for_user
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
@@ -165,34 +158,6 @@ def create_video_for_theme(
     text_image_path = os.path.join(base_output, "image", f"{theme}_{language}_image.png")
     srt_path = os.path.join(base_output, "srt", f"{theme}_{language}_srt.srt")
     final_output_path = os.path.join(base_output, "video", f"{theme}_{language}_video.mp4")
-
-    try:
-        if task_id: update_progress(task_id, "🖼️ Generating overlay...", 30)
-        generate_text_overlay(script_text, text_image_path, language=language)
-
-        if voiceover_path:
-            logger.info("[🔊] Using uploaded voiceover...")
-            voiceover_path.save(audio_path)
-            audio_duration = float(subprocess.check_output([
-                "ffprobe", "-v", "error", "-show_entries",
-                "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
-                audio_path
-            ]).strip())
-        else:
-            if task_id: update_progress(task_id, "🔊 Generating TTS...", 40)
-            audio_path, audio_duration = generate_tts_from_file(
-                theme, user_name, output_root="output", task_id=task_id,
-                language=language, tts_voice=tts_voice
-            )
-
-        if include_subtitles:
-            if task_id: update_progress(task_id, "📝 Generating subtitles...", 50)
-            generate_srt_from_audio(theme, audio_path, srt_path, language=language)
-            clip_srt_timing(srt_path, 0.5, audio_duration - 0.5)
-
-    except Exception:
-        logger.exception("[❌] Asset generation failed")
-        return None
 
     if task_id: update_progress(task_id, "🎞️ Fetching video clips...", 60)
 
