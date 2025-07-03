@@ -11,13 +11,20 @@ Generates a full Instagram Reel from a script:
 7. Output high-quality 1080x1920 MP4
 """
 
-import os
-import subprocess
 import logging
-from datetime import timedelta
-import srt
+import os
 import re
+import subprocess
+import srt
+import sys
+from datetime import timedelta
 from dotenv import load_dotenv
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Load environment variables
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_from_file
@@ -29,9 +36,6 @@ from utils.video_utils import download_video
 from utils.fetch_bgm import fetch_bgm
 from utils.progress_tracker import start_progress, update_progress, finish_progress
 from utils.translate_text import translate_to_english
-
-# Load environment
-load_dotenv()
 
 # Logger
 logging.basicConfig(level=logging.INFO)
@@ -70,7 +74,7 @@ def sanitize_english(text: str) -> str:
     return " ".join(ascii_words) or "inspiration"
 
 
-def fetch_multiple_clips(script_text, target_duration, fallback_category):
+def fetch_multiple_clips(script_text, target_duration, fallback_theme):
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_urls = set()
@@ -80,11 +84,11 @@ def fetch_multiple_clips(script_text, target_duration, fallback_category):
     if USE_PIXABAY:
         sources.append(fetch_pixabay_video)
 
-    fallback_local = os.path.join(VIDEO_DIR, f"{fallback_category}.mp4")
+    fallback_local = os.path.join(VIDEO_DIR, f"{fallback_theme}.mp4")
     search_query = sanitize_english(script_text)
 
     for i in range(count):
-        clip_path = os.path.join(TEMP_DIR, f"{fallback_category}_clip{i+1}.mp4")
+        clip_path = os.path.join(TEMP_DIR, f"{fallback_theme}_clip{i+1}.mp4")
         found = False
         for source in sources:
             url = source(search_query, clip_path, used_urls=used_urls)
@@ -131,8 +135,8 @@ def concatenate_clips(clips, output_path):
     return output_path
 
 
-def create_video_for_category(
-    category,
+def create_video_for_theme(
+    theme,
     username,
     include_watermark=True,
     bgm_path=None,
@@ -143,26 +147,24 @@ def create_video_for_category(
     tts_voice=None,
     include_subtitles=True
 ):
-    logger.info(f"🎬 Starting reel for: {category.upper()} | User: {username} | Lang: {language}")
+    logger.info(f"🎬 Starting reel for: {theme.upper()} | User: {username} | Lang: {language}")
     os.makedirs("output", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
     base_output = os.path.join("output", username)
     os.makedirs(base_output, exist_ok=True)
 
-    lang_suffix = f"_{language}"
-
     if task_id:
         start_progress(task_id)
 
     if not script_text:
-        text_path = generate_script_for_user(category, username, language=language)
+        text_path = generate_script_for_user(theme, username, language=language)
         with open(text_path, "r", encoding="utf-8") as f:
             script_text = f.read().strip()
 
-    audio_path = os.path.join(base_output, f"{category}_voice{lang_suffix}.mp3")
-    text_image_path = os.path.join(base_output, f"{category}_text{lang_suffix}.png")
-    srt_path = os.path.join(base_output, f"{category}{lang_suffix}.srt")
-    final_output_path = os.path.join(base_output, f"{category}{lang_suffix}.mp4")
+    audio_path = os.path.join(base_output, "tts", f"{theme}_{language}_tts.mp3")
+    text_image_path = os.path.join(base_output, "image", f"{theme}_{language}_image.png")
+    srt_path = os.path.join(base_output, "srt", f"{theme}_{language}_srt.srt")
+    final_output_path = os.path.join(base_output, "video", f"{theme}_{language}_video.mp4")
 
     try:
         if task_id: update_progress(task_id, "🖼️ Generating overlay...", 30)
@@ -179,13 +181,13 @@ def create_video_for_category(
         else:
             if task_id: update_progress(task_id, "🔊 Generating TTS...", 40)
             audio_path, audio_duration = generate_tts_from_file(
-                category, username, output_root="output", task_id=task_id,
+                theme, username, output_root="output", task_id=task_id,
                 language=language, tts_voice=tts_voice
             )
 
         if include_subtitles:
             if task_id: update_progress(task_id, "📝 Generating subtitles...", 50)
-            generate_srt_from_audio(category, audio_path, srt_path, language=language)
+            generate_srt_from_audio(theme, audio_path, srt_path, language=language)
             clip_srt_timing(srt_path, 0.5, audio_duration - 0.5)
 
     except Exception:
@@ -195,17 +197,17 @@ def create_video_for_category(
     if task_id: update_progress(task_id, "🎞️ Fetching video clips...", 60)
 
     english_script = translate_to_english(script_text)
-    clips = fetch_multiple_clips(english_script, audio_duration, fallback_category=category)
+    clips = fetch_multiple_clips(english_script, audio_duration, fallback_theme=theme)
     if not clips:
         logger.error("[❌] No video clips found.")
         return None
 
     if task_id: update_progress(task_id, "🎬 Concatenating clips...", 70)
-    combined_video_path = os.path.join(TEMP_DIR, f"{category}_combined.mp4")
+    combined_video_path = os.path.join(TEMP_DIR, f"{theme}_combined.mp4")
     concatenate_clips(clips, combined_video_path)
 
     # Audio mixing
-    mixed_audio_path = os.path.join(TEMP_DIR, f"{category}_mixed{lang_suffix}.m4a")
+    mixed_audio_path = os.path.join(TEMP_DIR, f"{theme}_{language}_mixed.m4a")
     if not bgm_path or not os.path.exists(bgm_path):
         try:
             bgm_path = fetch_bgm(english_script, "en", "default") or DEFAULT_BGM_PATH
@@ -279,13 +281,13 @@ def create_video_for_category(
 if __name__ == "__main__":
     import sys
     if len(sys.argv) >= 3:
-        category, username = sys.argv[1], sys.argv[2]
+        theme, username = sys.argv[1], sys.argv[2]
         include_watermark = sys.argv[3].lower() == "true" if len(sys.argv) >= 4 else True
         bgm_path = sys.argv[4] if len(sys.argv) >= 5 else None
         language = sys.argv[5] if len(sys.argv) >= 6 else "en"
-        create_video_for_category(
-            category, username, include_watermark=include_watermark,
+        create_video_for_theme(
+            theme, username, include_watermark=include_watermark,
             bgm_path=bgm_path, language=language
         )
     else:
-        print("Usage: python create_video.py <category> <username> [include_watermark=True] [bgm_path] [language=en]")
+        print("Usage: python create_video.py <theme> <username> [include_watermark=True] [bgm_path] [language=en]")

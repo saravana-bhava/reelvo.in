@@ -2,6 +2,7 @@
 
 import os
 import json
+import logging
 from flask import (
     Blueprint, request, render_template, session, redirect,
     url_for, flash, jsonify, send_from_directory
@@ -9,13 +10,18 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from utils.generate_script import generate_script_for_user
-from utils.create_video import create_video_for_category
-from utils.google_drive import upload_to_google_drive
+from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_from_text
-from utils.instagram import post_to_instagram
 from utils.subtitles import generate_srt_from_audio
+from utils.create_video import create_video_for_theme
+from utils.google_drive import upload_to_google_drive
+from utils.instagram import post_to_instagram
 
 reels_bp = Blueprint("reels", __name__)
+
+# Logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("create_video")
 
 @reels_bp.route("/create", methods=["GET"])
 def create_reel():
@@ -77,6 +83,8 @@ def create_reel_action():
         flash("Script is required.", "error")
         return redirect(url_for("reels.create_reel"))
 
+    logger.info(f"🎬 Starting reel for: {theme.upper() or custom_topic.upper()} | User: {username} | Lang: {language}")
+
     # Save script to file
     script_dir = os.path.join("output", username, "scripts")
     os.makedirs(script_dir, exist_ok=True)
@@ -87,24 +95,40 @@ def create_reel_action():
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script)
 
+    logger.info(f"🖼️ Generating overlay...")
+    text_image_path = os.path.join(output_dir, "image", f"{theme or custom_topic}_{language}_text_image.png")
+    generate_text_overlay(script, text_image_path, language=language)
+
     video_filename = f"{theme or custom_topic}_{language}_video.mp4"
     video_path = os.path.join(output_dir, "videos", secure_filename(video_filename))
 
     # TTS Audio or Uploaded Voice
-    audio_path = None
+    logger.info(f"🔊 Generating TTS...")
+    audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}_{language}_voice.mp3")
     if use_tts:
-        audio_path = os.path.join(output_dir, "tts", f"{theme or custom_topic}_{language}_voice.mp3")
         audio_path = generate_tts_from_text(script, username, audio_path, theme or custom_topic, None, language, voice)
     elif custom_voice_file:
+        logger.info("[🔊] Using uploaded voiceover...")
         filename = secure_filename(custom_voice_file.filename)
         audio_path = os.path.join(output_dir, "tts", filename)
-        custom_voice_file.save(audio_path)
+        voiceover_path.save(audio_path)
+        audio_duration = float(subprocess.check_output([
+            "ffprobe", "-v", "error", "-show_entries",
+            "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
+            audio_path
+        ]).strip())
     else:
         flash("You must upload a voice file or choose TTS.", "error")
         return redirect(url_for("reels.create_reel"))
 
+    if subtitles_enabled:
+        logger.info(f"📝 Generating subtitles...")
+        srt_path = os.path.join(output_dir, "srt", f"{theme or custom_topic}_{language}_srt.srt")
+        logger.info(audio_path)
+        generate_srt_from_audio(theme or custom_topic, audio_path, srt_path, 6, None, language=language)
+
     # Create Reel
-#    create_video_for_category(
+#    create_video_for_theme(
 #        category=theme or "custom",
 #        username=username,
 #        include_watermark=watermark_enabled,

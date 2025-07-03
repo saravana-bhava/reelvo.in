@@ -4,7 +4,8 @@ import os
 import logging
 from flask import Flask
 from threading import Thread
-from waitress import serve  # For production server
+from werkzeug.serving import run_simple
+#from waitress import serve
 
 from utils.scheduler import scheduler_runner
 from utils.instagram_token_refresher import refresh_instagram_tokens
@@ -50,7 +51,8 @@ def run():
     host = os.getenv("HOST", "0.0.0.0")
     logger.info(f"🚀 Production server starting at http://{host}:{port}")
 
-    serve(flask_app, host=host, port=port)  # Use Waitress instead of Flask dev server
+    run_simple("127.0.0.1", port, flask_app, use_debugger=True, use_reloader=True)
+    #serve(flask_app, host=host, port=port)
 
 if __name__ == "__main__":
     run()
