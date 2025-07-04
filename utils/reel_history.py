@@ -9,7 +9,10 @@ import os
 import json
 from typing import Dict, List
 
-HISTORY_FILE = "reel_history.json"
+# Paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, "..", "db")
+HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
 os.makedirs(os.path.dirname(HISTORY_FILE) or ".", exist_ok=True)
 
 

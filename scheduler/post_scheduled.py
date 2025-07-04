@@ -12,9 +12,12 @@ from datetime import datetime
 from utils.instagram_posting import post_to_instagram
 from utils.user_db import get_user_token_data
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, "..", "db")
+
 # File paths
-SCHEDULE_FILE = "scheduled_posts.json"
-HISTORY_FILE = "reel_history.json"
+HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
+SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
 OUTPUT_DIR = "output"
 
 # Logging configuration

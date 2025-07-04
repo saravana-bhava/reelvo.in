@@ -10,9 +10,12 @@ import json
 import sys
 from datetime import datetime, timedelta
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, "..", "db")
+
 # Constants
-REEL_HISTORY_PATH = "reel_history.json"
-SCHEDULE_PATH = "scheduled_posts.json"
+REEL_HISTORY_PATH = os.path.join(DB_DIR, "reel_history.json")
+SCHEDULE_PATH = os.path.join(DB_DIR, "scheduled_posts.json")
 DEFAULT_POST_HOUR = 16  # 4 PM
 
 
