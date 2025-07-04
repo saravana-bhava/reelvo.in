@@ -22,15 +22,22 @@ DEFAULT_POST_HOUR = 16  # 4 PM
 def load_json(path: str) -> dict:
     """Load JSON data from file, or return empty dict if file doesn't exist."""
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
     return {}
 
 
 def save_json(path: str, data: dict) -> None:
     """Save dictionary data to a JSON file with UTF-8 encoding."""
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except IOError as e:
+        print(f"❌ Failed to save schedule file: {e}")
 
 
 def schedule_reels_for_user(user_name: str) -> None:
@@ -43,6 +50,9 @@ def schedule_reels_for_user(user_name: str) -> None:
     user_history = history.get(user_name, {})
     user_schedule = schedule.get(user_name, {})
 
+    if not isinstance(user_schedule, dict):
+        user_schedule = {}
+
     already_scheduled = set(user_schedule.keys())
 
     # Start scheduling from today 4 PM (or tomorrow if already past 4 PM)
@@ -51,6 +61,7 @@ def schedule_reels_for_user(user_name: str) -> None:
     if now.hour >= DEFAULT_POST_HOUR:
         post_date += timedelta(days=1)
 
+    newly_scheduled = 0
     for filename, script in user_history.items():
         if filename in already_scheduled:
             continue  # Skip already scheduled reels
@@ -60,13 +71,13 @@ def schedule_reels_for_user(user_name: str) -> None:
             "scheduled_for": post_date.isoformat(),
             "posted": False
         }
-        post_date += timedelta(days=1)  # Next reel → next day
+        post_date += timedelta(days=1)
+        newly_scheduled += 1
 
-    # Save updated schedule
     schedule[user_name] = user_schedule
     save_json(SCHEDULE_PATH, schedule)
 
-    print(f"✅ Scheduled {len(user_schedule)} reels for user: {user_name}")
+    print(f"✅ Scheduled {newly_scheduled} new reel(s) for user: {user_name}")
 
 
 if __name__ == "__main__":

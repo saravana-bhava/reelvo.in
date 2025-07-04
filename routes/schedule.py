@@ -15,16 +15,22 @@ SCHEDULE_PATH = "db/scheduled_posts.json"
 def load_all_schedules() -> dict:
     """Load all user schedules from the shared JSON file."""
     if os.path.exists(SCHEDULE_PATH):
-        with open(SCHEDULE_PATH, "r") as f:
-            return json.load(f)
+        try:
+            with open(SCHEDULE_PATH, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
     return {}
 
 
 def save_all_schedules(data: dict) -> None:
     """Save all user schedules to the shared JSON file."""
     os.makedirs(os.path.dirname(SCHEDULE_PATH), exist_ok=True)
-    with open(SCHEDULE_PATH, "w") as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(SCHEDULE_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+    except IOError as e:
+        flash("❌ Failed to save schedule data.", "error")
 
 
 @schedule_bp.route("/scheduled", methods=["GET"])
@@ -60,13 +66,13 @@ def update_schedule():
         delete_key = f"delete_{i}"
 
         if delete_key in request.form:
-            continue  # Skip this entry (user marked for deletion)
+            continue  # Skip entry marked for deletion
 
-        if date_key in request.form and video_key in request.form:
+        if video_key in request.form and date_key in request.form:
             new_date = request.form.get(date_key)
             video_name = request.form.get(video_key)
 
-            if video_name == item.get("video"):
+            if video_name == item.get("video") and new_date:
                 item["scheduled_for"] = new_date
 
         updated_schedule.append(item)

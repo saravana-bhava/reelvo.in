@@ -4,7 +4,7 @@
 {% block content %}
 <h2>🎬 Create Your AI Reel ({{ user }})</h2>
 
-<form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data">
+<form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data" onsubmit="disableForm()">
   <label for="theme"><strong>🎯 Select Theme:</strong></label>
   <select id="theme" name="theme" onchange="checkPromptFilled()">
     <option value="">-- Choose theme --</option>
@@ -22,19 +22,13 @@
     <option value="hi">🇮🇳 Hindi</option>
   </select>
 
-  <button type="button" id="generateBtn" onclick="generateScript()" disabled>📝 Generate Script</button>
-  <div id="script-status" style="margin-top: 8px; color: #555;"></div>
-
-  <label for="script"><strong>✏️ Edit Script:</strong></label>
-  <textarea id="script" name="script" rows="6" required>{{ script }}</textarea>
-
-  <label for="voice_option" style="display: none;"><strong>🎙️ Voiceover Option:</strong></label>
-  <select id="voice_option" name="voice_option" style="display: none;">
+  <label for="voice_option"><strong>🎙️ Voiceover Option:</strong></label>
+  <select id="voice_option" name="voice_option" onchange="toggleVoiceInputs()" required>
     <option value="tts">Use AI Voice (TTS)</option>
     <option value="upload">Upload My Voice</option>
   </select>
 
-  <label for="voice_artist"><strong>🔊 TTS Voice:</strong></label>
+  <label for="voice_artist" id="voice_artist_label"><strong>🔊 TTS Voice:</strong></label>
   <select id="voice_artist" name="voice_artist">
     <optgroup label="English">
         <option value="en-US-Wavenet-A">English Male (Calm)</option>
@@ -50,10 +44,16 @@
         <option value="hi-IN-Wavenet-C">Hindi Female (Friendly)</option>
         <option value="hi-IN-Wavenet-D">Hindi Female (Polite)</option>
     </optgroup>
-</select>
+  </select>
 
-  <label for="custom_voice" style="display: none;"><strong>📁 Upload Voiceover:</strong></label>
+  <label for="custom_voice" id="custom_voice_label" style="display: none;"><strong>📁 Upload Voiceover:</strong></label>
   <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" style="display: none;" />
+
+  <button type="button" id="generateBtn" onclick="generateScript()" disabled aria-label="Generate AI script">📝 Generate Script</button>
+  <div id="script-status" role="status" style="margin-top: 8px; color: #555;"></div>
+
+  <label for="script"><strong>✏️ Edit Script:</strong></label>
+  <textarea id="script" name="script" rows="6" required>{{ script }}</textarea>
 
   <label><input type="checkbox" name="subtitles" checked /> Include Subtitles</label><br>
   <label><input type="checkbox" name="watermark" checked /> Include Watermark</label><br><br>
@@ -88,7 +88,6 @@ async function generateScript() {
     return;
   }
 
-  // Disable button immediately
   generateBtn.disabled = true;
   generateBtn.textContent = '⏳ Generating...';
   statusDiv.textContent = '⏳ Generating script...';
@@ -105,17 +104,44 @@ async function generateScript() {
     if (data.script_text) {
       scriptTextarea.value = data.script_text;
       statusDiv.textContent = '✅ Script generated.';
+      scriptTextarea.scrollIntoView({ behavior: "smooth", block: "center" });
     } else {
       statusDiv.textContent = data.error || '❌ Generation failed.';
     }
   } catch (err) {
     statusDiv.textContent = '❌ Request failed. Try again.';
   } finally {
-    // Re-enable the button in all cases
     generateBtn.disabled = false;
     generateBtn.textContent = '📝 Generate Script';
   }
 }
+
+function toggleVoiceInputs() {
+  const option = document.getElementById("voice_option").value;
+  const ttsVoice = document.getElementById("voice_artist");
+  const ttsLabel = document.getElementById("voice_artist_label");
+  const customVoice = document.getElementById("custom_voice");
+  const customLabel = document.getElementById("custom_voice_label");
+
+  if (option === "tts") {
+    ttsVoice.style.display = "block";
+    ttsLabel.style.display = "block";
+    customVoice.style.display = "none";
+    customLabel.style.display = "none";
+  } else {
+    ttsVoice.style.display = "none";
+    ttsLabel.style.display = "none";
+    customVoice.style.display = "block";
+    customLabel.style.display = "block";
+  }
+}
+
+function disableForm() {
+  const form = document.getElementById('reelForm');
+  Array.from(form.elements).forEach(el => el.disabled = true);
+}
+
+window.addEventListener("DOMContentLoaded", toggleVoiceInputs);
 </script>
 
 <hr />
@@ -123,9 +149,9 @@ async function generateScript() {
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-  <li><a href="{{ url_for('reels.serve_video', user_name=user, filename=v) }}" target="_blank" rel="noopener">{{ v }}</a></li>
+    <li><a href="{{ url_for('reels.serve_video', user_name=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
   {% else %}
-  <li>No reels found.</li>
+    <li>No reels found.</li>
   {% endfor %}
 </ul>
 {% endblock %}

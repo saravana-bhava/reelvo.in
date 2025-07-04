@@ -34,7 +34,7 @@ def load_json(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception as e:
+        except (json.JSONDecodeError, IOError) as e:
             logger.error(f"❌ Failed to load JSON from {path}: {e}")
             return {}
     return {}
@@ -42,6 +42,7 @@ def load_json(path):
 
 def save_json(path, data):
     try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
@@ -66,25 +67,27 @@ def post_due_reels():
                 continue
 
             scheduled_date = metadata.get("scheduled_for")
-            if scheduled_date and scheduled_date <= today_str:
-                caption = metadata.get("script") or history.get(user_name, {}).get(video, "")
-                video_path = os.path.join(OUTPUT_DIR, user_name, video)
+            if not scheduled_date or scheduled_date > today_str:
+                continue
 
-                if not os.path.exists(video_path):
-                    logger.warning(f"[{user_name}] ❌ Video not found: {video_path}")
-                    continue
+            caption = metadata.get("script") or history.get(user_name, {}).get(video, "")
+            video_path = os.path.join(OUTPUT_DIR, user_name, "videos", video)
 
-                logger.info(f"[{user_name}] ⏰ Posting scheduled reel: {video}")
-                try:
-                    success = post_to_instagram(user_name, video_path, caption)
-                    if success:
-                        metadata["posted"] = True
-                        metadata["posted_at"] = datetime.now().isoformat()
-                        logger.info(f"[{user_name}] ✅ Posted: {video}")
-                    else:
-                        logger.warning(f"[{user_name}] ⚠️ Failed to post: {video}")
-                except Exception as e:
-                    logger.exception(f"[{user_name}] ❌ Exception posting {video}: {e}")
+            if not os.path.exists(video_path):
+                logger.warning(f"[{user_name}] ❌ Video not found: {video_path}")
+                continue
+
+            logger.info(f"[{user_name}] ⏰ Posting scheduled reel: {video}")
+            try:
+                success = post_to_instagram(user_name, video_path, caption)
+                if success:
+                    metadata["posted"] = True
+                    metadata["posted_at"] = datetime.now().isoformat()
+                    logger.info(f"[{user_name}] ✅ Posted: {video}")
+                else:
+                    logger.warning(f"[{user_name}] ⚠️ Failed to post: {video}")
+            except Exception as e:
+                logger.exception(f"[{user_name}] ❌ Exception posting {video}: {e}")
 
     save_json(SCHEDULE_FILE, schedule)
     logger.info("✅ Finished scheduled posting process.")

@@ -31,9 +31,6 @@ def safe_get(url, params=None, timeout=10):
 
 @instagram_bp.route("/connect-instagram", methods=["GET"])
 def connect_instagram():
-    """
-    Redirects user to Instagram OAuth via Meta.
-    """
     auth_url = (
         f"https://www.facebook.com/v19.0/dialog/oauth"
         f"?client_id={INSTAGRAM_APP_ID}"
@@ -47,17 +44,13 @@ def connect_instagram():
 
 @instagram_bp.route("/instagram/callback", methods=["GET"])
 def instagram_callback():
-    """
-    Handles Instagram OAuth callback and saves long-lived tokens.
-    Includes fallback for Business Manager-owned Pages.
-    """
     code = request.args.get("code")
     if not code:
         flash("❌ Authorization failed. No code received.", "error")
         return redirect(url_for("dashboard.dashboard"))
 
     try:
-        # Step 1: Exchange code for short-lived token
+        # Step 1: Get short-lived token
         token_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
@@ -100,7 +93,7 @@ def instagram_callback():
         )
         pages = pages_json.get("data", []) if pages_json else []
 
-        # Step 3.1: Business Manager fallback
+        # Step 3.1: Fallback via Business Manager
         if not pages:
             biz_json = safe_get(
                 f"{GRAPH_API_BASE}/me/businesses",
@@ -122,7 +115,7 @@ def instagram_callback():
                     break
 
         if not pages:
-            flash("❌ No Facebook Pages found. Ensure you have full control or admin rights.", "error")
+            flash("❌ No Facebook Pages found. Ensure you have admin rights.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
         page_id = pages[0].get("id")
@@ -130,7 +123,7 @@ def instagram_callback():
             flash("❌ Page ID missing.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Step 4: Get Instagram business account
+        # Step 4: Get Instagram Business Account
         ig_json = safe_get(
             f"{GRAPH_API_BASE}/{page_id}",
             params={"fields": "instagram_business_account", "access_token": long_access_token}
@@ -139,7 +132,7 @@ def instagram_callback():
         ig_user_id = ig_account.get("id")
 
         if not ig_user_id:
-            flash("❌ Instagram business account not linked to Page. Please link it in Page settings.", "error")
+            flash("❌ Instagram business account not linked to Page.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
         # Step 5: Save token
@@ -158,9 +151,6 @@ def instagram_callback():
 
 @instagram_bp.route("/disconnect-instagram", methods=["POST"])
 def disconnect_instagram():
-    """
-    Clears user's Instagram token file.
-    """
     user_name = session.get("user")
     if not user_name:
         return redirect(url_for("auth.index"))
@@ -179,9 +169,6 @@ def disconnect_instagram():
 
 @instagram_bp.route("/api/post-reel", methods=["POST"])
 def api_post_reel():
-    """
-    API endpoint to post a Reel. Requires: video_path, video_url, optional caption.
-    """
     data = request.get_json()
     video_path = data.get("video_path")
     caption = data.get("caption", "")

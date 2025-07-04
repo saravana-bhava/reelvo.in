@@ -2,7 +2,7 @@
 {% block title %}Scheduled Posts | Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 style="margin-bottom: 24px;">🗕️ Scheduled Reels for <span style="color: #007BFF;">{{ user }}</span></h2>
+  <h2 style="margin-bottom: 24px;">🗓️ Scheduled Reels for <span style="color: #007BFF;">{{ user }}</span></h2>
 
   {% if scheduled and scheduled|length > 0 %}
     <form method="post" action="{{ url_for('schedule.update_schedule') }}">
@@ -11,7 +11,7 @@
           <thead style="background-color: #e3f2fd;">
             <tr>
               <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: left;">🎞️ Video</th>
-              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: left;">🗖️ Scheduled Date</th>
+              <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: left;">📅 Scheduled Date</th>
               <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: center;">📌 Status</th>
               <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: center;">✏️ Reschedule</th>
               <th style="padding: 12px; border-bottom: 1px solid #ddd; text-align: center;">🗑️ Delete</th>
@@ -31,7 +31,9 @@
                 </td>
                 <td style="padding: 12px; text-align: center;">
                   {% if not item.posted %}
+                    <label for="reschedule_{{ loop.index0 }}" class="sr-only">Reschedule</label>
                     <input type="date"
+                           id="reschedule_{{ loop.index0 }}"
                            name="reschedule_{{ loop.index0 }}"
                            value="{{ item.scheduled_for }}"
                            style="padding: 6px; border: 1px solid #ccc; border-radius: 5px;" />
@@ -42,7 +44,10 @@
                 </td>
                 <td style="padding: 12px; text-align: center;">
                   {% if not item.posted %}
-                    <input type="checkbox" name="delete_{{ loop.index0 }}" aria-label="Delete {{ item.video }}">
+                    <input type="checkbox"
+                           id="delete_{{ loop.index0 }}"
+                           name="delete_{{ loop.index0 }}"
+                           aria-label="Delete {{ item.video }}">
                   {% else %}
                     <span style="color: #888;">—</span>
                   {% endif %}

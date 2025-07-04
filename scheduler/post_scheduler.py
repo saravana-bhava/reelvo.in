@@ -19,6 +19,10 @@ def run_scheduler():
     today = now.strftime("%Y-%m-%d")
     current_time = now.strftime("%H:%M")
 
+    if not os.path.exists(SCHEDULE_DIR):
+        print(f"⚠️ Schedule directory '{SCHEDULE_DIR}' does not exist.")
+        return
+
     for user_file in os.listdir(SCHEDULE_DIR):
         if not user_file.endswith(".json"):
             continue
@@ -62,7 +66,7 @@ def run_scheduler():
                     print(f"[{user_name}] ✅ Posted reel: {reel['video_path']}")
                 except Exception as e:
                     print(f"[{user_name}] ❌ Error posting reel: {e}")
-                    # Optionally:
+                    # Optional: mark as failed
                     # reel["status"] = "failed"
 
         if updated:

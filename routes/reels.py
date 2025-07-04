@@ -24,9 +24,8 @@ from utils.reel_history import add_reel_to_history
 
 reels_bp = Blueprint("reels", __name__)
 
-# Logger
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_reel")
+logging.basicConfig(level=logging.INFO)
 
 
 @reels_bp.route("/create", methods=["GET"])
@@ -50,7 +49,7 @@ def create_reel():
         with open(os.path.join(user_script_dir, scripts[0]), "r", encoding="utf-8") as f:
             script_text = f.read()
 
-    theme_path = os.path.join("theme.json")
+    theme_path = "theme.json"
     with open(theme_path, "r", encoding="utf-8") as f:
         theme_data = json.load(f)
     themes = sorted(theme_data.keys())
@@ -88,23 +87,22 @@ def create_reel_action():
     logger.info(f"🎬 Starting reel for: User: {user_name} | Theme: {theme_name} | Language: {language}")
 
     output_dir = os.path.join("output", user_name)
-    os.makedirs(output_dir, exist_ok=True)
-
     scripts_dir = os.path.join(output_dir, "scripts")
+    images_dir = os.path.join(output_dir, "images")
+    tts_dir = os.path.join(output_dir, "tts")
     os.makedirs(scripts_dir, exist_ok=True)
+    os.makedirs(images_dir, exist_ok=True)
+    os.makedirs(tts_dir, exist_ok=True)
+
     script_filename = f"{theme_name}_{language}_text.txt"
     script_path = os.path.join(scripts_dir, secure_filename(script_filename))
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_text)
 
-    images_dir = os.path.join(output_dir, "images")
-    os.makedirs(images_dir, exist_ok=True)
     text_image_filename = f"{theme_name}_{language}_text_image.png"
     text_image_path = os.path.join(images_dir, secure_filename(text_image_filename))
     generate_text_overlay(text_image_path, language, script_text)
 
-    tts_dir = os.path.join(output_dir, "tts")
-    os.makedirs(tts_dir, exist_ok=True)
     tts_filename = f"{theme_name}_{language}_voice.mp3"
     audio_path = os.path.join(tts_dir, secure_filename(tts_filename))
 
@@ -150,6 +148,7 @@ def create_reel_action():
     mixed_filename = f"{theme_name}_{language}_mixed.m4a"
     mixed_audio_path = os.path.join(temp_dir, secure_filename(mixed_filename))
     audio_to_use = audio_path
+
     if bgm_path and os.path.exists(bgm_path):
         subprocess.run([
             "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
@@ -216,12 +215,11 @@ def create_reel_action():
         flash("[❌] Video could not be generated.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    logger.info("[🌐] Upload to google drive...")
+    logger.info("[🌐] Upload to Google Drive...")
     upload_url = upload_to_google_drive(video_path, user_name)
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
     add_reel_to_history(user_name, os.path.basename(video_path), script_text)
-
     return redirect(url_for("reels.create_reel"))
 
 

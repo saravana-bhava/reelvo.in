@@ -5,6 +5,7 @@ from utils.progress_tracker import progress_status
 
 progress_bp = Blueprint("progress", __name__)
 
+
 @progress_bp.route("/progress/<task_id>", methods=["GET"])
 def get_progress(task_id):
     """

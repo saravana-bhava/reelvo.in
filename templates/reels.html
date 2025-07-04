@@ -17,7 +17,8 @@
           <div style="margin-top: 12px;">
             <strong>{{ vid }}</strong>
             {% if scripts and scripts[vid] %}
-              <pre style="background: #f8f9fa; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; margin-top: 8px; font-size: 14px;">
+              <pre aria-label="Script for {{ vid }}"
+                   style="background: #f8f9fa; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; margin-top: 8px; font-size: 14px;">
 {{ scripts[vid] }}
               </pre>
             {% endif %}

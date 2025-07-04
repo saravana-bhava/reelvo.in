@@ -5,7 +5,7 @@ import logging
 from flask import Flask
 from threading import Thread
 from werkzeug.serving import run_simple
-#from waitress import serve
+# from waitress import serve  # Uncomment this for real production use
 
 from utils.scheduler import scheduler_runner
 from utils.instagram_token_refresher import refresh_instagram_tokens
@@ -19,7 +19,10 @@ from routes.schedule import schedule_bp
 # ----------------- Logging Setup -----------------
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 logger = logging.getLogger("reelvo")
 
 # ----------------- Flask App Setup -----------------
@@ -51,8 +54,11 @@ def run():
     host = os.getenv("HOST", "0.0.0.0")
     logger.info(f"🚀 Production server starting at http://{host}:{port}")
 
-    run_simple("127.0.0.1", port, flask_app, use_debugger=True, use_reloader=True)
-    #serve(flask_app, host=host, port=port)
+    # Development server (use_debugger=True is not for production)
+    run_simple(host, port, flask_app, use_debugger=False, use_reloader=False)
+
+    # Uncomment below for production use:
+    # serve(flask_app, host=host, port=port)
 
 if __name__ == "__main__":
     run()
