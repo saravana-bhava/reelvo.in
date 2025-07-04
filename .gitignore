@@ -93,6 +93,7 @@ __tests__/
 cache/
 temp/
 docs/
+user_tokens/
 
 # ─────────────────────────────────────────────
 # FFmpeg Intermediate Files
