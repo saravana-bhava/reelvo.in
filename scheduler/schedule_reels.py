@@ -51,12 +51,12 @@ def schedule_reels_for_user(user_name: str) -> None:
     if now.hour >= DEFAULT_POST_HOUR:
         post_date += timedelta(days=1)
 
-    for filename, meta in user_history.items():
+    for filename, script in user_history.items():
         if filename in already_scheduled:
             continue  # Skip already scheduled reels
 
         user_schedule[filename] = {
-            "script": meta.get("script", ""),
+            "script": script,
             "scheduled_for": post_date.isoformat(),
             "posted": False
         }
