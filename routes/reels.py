@@ -20,6 +20,7 @@ from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video
 from utils.google_drive import upload_to_google_drive
 from utils.instagram import post_to_instagram
+from utils.reel_history import add_reel_to_history
 
 reels_bp = Blueprint("reels", __name__)
 
@@ -118,7 +119,7 @@ def create_reel_action():
     elif custom_voice_file:
         logger.info("[🔊] Using uploaded voiceover...")
         filename = secure_filename(custom_voice_file.filename)
-        audio_path = os.path.join(output_dir, "tts", filename)
+        audio_path = os.path.join(tts_dir, filename)
         custom_voice_file.save(audio_path)
         audio_duration = float(subprocess.check_output([
             "ffprobe", "-v", "error", "-show_entries",
@@ -138,13 +139,7 @@ def create_reel_action():
         os.makedirs(srt_dir, exist_ok=True)
         srt_filename = f"{theme_name}_{language}_srt.srt"
         srt_path = os.path.join(srt_dir, secure_filename(srt_filename))
-
-        generate_srt_from_audio(
-            srt_path=srt_path,
-            language=language,
-            audio_path=audio_path,
-            words_per_line=6
-        )
+        generate_srt_from_audio(srt_path, language, audio_path, 6)
 
     english_script_text = translate_to_english(script_text)
 
@@ -152,7 +147,6 @@ def create_reel_action():
     os.makedirs(temp_dir, exist_ok=True)
 
     bgm_path = fetch_bgm(english_script_text, "en", "default") or "assets/music/default.mp3"
-
     mixed_filename = f"{theme_name}_{language}_mixed.m4a"
     mixed_audio_path = os.path.join(temp_dir, secure_filename(mixed_filename))
     audio_to_use = audio_path
@@ -164,24 +158,13 @@ def create_reel_action():
         ], check=True)
         audio_to_use = mixed_audio_path
 
-    clips = fetch_multiple_clips(
-        temp_dir=temp_dir,
-        theme_name=theme_name,
-        language=language,
-        script_text=english_script_text,
-        target_duration=audio_duration
-    )
+    clips = fetch_multiple_clips(temp_dir, theme_name, language, english_script_text, audio_duration)
     if not clips:
         logger.error("[❌] No video clips found.")
         flash("[❌] No video clips found.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    combined_video_path = concatenate_clips(
-        temp_dir=temp_dir,
-        theme_name=theme_name,
-        language=language,
-        clips=clips
-    )
+    combined_video_path = concatenate_clips(temp_dir, theme_name, language, clips)
     if not combined_video_path:
         logger.error("[❌] Video clips could not be combined.")
         flash("[❌] Video clips could not be combined.", "error")
@@ -192,11 +175,9 @@ def create_reel_action():
     logo_index = None
 
     if watermark_enabled:
-        logger.info("[🌐] Adding watermark...")
         watermark_dir = os.path.join(output_dir, "watermark")
         os.makedirs(watermark_dir, exist_ok=True)
-        watermark_filename = "logo.png"
-        watermark_path = os.path.join(watermark_dir, secure_filename(watermark_filename))
+        watermark_path = os.path.join(watermark_dir, "logo.png")
         inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
         logo_index = input_index
         input_index += 1
@@ -213,14 +194,12 @@ def create_reel_action():
         base = "[wm]"
 
     if subtitles_enabled:
-        logger.info("[🌐] Adding subtitles...")
         subtitle_style = (
             "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
             "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
             "BorderStyle=3,Outline=2,MarginV=10"
         )
         escaped_srt_path = srt_path.replace('\\', '\\\\').replace(':', '\\:').replace("'", "\\'")
-        logger.info(f"[🧪] Subtitle path: {escaped_srt_path}")
         filters.append(f"{base}subtitles='{escaped_srt_path}':force_style='{subtitle_style}'[outv]")
         map_video = "[outv]"
     else:
@@ -231,13 +210,7 @@ def create_reel_action():
     video_filename = f"{theme_name}_{language}_video.mp4"
     video_path = os.path.join(videos_dir, secure_filename(video_filename))
 
-    video_path = create_video(
-        video_path=video_path,
-        inputs=inputs,
-        audio_duration=audio_duration,
-        filters=filters,
-        map_video=map_video
-    )
+    video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
     if not video_path:
         logger.error("[❌] Video could not be generated.")
         flash("[❌] Video could not be generated.", "error")
@@ -246,6 +219,8 @@ def create_reel_action():
     logger.info("[🌐] Upload to google drive...")
     upload_url = upload_to_google_drive(video_path, user_name)
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
+
+    add_reel_to_history(user_name, os.path.basename(video_path), script_text)
 
     return redirect(url_for("reels.create_reel"))
 
