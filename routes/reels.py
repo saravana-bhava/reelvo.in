@@ -34,9 +34,9 @@ def create_reel():
         return redirect(url_for("auth.index"))
 
     user = session["user"]
-    output_path = os.path.join("output", user)
-    os.makedirs(output_path, exist_ok=True)
-    videos = os.listdir(output_path)
+    videos_path = os.path.join("output", user, "videos")
+    os.makedirs(videos_path, exist_ok=True)
+    videos = os.listdir(videos_path)
 
     script_text = ""
     user_script_dir = os.path.join("output", user, "scripts")
@@ -278,7 +278,7 @@ def generate_script_ajax():
 
 @reels_bp.route("/videos/<user_name>/<filename>")
 def serve_video(user_name, filename):
-    return send_from_directory(os.path.join("output", user_name), filename)
+    return send_from_directory(os.path.join("output", user_name, "videos"), filename)
 
 
 @reels_bp.route("/reels", methods=["GET"])
@@ -287,7 +287,7 @@ def list_reels():
         return redirect(url_for("auth.index"))
 
     user = session["user"]
-    video_folder = os.path.join("output", user)
+    video_folder = os.path.join("output", user, "videos")
     os.makedirs(video_folder, exist_ok=True)
 
     videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
