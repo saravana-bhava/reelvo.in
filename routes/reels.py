@@ -191,7 +191,8 @@ def create_reel_action():
             "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
             "BorderStyle=3,Outline=2,MarginV=10"
         )
-        filters.append(f"{base}subtitles='{srt_path.replace('\\', '\\\\').replace(':', '\\:')}':force_style='{style}'[outv]")
+        escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+        filters.append(f"{base}subtitles='{escaped_srt_path}':force_style='{style}'[outv]")
         map_video = "[outv]"
     else:
         map_video = base

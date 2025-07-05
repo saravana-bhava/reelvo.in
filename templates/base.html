@@ -35,7 +35,6 @@
 
     {% if session.get('user') %}
       <form action="{{ url_for('instagram.disconnect_instagram') }}" method="post" class="logout-form">
-        {{ csrf_token() }}
         <button type="submit">Disconnect Instagram</button>
       </form>
       <a href="{{ url_for('auth.logout') }}">Logout</a>
