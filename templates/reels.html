@@ -2,35 +2,36 @@
 {% block title %}Reel History | Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 style="margin-bottom: 24px;">📂 Reel History for <span style="color:#007BFF">{{ user }}</span></h2>
+  <h2 class="page-heading">📂 Reel History for <span style="color:#007BFF">{{ user }}</span></h2>
 
   {% if videos %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+    <div class="video-grid">
       {% for vid in videos %}
-        <div style="background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
+        <div class="video-card">
           <video width="100%" height="auto" controls
-                 style="border-radius: 6px; max-height: 600px;"
+                 class="video-player"
                  aria-label="Reel: {{ vid }}">
-            <source src="{{ url_for('reels.serve_video', user_name=user, filename=vid) }}" type="video/mp4">
+            <source src="{{ url_for('reels.serve_video', user_email=user, filename=vid) }}" type="video/mp4">
             Your browser does not support the video tag.
           </video>
-          <div style="margin-top: 12px;">
+
+          <div class="video-meta">
             <strong>{{ vid }}</strong>
             {% if scripts and scripts.get(vid) %}
-              <pre aria-label="Script for {{ vid }}"
-                   style="background: #f8f9fa; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; margin-top: 8px; font-size: 14px;">
-{{ scripts[vid] }}
-              </pre>
+              <pre class="script-preview" aria-label="Script for {{ vid }}">{{ scripts[vid] }}</pre>
             {% endif %}
           </div>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <p style="margin-top: 20px; font-size: 16px;">❌ No reels found yet.</p>
+    <p class="no-reels">❌ No reels found yet.</p>
   {% endif %}
 
   <div style="margin-top: 40px;">
-    <a class="button" href="{{ url_for('dashboard.dashboard') }}" role="button" aria-label="Back to Dashboard">⬅️ Back to Dashboard</a>
+    <a class="button" href="{{ url_for('dashboard.dashboard') }}"
+       role="button" aria-label="Back to Dashboard">
+      ⬅️ Back to Dashboard
+    </a>
   </div>
 {% endblock %}

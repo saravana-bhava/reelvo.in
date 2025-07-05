@@ -2,7 +2,8 @@
 
 """
 Posts scheduled reels for today to Instagram.
-Should be triggered daily (e.g., via CRON at 4 PM).
+Should be triggered daily, e.g.:
+0 16 * * * /usr/bin/python3 /path/to/post_scheduled.py
 """
 
 import os
@@ -20,7 +21,7 @@ HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
 SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
 OUTPUT_DIR = "output"
 
-# Logging configuration
+# Logging config
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -54,30 +55,40 @@ def post_due_reels():
 
     schedule = load_json(SCHEDULE_FILE)
     history = load_json(HISTORY_FILE)
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now().strftime("%Y-%m-%d")
 
     for user_email, user_schedule in schedule.items():
         token_data = get_user_token_data(user_email)
         if not token_data or "access_token" not in token_data:
-            logger.warning(f"[{user_email}] ⚠️ No valid Instagram token found.")
+            logger.warning(f"[{user_email}] ⚠️ No valid Instagram token.")
             continue
 
-        for video, metadata in user_schedule.items():
+        if not isinstance(user_schedule, list):
+            logger.warning(f"[{user_email}] ⚠️ Malformed schedule. Skipping.")
+            continue
+
+        for metadata in user_schedule:
+            if not isinstance(metadata, dict):
+                continue
+
             if metadata.get("posted"):
                 continue
 
             scheduled_date = metadata.get("scheduled_for")
-            if not scheduled_date or scheduled_date > today_str:
+            video = metadata.get("video")
+
+            if not video or not scheduled_date or scheduled_date > today:
                 continue
 
-            caption = metadata.get("script") or history.get(user_email, {}).get(video, "")
             video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
-
             if not os.path.exists(video_path):
                 logger.warning(f"[{user_email}] ❌ Video not found: {video_path}")
                 continue
 
-            logger.info(f"[{user_email}] ⏰ Posting scheduled reel: {video}")
+            # Caption fallback
+            caption = metadata.get("script") or history.get(user_email, {}).get(video, "")
+
+            logger.info(f"[{user_email}] ⏰ Posting: {video}")
             try:
                 success = post_to_instagram(user_email, video_path, caption)
                 if success:
@@ -90,7 +101,7 @@ def post_due_reels():
                 logger.exception(f"[{user_email}] ❌ Exception posting {video}: {e}")
 
     save_json(SCHEDULE_FILE, schedule)
-    logger.info("✅ Finished scheduled posting process.")
+    logger.info("✅ Finished scheduled posting.")
 
 
 if __name__ == "__main__":

@@ -31,18 +31,18 @@
   <label for="voice_artist" id="voice_artist_label"><strong>🔊 TTS Voice:</strong></label>
   <select id="voice_artist" name="voice_artist">
     <optgroup label="English">
-        <option value="en-US-Wavenet-A">English Male (Calm)</option>
-        <option value="en-US-Wavenet-B">English Male (Deep)</option>
-        <option value="en-US-Wavenet-C">English Female (Warm)</option>
-        <option value="en-US-Wavenet-D">English Male (Energetic)</option>
-        <option value="en-US-Wavenet-E">English Female (Upbeat)</option>
-        <option value="en-US-Wavenet-F">English Female (Neutral)</option>
+      <option value="en-US-Wavenet-A">English Male (Calm)</option>
+      <option value="en-US-Wavenet-B">English Male (Deep)</option>
+      <option value="en-US-Wavenet-C">English Female (Warm)</option>
+      <option value="en-US-Wavenet-D">English Male (Energetic)</option>
+      <option value="en-US-Wavenet-E">English Female (Upbeat)</option>
+      <option value="en-US-Wavenet-F">English Female (Neutral)</option>
     </optgroup>
     <optgroup label="Hindi">
-        <option value="hi-IN-Wavenet-A">Hindi Male (Deep)</option>
-        <option value="hi-IN-Wavenet-B">Hindi Male (Warm)</option>
-        <option value="hi-IN-Wavenet-C">Hindi Female (Friendly)</option>
-        <option value="hi-IN-Wavenet-D">Hindi Female (Polite)</option>
+      <option value="hi-IN-Wavenet-A">Hindi Male (Deep)</option>
+      <option value="hi-IN-Wavenet-B">Hindi Male (Warm)</option>
+      <option value="hi-IN-Wavenet-C">Hindi Female (Friendly)</option>
+      <option value="hi-IN-Wavenet-D">Hindi Female (Polite)</option>
     </optgroup>
   </select>
 
@@ -74,7 +74,6 @@ function checkPromptFilled() {
   generateBtn.disabled = !(theme || topic);
 }
 
-// Attach listeners
 themeInput.addEventListener('change', checkPromptFilled);
 topicInput.addEventListener('input', checkPromptFilled);
 
@@ -123,17 +122,11 @@ function toggleVoiceInputs() {
   const customVoice = document.getElementById("custom_voice");
   const customLabel = document.getElementById("custom_voice_label");
 
-  if (option === "tts") {
-    ttsVoice.style.display = "block";
-    ttsLabel.style.display = "block";
-    customVoice.style.display = "none";
-    customLabel.style.display = "none";
-  } else {
-    ttsVoice.style.display = "none";
-    ttsLabel.style.display = "none";
-    customVoice.style.display = "block";
-    customLabel.style.display = "block";
-  }
+  const showTTS = option === "tts";
+  ttsVoice.style.display = showTTS ? "block" : "none";
+  ttsLabel.style.display = showTTS ? "block" : "none";
+  customVoice.style.display = showTTS ? "none" : "block";
+  customLabel.style.display = showTTS ? "none" : "block";
 }
 
 function disableForm() {

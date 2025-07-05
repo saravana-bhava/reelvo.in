@@ -2,15 +2,14 @@
 {% block title %}Login - Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 style="text-align: center; margin-top: 40px;">🔐 Login to Reelvo.ai</h2>
+  <h2 class="page-heading">🔐 Login to Reelvo.ai</h2>
 
   <form method="post"
         action="{{ url_for('auth.login') }}"
-        style="max-width: 400px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"
+        class="form-card"
         aria-label="Login Form">
 
-    <label for="email"
-           style="display: block; margin-bottom: 8px; font-weight: bold;">
+    <label for="email" class="form-label">
       📧 Email Address
     </label>
     <input type="email"
@@ -19,10 +18,9 @@
            placeholder="Enter your email..."
            required
            autocomplete="email"
-           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 20px;" />
+           class="form-input" />
 
-    <label for="password"
-           style="display: block; margin-bottom: 8px; font-weight: bold;">
+    <label for="password" class="form-label">
       🔑 Password
     </label>
     <input type="password"
@@ -31,21 +29,21 @@
            placeholder="Enter your password..."
            required
            autocomplete="current-password"
-           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px;" />
+           class="form-input" />
 
-    <div style="text-align: right; margin-bottom: 20px;">
-      <a href="{{ url_for('auth.forgot_password') }}" style="font-size: 14px; color: #007BFF; text-decoration: none;">❓ Forgot Password?</a>
+    <div class="form-link-right">
+      <a href="{{ url_for('auth.forgot_password') }}" class="link-small">
+        ❓ Forgot Password?
+      </a>
     </div>
 
-    <button type="submit"
-            style="width: 100%; padding: 12px; background-color: #007BFF; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;">
+    <button type="submit" class="button button-primary" style="width: 100%;">
       🚀 Login
     </button>
 
-    <div style="margin-top: 20px; text-align: center; font-size: 15px;">
+    <div class="form-footer">
       Don't have an account?
-      <a href="{{ url_for('auth.register') }}"
-         style="color: #28a745; font-weight: bold; text-decoration: none;">
+      <a href="{{ url_for('auth.register') }}" class="link-success">
         Register here
       </a>
     </div>
