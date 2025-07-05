@@ -2,41 +2,48 @@
 {% block title %}Register - Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 style="text-align:center; margin-top: 40px;">📝 Register for Reelvo.ai</h2>
+  <h2 style="text-align: center; margin-top: 40px;">📝 Register on Reelvo.ai</h2>
 
   <form method="post"
         action="{{ url_for('auth.register') }}"
-        style="max-width: 400px; margin: 30px auto; background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+        style="max-width: 400px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
         aria-label="Registration Form">
 
-    <label for="user_name"
-           style="display:block; margin-bottom: 8px; font-weight: bold;"
-           aria-label="Choose a username">👤 Username</label>
-
-    <input type="text"
-           id="user_name"
-           name="user_name"
-           placeholder="Choose a username"
+    <label for="email"
+           style="display: block; margin-bottom: 8px; font-weight: bold;">
+      📧 Email Address
+    </label>
+    <input type="email"
+           id="email"
+           name="email"
+           placeholder="Enter your email..."
            required
-           autocomplete="username"
+           autocomplete="email"
            style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 20px;" />
 
-    <label for="user_password"
-           style="display:block; margin-bottom: 8px; font-weight: bold;"
-           aria-label="Choose a password">🔐 Password</label>
-
+    <label for="password"
+           style="display: block; margin-bottom: 8px; font-weight: bold;">
+      🔒 Choose Password
+    </label>
     <input type="password"
-           id="user_password"
-           name="user_password"
-           placeholder="Choose a password"
+           id="password"
+           name="password"
+           placeholder="Create a password..."
            required
            autocomplete="new-password"
-           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 24px;" />
+           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 20px;" />
 
     <button type="submit"
-            style="width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;"
-            aria-label="Register your account">
+            style="width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;">
       ✅ Register
     </button>
+
+    <div style="margin-top: 20px; text-align: center; font-size: 15px;">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}"
+         style="color: #007BFF; font-weight: bold; text-decoration: none;">
+        Login here
+      </a>
+    </div>
   </form>
 {% endblock %}
