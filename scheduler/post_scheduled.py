@@ -1,123 +1,142 @@
-# File: scheduler/publish_scheduled_reels.py
+# File: scheduler/post_scheduled.py
+
+"""
+Posts reels scheduled for today using unified schedule (db/scheduled_posts.json).
+Includes email alerting on failures and log rotation.
+"""
 
 import os
 import json
 import logging
 from datetime import datetime
-from dotenv import load_dotenv
-from flask import Flask
-from utils.instagram import post_to_instagram
-from utils.user_db import get_instagram_credentials
-from utils.reel_history import add_reel_to_history
-from routes.auth import send_email
+from logging.handlers import RotatingFileHandler
+import smtplib
+from email.mime.text import MIMEText
+from flask import Flask  # Only to load config if needed
+from utils.instagram_posting import post_to_instagram
+from utils.user_db import get_user_token_data
 
-# Load environment variables
-load_dotenv()
+# Constants
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, "..", "db")
+OUTPUT_DIR = os.path.join(BASE_DIR, "..", "output")
+SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
+HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
+LOG_FILE = os.path.join(BASE_DIR, "logs", "post_scheduled.log")
+EMAIL_TEMPLATE = os.path.join(BASE_DIR, "email_alert_template.txt")
 
-# Setup logging
-os.makedirs("logs", exist_ok=True)
-logging.basicConfig(
-    filename="logs/publish.log",
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger("scheduler")
+# Logging with rotation
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+logger = logging.getLogger("scheduled_reels")
+logger.setLevel(logging.INFO)
+handler = RotatingFileHandler(LOG_FILE, maxBytes=2 * 1024 * 1024, backupCount=3)
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
-# Load scheduled posts
-SCHEDULE_PATH = "db/scheduled_posts.json"
-DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL", "developer@sazm.in")
+# Email alert function
+def send_email_alert(subject, message):
+    try:
+        with open(EMAIL_TEMPLATE, "r", encoding="utf-8") as f:
+            template = f.read()
 
+        body = template.format(log_path=LOG_FILE, error_message=message)
 
-def load_scheduled():
-    if os.path.exists(SCHEDULE_PATH):
+        smtp_host = os.getenv("SMTP_HOST")
+        smtp_port = int(os.getenv("SMTP_PORT", 587))
+        smtp_user = os.getenv("SMTP_USERNAME")
+        smtp_pass = os.getenv("SMTP_PASSWORD")
+        from_email = os.getenv("SMTP_FROM_EMAIL", smtp_user)
+        to_email = os.getenv("ALERT_EMAIL", smtp_user)
+
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = from_email
+        msg["To"] = to_email
+
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            if os.getenv("SMTP_USE_TLS", "true").lower() == "true":
+                server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+
+        logger.info(f"Email alert sent to {to_email}")
+    except Exception as e:
+        logger.error(f"Failed to send email alert: {e}")
+
+# Helper functions
+def load_json(path):
+    if os.path.exists(path):
         try:
-            with open(SCHEDULE_PATH, "r") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except json.JSONDecodeError:
-            logger.error("❌ Failed to load scheduled_posts.json (invalid JSON)")
+        except Exception as e:
+            logger.error(f"Failed to load {path}: {e}")
     return {}
 
-
-def save_scheduled(data):
-    os.makedirs(os.path.dirname(SCHEDULE_PATH), exist_ok=True)
+def save_json(path, data):
     try:
-        with open(SCHEDULE_PATH, "w") as f:
-            json.dump(data, f, indent=2)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        logger.error(f"❌ Failed to save updated schedule: {e}")
+        logger.error(f"Failed to save {path}: {e}")
 
-
-def send_notification(email, subject, body):
-    app = Flask(__name__)
-    app.config.update(
-        SMTP_HOST=os.getenv("SMTP_HOST"),
-        SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
-        SMTP_USERNAME=os.getenv("SMTP_USERNAME"),
-        SMTP_PASSWORD=os.getenv("SMTP_PASSWORD"),
-        SMTP_SENDER_NAME=os.getenv("SMTP_SENDER_NAME", "Reelvo.ai"),
-        SMTP_USE_TLS=os.getenv("SMTP_USE_TLS", "true").lower() == "true"
-    )
-    with app.app_context():
-        try:
-            send_email(email, subject, body)
-        except Exception as e:
-            logger.error(f"❌ Failed to send email: {e}")
-
-
+# Main poster logic
 def post_due_reels():
-    all_schedules = load_scheduled()
-    updated = False
-    now = datetime.now()
+    logger.info("\U0001f4e4 Starting scheduled reel poster...")
+    schedule = load_json(SCHEDULE_FILE)
+    history = load_json(HISTORY_FILE)
+    today = datetime.now().strftime("%Y-%m-%d")
 
-    for user, posts in all_schedules.items():
-        for post in posts:
-            if post.get("posted"):
+    failures = []
+
+    for user_email, jobs in schedule.items():
+        token_data = get_user_token_data(user_email)
+        if not token_data or "access_token" not in token_data:
+            logger.warning(f"[{user_email}] No valid Instagram token.")
+            continue
+
+        if not isinstance(jobs, list):
+            logger.warning(f"[{user_email}] Schedule format invalid.")
+            continue
+
+        for item in jobs:
+            if not isinstance(item, dict) or item.get("posted"):
                 continue
 
-            scheduled_for = post.get("scheduled_for")
-            if not scheduled_for:
+            scheduled_date = item.get("scheduled_for")
+            video = item.get("video")
+
+            if not video or not scheduled_date or scheduled_date > today:
                 continue
 
-            try:
-                scheduled_dt = datetime.fromisoformat(scheduled_for)
-            except ValueError:
-                logger.warning(f"⚠️ Invalid datetime format for user {user}: {scheduled_for}")
-                continue
-
-            if scheduled_dt > now:
-                continue  # Not yet due
-
-            video_path = os.path.join("output", user, "videos", post["video"])
+            video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
             if not os.path.exists(video_path):
-                logger.error(f"🚫 Video not found: {video_path}")
+                logger.warning(f"[{user_email}] Video not found: {video_path}")
+                failures.append(f"[{user_email}] Missing file: {video}")
                 continue
 
-            caption = post.get("caption", "")
-            video_url = ""  # Optionally use a generated public link
+            caption = item.get("script") or history.get(user_email, {}).get(video, "")
 
+            logger.info(f"[{user_email}] Posting: {video}")
             try:
-                html_result = post_to_instagram(
-                    video_path=video_path,
-                    caption=caption,
-                    user_name=user,
-                    video_url=video_url
-                )
-                post["posted"] = True
-                add_reel_to_history(user, post["video"], caption)
-                logger.info(f"✅ Posted: {post['video']} for {user}")
-                send_notification(user, "🎉 Reel Posted Successfully", f"Your reel '{post['video']}' was posted at {now}.\n\n{html_result}")
-                updated = True
+                success = post_to_instagram(user_email, video_path, caption)
+                if success:
+                    item["posted"] = True
+                    item["posted_at"] = datetime.now().isoformat()
+                    logger.info(f"[{user_email}] Posted successfully: {video}")
+                else:
+                    failures.append(f"[{user_email}] Failed API post: {video}")
             except Exception as e:
-                logger.exception(f"❌ Failed to post reel for {user}: {e}")
-                send_notification(user, "❌ Failed to Post Reel", f"An error occurred while posting your reel '{post['video']}':\n\n{e}")
+                logger.exception(f"[{user_email}] Exception posting {video}")
+                failures.append(f"[{user_email}] Exception: {str(e)}")
 
-    if updated:
-        save_scheduled(all_schedules)
+    save_json(SCHEDULE_FILE, schedule)
+    logger.info("✅ Finished scheduled posting.")
 
+    if failures:
+        message = "\n".join(failures)
+        send_email_alert("[Alert] Reel Posting Failures", message)
 
 if __name__ == "__main__":
-    try:
-        post_due_reels()
-    except Exception as e:
-        logger.exception(f"💥 Fatal error in publish script: {e}")
+    post_due_reels()

@@ -1,8 +1,8 @@
 # File: scheduler/schedule_reels.py
 
 """
-Assigns posting times for unscheduled reels (1 per day, 4PM).
-Writes to reels_metadata/<user>.json for compatibility with post_scheduled_reels.py.
+Assigns posting times for unscheduled reels (1 per day at 4PM).
+Updates db/scheduled_posts.json (used by post_scheduled.py).
 """
 
 import os
@@ -13,11 +13,11 @@ from datetime import datetime, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_DIR = os.path.join(BASE_DIR, "..", "db")
-METADATA_DIR = os.path.join(BASE_DIR, "..", "reels_metadata")
 
 # Paths
 REEL_HISTORY_PATH = os.path.join(DB_DIR, "reel_history.json")
-DEFAULT_POST_HOUR = 16  # 4 PM
+SCHEDULE_PATH = os.path.join(DB_DIR, "scheduled_posts.json")
+DEFAULT_POST_HOUR = 16  # 4PM
 
 # Logging setup
 logging.basicConfig(
@@ -49,53 +49,49 @@ def save_json(path, data):
 
 def schedule_reels_for_user(user_email: str):
     history = load_json(REEL_HISTORY_PATH)
+    scheduled = load_json(SCHEDULE_PATH)
+
     user_history = history.get(user_email, {})
+    user_schedule = scheduled.get(user_email, [])
 
     if not isinstance(user_history, dict):
         logger.warning(f"[{user_email}] ⚠️ No valid reel history found.")
         return
 
-    metadata_path = os.path.join(METADATA_DIR, f"{user_email}.json")
-    existing = []
+    scheduled_video_names = {item.get("video") for item in user_schedule if isinstance(item, dict)}
 
-    if os.path.exists(metadata_path):
+    # Start from latest scheduled date or today
+    all_dates = [item.get("scheduled_for") for item in user_schedule if "scheduled_for" in item]
+    start_date = datetime.now().replace(hour=DEFAULT_POST_HOUR, minute=0, second=0, microsecond=0)
+    if all_dates:
         try:
-            with open(metadata_path, "r", encoding="utf-8") as f:
-                existing = json.load(f)
-        except Exception as e:
-            logger.warning(f"[{user_email}] Failed to load existing schedule: {e}")
-            existing = []
+            latest = max(datetime.strptime(d, "%Y-%m-%d") for d in all_dates)
+            start_date = max(start_date, latest + timedelta(days=1))
+        except Exception:
+            pass
 
-    existing_video_names = {os.path.basename(x.get("video_path", "")) for x in existing if isinstance(x, dict)}
-
-    # Start scheduling from today 4PM or tomorrow 4PM
-    now = datetime.now()
-    post_date = now.replace(hour=DEFAULT_POST_HOUR, minute=0, second=0, microsecond=0)
-    if now.hour >= DEFAULT_POST_HOUR:
-        post_date += timedelta(days=1)
-
-    scheduled = 0
-    for video_name, script in user_history.items():
-        if video_name in existing_video_names:
+    count = 0
+    for video, script in user_history.items():
+        if video in scheduled_video_names:
             continue
 
-        video_path = f"output/{user_email}/videos/{video_name}"
-
-        metadata = {
+        video_path = f"output/{user_email}/videos/{video}"
+        item = {
+            "video": video,
             "video_path": video_path,
-            "caption": script,
-            "scheduled_date": post_date.strftime("%Y-%m-%d"),
-            "scheduled_time": f"{DEFAULT_POST_HOUR:02}:00",
-            "status": "scheduled"
+            "script": script,
+            "scheduled_for": start_date.strftime("%Y-%m-%d"),
+            "posted": False
         }
-        existing.append(metadata)
-        post_date += timedelta(days=1)
-        scheduled += 1
+        user_schedule.append(item)
+        start_date += timedelta(days=1)
+        count += 1
 
-    save_json(metadata_path, existing)
+    scheduled[user_email] = user_schedule
+    save_json(SCHEDULE_PATH, scheduled)
 
-    if scheduled:
-        logger.info(f"[{user_email}] ✅ Scheduled {scheduled} new reel(s).")
+    if count:
+        logger.info(f"[{user_email}] ✅ Scheduled {count} new reel(s).")
     else:
         logger.info(f"[{user_email}] ℹ️ No new reels to schedule.")
 
@@ -105,5 +101,5 @@ if __name__ == "__main__":
         print("Usage: python schedule_reels.py <user_email>")
         sys.exit(1)
 
-    user_email = sys.argv[1].strip().lower()
-    schedule_reels_for_user(user_email)
+    email = sys.argv[1].strip().lower()
+    schedule_reels_for_user(email)

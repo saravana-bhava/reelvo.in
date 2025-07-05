@@ -1,0 +1,9 @@
+🚨 Instagram Auto-Post Alert 🚨
+
+One or more scheduled reels failed to post today.
+
+Error Details:
+{error_message}
+
+Check logs at:
+{log_path}
