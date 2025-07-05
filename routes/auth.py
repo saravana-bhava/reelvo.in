@@ -11,7 +11,6 @@ import smtplib
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from flask import Blueprint, render_template, request, redirect, session, url_for, flash, current_app
-from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
 auth_bp = Blueprint("auth", __name__)
@@ -103,7 +102,7 @@ def login():
             flash("Invalid email or password.", "danger")
             return redirect(url_for("auth.login"))
 
-        session["user"] = secure_filename(email)
+        session["user"] = email
         return redirect(url_for("dashboard.dashboard"))
 
     return render_template("login.html")

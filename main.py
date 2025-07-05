@@ -6,7 +6,6 @@ from flask import Flask
 from threading import Thread
 from werkzeug.serving import run_simple
 from werkzeug.middleware.proxy_fix import ProxyFix
-
 # from waitress import serve  # Uncomment this for real production use
 
 from utils.scheduler import scheduler_runner
@@ -20,11 +19,9 @@ from routes.schedule import schedule_bp
 from dotenv import load_dotenv
 
 # ----------------- Load Environment -----------------
-
 load_dotenv()
 
 # ----------------- Logging Setup -----------------
-
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -33,14 +30,13 @@ logging.basicConfig(
 logger = logging.getLogger("reelvo")
 
 # ----------------- Flask App Setup -----------------
-
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
-# ✅ Trust proxy headers to detect HTTPS properly
+# ✅ Trust proxy headers (especially for HTTPS on Render)
 flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
 
-# Load SMTP settings into config
+# SMTP Configuration
 flask_app.config.update(
     SMTP_HOST=os.getenv("SMTP_HOST"),
     SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
@@ -50,7 +46,7 @@ flask_app.config.update(
     SMTP_USE_TLS=os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 )
 
-# Register blueprints
+# ----------------- Register Blueprints -----------------
 flask_app.register_blueprint(auth_bp)
 flask_app.register_blueprint(dashboard_bp)
 flask_app.register_blueprint(reels_bp)
@@ -59,14 +55,12 @@ flask_app.register_blueprint(instagram_bp)
 flask_app.register_blueprint(schedule_bp)
 
 # ----------------- Background Threads -----------------
-
 def start_background_tasks():
     logger.info("Starting background tasks...")
     Thread(target=refresh_instagram_tokens, daemon=True).start()
     Thread(target=scheduler_runner, daemon=True).start()
 
 # ----------------- Start Server -----------------
-
 def run():
     os.makedirs("output", exist_ok=True)
     start_background_tasks()
@@ -74,14 +68,15 @@ def run():
     port = int(os.getenv("PORT", 5000))
     protocol = os.getenv("PROTOCOL", "https")
     host = os.getenv("HOST", "0.0.0.0")
+
     logger.info(f"🚀 Production server starting at {protocol}://{host}:{port}")
 
     if os.getenv("FLASK_ENV", "production").lower() == "development":
         logger.warning("⚠️ Running in development mode with debugger enabled!")
         run_simple(host, port, flask_app, use_debugger=True, use_reloader=True)
     else:
-        # In production, use a production-grade WSGI server like Waitress or Gunicorn
-        # Uncomment below to use Waitress:
+        # For production, prefer a WSGI server like Waitress or Gunicorn
+        # To use Waitress, uncomment below:
         # serve(flask_app, host=host, port=port)
         run_simple(host, port, flask_app, use_debugger=False, use_reloader=False)
 

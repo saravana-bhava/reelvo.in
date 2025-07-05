@@ -19,7 +19,8 @@ echo -e "${GREEN}🚀 Starting Reelvo.ai application...${NC}"
 if ! command -v ffmpeg &> /dev/null; then
     echo -e "${YELLOW}🔧 FFmpeg not found. Installing...${NC}"
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+        sudo apt-get update -qq
+        sudo apt-get install -y ffmpeg
         echo -e "${GREEN}✅ FFmpeg installed.${NC}"
     else
         echo -e "${RED}❌ FFmpeg installation not supported on this OS.${NC}"

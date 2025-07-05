@@ -7,6 +7,7 @@ for a given category and user_name using create_video_for_category().
 
 import sys
 import logging
+from typing import Optional
 from utils.create_video import create_video_for_category
 
 # Setup logging
@@ -17,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger("run_pipeline")
 
 
-def run_pipeline(category: str, user_name: str = "demo") -> str | None:
+def run_pipeline(category: str, user_name: str = "demo") -> Optional[str]:
     """
     Runs the video generation pipeline for a specific category and user.
 
@@ -26,7 +27,7 @@ def run_pipeline(category: str, user_name: str = "demo") -> str | None:
         user_name (str): User identifier.
 
     Returns:
-        str | None: Path to the generated video, or None if failed.
+        Optional[str]: Path to the generated video, or None if failed.
     """
     category = category.strip().lower()
     user_name = user_name.strip()

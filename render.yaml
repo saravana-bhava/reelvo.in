@@ -22,7 +22,7 @@ services:
     # ⚙️ Deploy settings
     # ───────────────────────────────────────────────
     autoDeploy: true
-    plan: free  # ⬆️ Upgrade to 'standard' or 'pro' for high concurrency & performance
+    plan: free  # Consider 'starter' or higher for faster performance & background jobs
 
     # ───────────────────────────────────────────────
     # 🔐 Environment variables (set values in dashboard)
@@ -38,7 +38,7 @@ services:
       - key: USE_GOOGLE_CLOUD_TTS
         value: false
 
-      # API keys (set in dashboard UI for security)
+      # API keys (do NOT hardcode)
       - key: OPENAI_API_KEY
         sync: false
 
@@ -46,7 +46,10 @@ services:
       - key: GOOGLE_CLOUD_TTS_VOICE
         value: en-US-Wavenet-D
 
-      # Optional: Provide the credential content using Render's secret file feature
-      # Or inject base64 via another environment var
+      # You may also configure GOOGLE_APPLICATION_CREDENTIALS via:
+      # - Render's Secret Files (recommended)
+      # - base64 env var and decode in runtime
+      # Example (if needed):
       # - key: GOOGLE_APPLICATION_CREDENTIALS
-      #   value: /etc/credentials/google.json
+      #   value: /etc/secrets/credentials.json
+'['

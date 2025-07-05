@@ -12,10 +12,10 @@ import sys
 from dotenv import load_dotenv
 from run_pipeline import run_pipeline
 
-# Load .env configuration
+# ----------------- Load Environment -----------------
 load_dotenv()
 
-# Configure logging
+# ----------------- Logging Configuration -----------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -23,10 +23,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cron_pipeline")
 
-# Constants
+# ----------------- Constants -----------------
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL", "developer@sazm.in")
-SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "5"))  # Delay between categories (in seconds)
+SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "5"))
 
 
 def run_all_categories_for_user(user_name: str):
@@ -52,7 +52,7 @@ def run_all_categories_for_user(user_name: str):
         except Exception as e:
             logger.exception(f"[❌] Error generating reel for category '{category}': {e}")
 
-        if i < len(CATEGORIES):  # Don't sleep after the last category
+        if i < len(CATEGORIES):
             time.sleep(SLEEP_BETWEEN)
 
     logger.info(f"🏁 All scheduled reels generated for user: {user_name}")

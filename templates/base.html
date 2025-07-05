@@ -34,7 +34,10 @@
        class="{% if request.endpoint == 'schedule.list_scheduled_jobs_view' %}active{% endif %}">Scheduled Reels</a>
 
     {% if session.get('user') %}
-      <form action="{{ url_for('instagram.disconnect_instagram') }}" method="post" class="logout-form">
+      <form action="{{ url_for('instagram.disconnect_instagram') }}"
+            method="post"
+            class="logout-form"
+            style="display: inline;">
         <button type="submit">Disconnect Instagram</button>
       </form>
       <a href="{{ url_for('auth.logout') }}">Logout</a>
@@ -52,7 +55,14 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
+
     {% block content %}{% endblock %}
   </main>
+
+  <!-- Optional footer -->
+  <footer class="footer">
+    <p>&copy; {{ current_year or 2025 }} Reelvo.ai &mdash; All rights reserved.</p>
+  </footer>
+
 </body>
 </html>

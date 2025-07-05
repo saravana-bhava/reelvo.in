@@ -254,6 +254,15 @@ def list_reels():
     user_email = session["user"]
     video_folder = os.path.join("output", user_email, "videos")
     os.makedirs(video_folder, exist_ok=True)
-
     videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
-    return render_template("reels.html", user=user_email, videos=videos)
+
+    # Optional: pass script previews
+    scripts_path = os.path.join("output", user_email, "scripts")
+    scripts = {}
+    if os.path.exists(scripts_path):
+        for f in os.listdir(scripts_path):
+            if f.endswith(".txt"):
+                with open(os.path.join(scripts_path, f), encoding="utf-8") as file:
+                    scripts[f.replace("_text.txt", "_video.mp4")] = file.read().strip()
+
+    return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
