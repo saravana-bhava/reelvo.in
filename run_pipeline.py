@@ -28,6 +28,9 @@ def run_pipeline(category: str, user_name: str = "demo") -> str | None:
     Returns:
         str | None: Path to the generated video, or None if failed.
     """
+    category = category.strip().lower()
+    user_name = user_name.strip()
+
     logger.info(f"⚙️ Starting pipeline for: {category.upper()} | User: {user_name}")
     try:
         result = create_video_for_category(category, user_name)
@@ -47,7 +50,7 @@ if __name__ == "__main__":
         print("Example: python run_pipeline.py motivation demo")
         sys.exit(1)
 
-    category_arg = sys.argv[1].lower()
+    category_arg = sys.argv[1]
     user_name_arg = sys.argv[2] if len(sys.argv) == 3 else "demo"
 
     run_pipeline(category_arg, user_name_arg)

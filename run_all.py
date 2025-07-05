@@ -11,7 +11,7 @@ import logging
 from dotenv import load_dotenv
 from run_pipeline import run_pipeline
 
-# Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
 # Logger setup
@@ -24,7 +24,7 @@ logger = logging.getLogger("run_all")
 # Constants
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
 DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL", "developer@sazm.in")
-SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "2"))  # Delay (seconds) between reels
+SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "2"))  # Delay between each reel (in seconds)
 
 
 def run_all_categories(user_name: str) -> None:
@@ -34,11 +34,12 @@ def run_all_categories(user_name: str) -> None:
     Args:
         user_name (str): Target user_name.
     """
+    user_name = user_name.strip()
     logger.info(f"🚀 Starting batch reel generation for user: {user_name}")
 
-    for category in CATEGORIES:
+    for i, category in enumerate(CATEGORIES, start=1):
         try:
-            logger.info(f"🔹 Generating reel for category: {category}")
+            logger.info(f"[{i}/{len(CATEGORIES)}] 🔹 Generating reel for category: {category}")
             result = run_pipeline(category, user_name)
 
             if result:
@@ -49,9 +50,10 @@ def run_all_categories(user_name: str) -> None:
         except Exception as e:
             logger.exception(f"[❌] Error generating reel for '{category}': {e}")
 
-        time.sleep(SLEEP_BETWEEN)
+        if i < len(CATEGORIES):  # Don't sleep after the last reel
+            time.sleep(SLEEP_BETWEEN)
 
-    logger.info(f"✅ Finished processing all categories for user: {user_name}")
+    logger.info(f"🏁 Finished processing all categories for user: {user_name}")
 
 
 if __name__ == "__main__":
@@ -59,5 +61,5 @@ if __name__ == "__main__":
         user_arg = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_EMAIL
         run_all_categories(user_arg)
     except Exception as e:
-        logger.exception(f"Fatal error in batch runner: {e}")
+        logger.exception(f"[💥] Fatal error in batch runner: {e}")
         sys.exit(1)

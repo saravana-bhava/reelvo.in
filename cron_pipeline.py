@@ -9,7 +9,11 @@ import time
 import logging
 import os
 import sys
+from dotenv import load_dotenv
 from run_pipeline import run_pipeline
+
+# Load .env configuration
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -32,24 +36,26 @@ def run_all_categories_for_user(user_name: str):
     Args:
         user_name (str): Username for whom to generate reels.
     """
+    user_name = user_name.strip()
     logger.info(f"🌀 Starting CRON reel generation for user: {user_name}")
 
-    for category in CATEGORIES:
+    for i, category in enumerate(CATEGORIES, start=1):
         try:
-            logger.info(f"🕒 Generating reel for category: {category}")
+            logger.info(f"[{i}/{len(CATEGORIES)}] 🕒 Generating reel for category: {category}")
             output_path = run_pipeline(category, user_name)
 
             if output_path:
-                logger.info(f"[✅] Completed: {output_path}")
+                logger.info(f"[✅] Reel created → {output_path}")
             else:
-                logger.warning(f"[⚠️] Generation failed for category: {category}")
+                logger.warning(f"[⚠️] Failed to generate reel for: {category}")
 
         except Exception as e:
-            logger.exception(f"[❌] Error generating category '{category}': {e}")
+            logger.exception(f"[❌] Error generating reel for category '{category}': {e}")
 
-        time.sleep(SLEEP_BETWEEN)
+        if i < len(CATEGORIES):  # Don't sleep after the last category
+            time.sleep(SLEEP_BETWEEN)
 
-    logger.info("✅ All CRON-based reel generations completed.\n")
+    logger.info(f"🏁 All scheduled reels generated for user: {user_name}")
 
 
 if __name__ == "__main__":
@@ -57,5 +63,5 @@ if __name__ == "__main__":
         user = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_EMAIL
         run_all_categories_for_user(user)
     except Exception as main_err:
-        logger.exception(f"❌ Fatal error in CRON pipeline: {main_err}")
+        logger.exception(f"[💥] Fatal error in CRON pipeline: {main_err}")
         sys.exit(1)
