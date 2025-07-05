@@ -47,13 +47,16 @@ def load_user_tokens(user_name: str) -> Optional[dict]:
         user_name (str): Unique user ID.
 
     Returns:
-        dict or None: Token dict or None if not found.
+        dict or None: Token dict or None if not found or invalid.
     """
     path = get_user_token_path(user_name)
     if not os.path.exists(path):
         return None
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return None
 
 
 def update_access_token(user_name: str, new_token: str, new_expiry: int):
@@ -102,5 +105,7 @@ def log_post(user_name: str, video_path: str, caption: str, drive_url: str = "")
     log_dir = os.path.join("output", user_name)
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "instagram_posts.log")
+
+    log_entry = f"{datetime.utcnow().isoformat()} | {video_path} | {caption} | {drive_url or 'N/A'}\n"
     with open(log_file, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.utcnow().isoformat()} | {video_path} | {caption} | {drive_url or 'N/A'}\n")
+        f.write(log_entry)

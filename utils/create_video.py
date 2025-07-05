@@ -29,13 +29,13 @@ def create_video(
 
     Args:
         video_path (str): Output path to save final video.
-        inputs (List[str]): Input ffmpeg arguments, e.g., ["-i", "vid.mp4", "-i", "audio.mp3"]
-        audio_duration (float): Duration of final video in seconds.
-        filters (List[str]): FFmpeg filter_complex commands.
-        map_video (str): Video stream map reference, e.g., "[v]"
+        inputs (List[str]): Input ffmpeg arguments, e.g., ["-i", "clip1.mp4", "-i", "audio.mp3"]
+        audio_duration (float): Total duration of final video in seconds.
+        filters (List[str]): FFmpeg filter_complex commands, joined with ';'.
+        map_video (str): Output video stream reference (e.g., "[v]").
 
     Returns:
-        Optional[str]: Path to created video if success, else None.
+        Optional[str]: Path to the created video, or None on failure.
     """
 
     logger.info("[🌐] Generating final Instagram Reel...")
@@ -57,12 +57,14 @@ def create_video(
         subprocess.run(cmd, check=True)
         logger.info(f"[✅] Reel created → {video_path}")
         return video_path
-    except subprocess.CalledProcessError:
+
+    except subprocess.CalledProcessError as e:
         logger.exception("[❌] FFmpeg render failed.")
         return None
 
 
-# CLI support for manual test (optional)
+# CLI support for manual testing (optional)
 if __name__ == "__main__":
-    print("This script is not intended for direct CLI usage.")
-    print("Use the `create_video()` function from within the main video generation pipeline.")
+    print("❌ This script is not meant to be run directly.")
+    print("🔁 Use the `create_video()` function from within the main pipeline.")
+    sys.exit(1)

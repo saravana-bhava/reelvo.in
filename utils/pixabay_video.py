@@ -73,7 +73,7 @@ def fetch_pixabay_video(
 
         for result in hits:
             duration = result.get("duration", 0)
-            if duration < min_duration or duration > 60:
+            if not (min_duration <= duration <= 60):
                 continue
 
             video_options = result.get("videos", {})

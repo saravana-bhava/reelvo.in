@@ -46,7 +46,8 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("Usage: python utils/translate_text.py '<text>'")
-    else:
-        input_text = " ".join(sys.argv[1:])
-        translated = translate_to_english(input_text)
-        print(f"🔁 Translated: {translated}")
+        sys.exit(1)
+
+    input_text = " ".join(sys.argv[1:])
+    result = translate_to_english(input_text)
+    print(f"🔁 Translated:\n{result}")

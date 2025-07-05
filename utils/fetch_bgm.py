@@ -24,16 +24,7 @@ def sanitize_filename(name: str) -> str:
 
 
 def download_bgm_from_url(url: str, dest_path: str) -> Optional[str]:
-    """
-    Download an audio file from a URL and save it locally.
-
-    Args:
-        url (str): Direct MP3 URL.
-        dest_path (str): Destination file path.
-
-    Returns:
-        Optional[str]: Path to saved file or None.
-    """
+    """Download an audio file from a URL and save it locally."""
     try:
         logger.info(f"[🌐] Downloading BGM from: {url}")
         response = requests.get(url, stream=True, timeout=15)
@@ -42,6 +33,7 @@ def download_bgm_from_url(url: str, dest_path: str) -> Optional[str]:
         with open(dest_path, 'wb') as f:
             for chunk in response.iter_content(1024 * 64):
                 f.write(chunk)
+
         logger.info(f"[✅] BGM saved to: {dest_path}")
         return dest_path
 
@@ -58,19 +50,9 @@ def fetch_bgm(
     language: str = "en",
     fallback_category: Optional[str] = None
 ) -> Optional[str]:
-
-    """
-    Fetch background music matching the script content.
-
-    Args:
-        script_text (str): Script content to extract keywords.
-        language (str): "en" or "hi"
-        fallback_category (Optional[str]): e.g., 'motivation'
-
-    Returns:
-        Optional[str]: Local MP3 path or None.
-    """
+    """Fetch background music matching the script content."""
     original_text = script_text
+
     if language != "en":
         try:
             logger.info("[🌐] Translating script to English for BGM match...")
@@ -97,6 +79,7 @@ def fetch_bgm(
 
     try:
         bgm_url_or_path = search_freesound(keyword, language=language)
+
         if bgm_url_or_path:
             if bgm_url_or_path.startswith("http"):
                 return download_bgm_from_url(bgm_url_or_path, cached_path)
@@ -108,15 +91,18 @@ def fetch_bgm(
                 except Exception as e:
                     logger.warning(f"[⚠️] Failed to move BGM file: {e}")
                     return bgm_url_or_path
+
     except Exception as e:
-        logger.warning(f"[❌] Freesound lookup failed: {e}")
+        logger.warning(f"[❌] Freesound lookup failed for keyword '{keyword}': {e}")
 
     # Fallback music
     if fallback_category:
         fallback_path = os.path.join("assets", "music", f"{fallback_category}.mp3")
         if os.path.exists(fallback_path):
-            logger.info(f"[🎼] Using fallback BGM: {fallback_path}")
+            logger.info(f"[🎼] Using fallback BGM for category '{fallback_category}': {fallback_path}")
             return fallback_path
+        else:
+            logger.warning(f"[⚠️] Fallback category file not found: {fallback_path}")
 
     logger.warning("[⚠️] No suitable BGM found or fallback failed.")
     return None

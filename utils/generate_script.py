@@ -50,6 +50,10 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
     Generates text using OpenAI-compatible APIs (OpenAI or OpenRouter).
     Returns None if generation fails.
     """
+    if not API_KEY:
+        logger.error("[🔑] No API key provided for OpenAI/OpenRouter.")
+        return None
+
     try:
         headers = {
             "Authorization": f"Bearer {API_KEY}",
@@ -78,6 +82,7 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
             return None
 
         script = response_data["choices"][0]["message"]["content"].strip()
+
         # Remove leading/trailing quotes if present
         if (script.startswith('"') and script.endswith('"')) or (script.startswith("“") and script.endswith("”")):
             script = script[1:-1].strip()
@@ -98,14 +103,20 @@ def generate_script(prompt: str, language: str = "en") -> str:
     language_norm = language.strip().lower()
 
     def fallback_script() -> str:
-        return THEMES.get(prompt_norm, {}).get(language_norm, f"[Theme script for '{prompt_norm}' in '{language_norm}']")
+        fallback = THEMES.get(prompt_norm, {}).get(language_norm)
+        if fallback:
+            return dedent(fallback).strip()
+        else:
+            available_langs = list(THEMES.get(prompt_norm, {}).keys())
+            logger.warning(f"[⚠️] No fallback for '{prompt_norm}' in '{language_norm}'. Available: {available_langs}")
+            return f"[Theme script for '{prompt_norm}' in '{language_norm}']"
 
     chat_prompt = (
-        f"Write only the voiceover lines (no scene descriptions, no headers, no visuals, no call-to-action). "
-        f"The topic is '{prompt_norm}', "
-        f"{'in Hindi' if language_norm == 'hi' else 'in English'}. "
-        "Make it under 30 seconds, and keep it emotional, energetic, and impactful. "
-        "Do not include any headings, bullet points, emojis, or visual cues — just the plain script lines."
+        f"Write a short voiceover script for an Instagram Reel. "
+        f"The theme is '{prompt_norm}', "
+        f"language: {'Hindi' if language_norm == 'hi' else 'English'}. "
+        f"The script should be under 30 seconds, energetic, emotional, and impactful. "
+        f"Output only the script lines—no headings, emojis, scene directions, or bullet points."
     )
 
     if USE_OPENAI:

@@ -72,7 +72,7 @@ def fetch_pexels_video(
 
     for video in videos:
         duration = video.get("duration", 0)
-        if duration < min_duration or duration > 60:
+        if not (min_duration <= duration <= 60):
             continue
 
         for file in video.get("video_files", []):

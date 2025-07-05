@@ -2,78 +2,92 @@
 
 """
 In-memory task progress tracker for async operations.
+Provides:
+- start_progress(task_id)
+- update_progress(task_id, status, percent)
+- finish_progress(task_id, status, percent)
+- get_progress(task_id)
 """
 
 import time
 from typing import Dict, Any
 
-# In-memory task status store
+# In-memory task progress registry
 progress_status: Dict[str, Dict[str, Any]] = {}
 
 
 def start_progress(task_id: str) -> None:
     """
-    Initialize progress for a given task.
+    Initialize a new task in the progress registry.
 
     Args:
         task_id (str): Unique identifier for the task.
     """
+    now = time.time()
     progress_status[task_id] = {
         "status": "🚀 Starting...",
         "percent": 0,
-        "start_time": time.time(),
+        "start_time": now,
         "elapsed": 0
     }
 
 
 def update_progress(task_id: str, status: str, percent: int) -> None:
     """
-    Update the status and percent of a running task.
+    Update the current progress of a task.
 
     Args:
-        task_id (str): Task identifier.
-        status (str): Status message to show.
-        percent (int): Progress percentage (0-100).
+        task_id (str): Unique task identifier.
+        status (str): Current progress status message.
+        percent (int): Completion percentage (0–100).
     """
-    if task_id in progress_status:
-        now = time.time()
-        start = progress_status[task_id].get("start_time", now)
-        progress_status[task_id].update({
-            "status": status,
-            "percent": percent,
-            "elapsed": int(now - start)
-        })
+    if task_id not in progress_status:
+        return  # Ignore update if task not initialized
+
+    now = time.time()
+    start = progress_status[task_id].get("start_time", now)
+    progress_status[task_id].update({
+        "status": status,
+        "percent": percent,
+        "elapsed": int(now - start)
+    })
 
 
 def finish_progress(task_id: str, status: str, percent: int = 100) -> None:
     """
-    Mark the task as complete and update final elapsed time.
+    Mark a task as complete and finalize elapsed time.
 
     Args:
-        task_id (str): Task identifier.
+        task_id (str): Unique task identifier.
         status (str): Final status message.
-        percent (int, optional): Final percent. Defaults to 100.
+        percent (int, optional): Final percent value. Defaults to 100.
     """
-    if task_id in progress_status:
-        now = time.time()
-        start = progress_status[task_id].get("start_time", now)
-        elapsed = now - start
-        progress_status[task_id].update({
-            "status": f"{status}<br>⏱️ Took {elapsed:.1f} sec",
-            "percent": percent,
-            "elapsed": int(elapsed)
-        })
+    if task_id not in progress_status:
+        return  # Skip if task wasn't tracked
+
+    now = time.time()
+    start = progress_status[task_id].get("start_time", now)
+    elapsed = now - start
+    progress_status[task_id].update({
+        "status": f"{status}<br>⏱️ Took {elapsed:.1f} sec",
+        "percent": percent,
+        "elapsed": int(elapsed)
+    })
 
 
 def get_progress(task_id: str) -> Dict[str, Any]:
     """
-    Retrieve the current status of a task.
+    Get the current progress status of a task.
 
     Args:
-        task_id (str): Task identifier.
+        task_id (str): Unique task identifier.
 
     Returns:
-        dict: Progress information including status, percent, and elapsed time.
+        dict: {
+            "status": str,
+            "percent": int,
+            "elapsed": int
+        }
     """
     return progress_status.get(task_id, {
         "status": "❌ Task not found.",

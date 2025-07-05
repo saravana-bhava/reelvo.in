@@ -13,19 +13,17 @@ from typing import Optional, Tuple
 from gtts import gTTS
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
-# Logging setup
+# Logging
 logger = logging.getLogger("tts_audio")
 logging.basicConfig(level=logging.INFO)
 
 # Feature flags
 USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
-
-# Defaults
 GOOGLE_CLOUD_TTS_VOICE = os.getenv("GOOGLE_CLOUD_TTS_VOICE", "en-US-Wavenet-D")
 
 
@@ -55,6 +53,7 @@ def generate_tts_audio(
     Generates TTS audio and returns (output_path, duration_in_seconds).
     """
     logger.info(f"[🔊] Generating TTS → {tts_path}")
+    os.makedirs(os.path.dirname(tts_path), exist_ok=True)
     raw_path = tts_path.replace(".mp3", "_raw.mp3")
     success = False
 
@@ -62,19 +61,19 @@ def generate_tts_audio(
     if USE_GOOGLE_CLOUD:
         try:
             from google.cloud import texttospeech
-            logger.info("[🧠] Trying Google Cloud TTS...")
+            logger.info("[🧠] Using Google Cloud TTS...")
 
             lang_code = {"hi": "hi-IN", "en": "en-US"}.get(language, "en-US")
             voice_name = tts_voice or GOOGLE_CLOUD_TTS_VOICE
-            cache_key = hashlib.md5(f"{script_text}|{voice_name}".encode()).hexdigest()
+            cache_key = hashlib.md5(f"{script_text}|{language}|{voice_name}".encode()).hexdigest()
             cache_dir = os.path.join(ROOT_DIR, "cache", "tts")
             os.makedirs(cache_dir, exist_ok=True)
             cached_path = os.path.join(cache_dir, f"{cache_key}.mp3")
 
             if cache and not DISABLE_CACHE and os.path.exists(cached_path):
                 subprocess.run(["cp", cached_path, raw_path], check=True)
+                logger.info("[📦] Loaded cached Google TTS audio.")
                 success = True
-                logger.info("[📦] Using cached Google TTS audio.")
             else:
                 client = texttospeech.TextToSpeechClient()
                 synthesis_input = texttospeech.SynthesisInput(text=script_text)
@@ -92,8 +91,8 @@ def generate_tts_audio(
                     with open(cached_path, "wb") as f:
                         f.write(response.audio_content)
 
+                logger.info("[✅] Google Cloud TTS audio saved.")
                 success = True
-                logger.info("[✅] Google TTS audio saved.")
         except Exception as e:
             logger.warning(f"[❌] Google Cloud TTS failed: {e}")
 
@@ -104,12 +103,12 @@ def generate_tts_audio(
             lang = "hi" if language == "hi" or any('\u0900' <= c <= '\u097F' for c in script_text) else "en"
             gtts_obj = gTTS(text=script_text.strip(), lang=lang)
             gtts_obj.save(raw_path)
-            success = True
             logger.info("[✅] gTTS audio saved.")
+            success = True
         except Exception as e:
             raise RuntimeError(f"[❌] gTTS failed: {e}")
 
-    # --- Final Conversion using FFmpeg ---
+    # --- Convert to final mp3 using FFmpeg ---
     if success:
         try:
             subprocess.run([
@@ -124,7 +123,7 @@ def generate_tts_audio(
         logger.info(f"[🎯] TTS audio ready: {tts_path} ({duration:.1f}s)")
         return tts_path, duration
 
-    raise RuntimeError("[❌] All TTS methods failed.")
+    raise RuntimeError("[❌] All TTS generation methods failed.")
 
 
 # CLI usage
@@ -137,9 +136,13 @@ if __name__ == "__main__":
 
     tts_path = sys.argv[1]
     language = sys.argv[2]
-    script_text = sys.argv[3]
-    tts_voice = sys.argv[4]
-    cache_str = sys.argv[5]
+    script_text = " ".join(sys.argv[3:-2])
+    tts_voice = sys.argv[-2]
+    cache_str = sys.argv[-1]
     cache = cache_str.lower() in ("1", "true", "yes")
 
-    generate_tts_audio(tts_path, language, script_text, tts_voice, cache)
+    try:
+        generate_tts_audio(tts_path, language, script_text, tts_voice, cache)
+    except Exception as e:
+        logger.error(e)
+        sys.exit(1)

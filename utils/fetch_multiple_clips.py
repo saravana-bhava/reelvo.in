@@ -23,18 +23,14 @@ logging.basicConfig(level=logging.INFO)
 
 
 def sanitize_english(text: str) -> str:
-    """
-    Extract English words from input text for search query.
-    """
+    """Extract English words from input text for search query."""
     words = re.findall(r'\b\w+\b', text.lower())
     ascii_words = [w for w in words if w.isascii()]
     return " ".join(ascii_words) or "inspiration"
 
 
 def download_video(src_path: str, dest_path: str, min_duration=5, max_duration=6) -> bool:
-    """
-    Trim a local video clip from a source file and save to destination.
-    """
+    """Trim a local video clip from a source file and save to destination."""
     try:
         subprocess.run([
             "ffmpeg", "-y", "-i", src_path,
@@ -47,7 +43,7 @@ def download_video(src_path: str, dest_path: str, min_duration=5, max_duration=6
         ], check=True)
         return True
     except Exception as e:
-        logger.error(f"[❌] Failed to copy fallback clip: {e}")
+        logger.error(f"[❌] Failed to copy fallback clip '{src_path}' to '{dest_path}': {e}")
         return False
 
 
@@ -61,9 +57,6 @@ def fetch_multiple_clips(
     """
     Download multiple clips from Pixabay or Pexels for the given script.
     Falls back to local assets if APIs fail.
-
-    Returns:
-        List[str]: paths to downloaded clips
     """
     logger.info("🎞️ Fetching video clips...")
 
@@ -85,13 +78,17 @@ def fetch_multiple_clips(
     for i in range(count):
         clip_path = os.path.join(temp_dir, f"{theme_name}_{language}_clip{i+1}.mp4")
         found = False
+
         for source in sources:
-            url = source(search_query, clip_path, used_urls=used_urls)
-            if url:
-                used_urls.add(url)
-                downloaded_clips.append(clip_path)
-                found = True
-                break
+            try:
+                url = source(search_query, clip_path, used_urls=used_urls)
+                if url:
+                    used_urls.add(url)
+                    downloaded_clips.append(clip_path)
+                    found = True
+                    break
+            except Exception as e:
+                logger.warning(f"[⚠️] Source error: {source.__name__} failed: {e}")
 
         if not found and os.path.exists(fallback_local):
             if download_video(fallback_local, clip_path):
@@ -110,12 +107,7 @@ def concatenate_clips(
     language: str,
     clips: List[str]
 ) -> str:
-    """
-    Re-encode and concatenate video clips into a single vertical video.
-
-    Returns:
-        str: path to the final combined video
-    """
+    """Re-encode and concatenate video clips into a single vertical video."""
     logger.info("[🔁] Re-encoding and concatenating clips...")
 
     reencoded_clips = []

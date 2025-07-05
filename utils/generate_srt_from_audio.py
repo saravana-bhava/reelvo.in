@@ -27,7 +27,7 @@ try:
     MODEL = whisper.load_model("small")
 except Exception as e:
     logger.error(f"[❌] Failed to load Whisper model: {e}")
-    raise RuntimeError("Whisper model loading failed.")
+    MODEL = None
 
 
 def generate_srt_from_audio(
@@ -45,6 +45,9 @@ def generate_srt_from_audio(
         audio_path (str): Input audio path.
         words_per_line (int): Number of words per subtitle line.
     """
+    if not MODEL:
+        raise RuntimeError("[❌] Whisper model not loaded. Cannot generate subtitles.")
+
     logger.info(f"[🧠] Transcribing audio with Whisper → {audio_path}")
 
     try:
@@ -99,8 +102,9 @@ def generate_srt_from_audio(
 
     logger.info(f"[✅] SRT saved: {srt_path}")
 
-    # Convert to ASS if Hindi detected
-    if any('\u0900' <= c <= '\u097F' for c in " ".join(sub.content for sub in subtitles)):
+    # Detect Hindi (Devanagari Unicode block) and convert to ASS
+    combined_text = " ".join(sub.content for sub in subtitles)
+    if any('\u0900' <= c <= '\u097F' for c in combined_text):
         ass_path = srt_path.replace(".srt", ".ass")
         convert_srt_to_ass(srt_path, ass_path, font="Noto Sans Devanagari")
         logger.info(f"[🈶] ASS generated for Hindi: {ass_path}")
@@ -136,6 +140,9 @@ def convert_srt_to_ass(
 ScriptType: v4.00+
 PlayResX: 1080
 PlayResY: 1920
+Collisions: Normal
+WrapStyle: 0
+ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
@@ -162,6 +169,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 # CLI usage
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) not in (3, 4):
         print("Usage: python utils/generate_srt_from_audio.py <audio_path> <srt_output_path> [language]")
         sys.exit(1)
@@ -170,9 +178,13 @@ if __name__ == "__main__":
     srt_output_path = sys.argv[2]
     language = sys.argv[3] if len(sys.argv) == 4 else "auto"
 
-    generate_srt_from_audio(
-        srt_path=srt_output_path,
-        language=language,
-        audio_path=audio_path,
-        words_per_line=6
-    )
+    try:
+        generate_srt_from_audio(
+            srt_path=srt_output_path,
+            language=language,
+            audio_path=audio_path,
+            words_per_line=6
+        )
+    except Exception as e:
+        logger.error(f"[💥] Subtitle generation failed: {e}")
+        sys.exit(1)

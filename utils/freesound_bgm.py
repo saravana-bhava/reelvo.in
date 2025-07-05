@@ -3,6 +3,7 @@
 import os
 import logging
 import requests
+import string
 from urllib.parse import quote
 from typing import Optional
 from dotenv import load_dotenv
@@ -12,12 +13,18 @@ load_dotenv()
 
 FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY")
 FREESOUND_API_URL = "https://freesound.org/apiv2/search/text/"
+
 logger = logging.getLogger("freesound_bgm")
 logging.basicConfig(level=logging.INFO)
 
 HEADERS = {
     "Authorization": f"Token {FREESOUND_API_KEY}"
 }
+
+
+def sanitize_filename(name: str) -> str:
+    """Remove unsafe characters from file names."""
+    return ''.join(c for c in name if c in string.ascii_letters + string.digits + "_").lower()
 
 
 def search_freesound(query: str, language: str = "en") -> Optional[str]:
@@ -57,15 +64,21 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
 
         top_result = results[0]
         previews = top_result.get("previews", {})
-        preview_url = previews.get("preview-hq-mp3")
+
+        preview_url = (
+            previews.get("preview-hq-mp3") or
+            previews.get("preview-lq-mp3") or
+            None
+        )
 
         if not preview_url:
-            logger.warning("[⚠️] No high-quality preview found.")
+            logger.warning("[⚠️] No MP3 preview available in top result.")
             return None
 
         os.makedirs("cache/bgm", exist_ok=True)
-        file_name = f"{query.lower().replace(' ', '_')}_{language}.mp3"
-        dest_path = os.path.join("cache/bgm", file_name)
+        base_name = sanitize_filename(query)
+        filename = f"{base_name}_{language}.mp3"
+        dest_path = os.path.join("cache/bgm", filename)
 
         if os.path.exists(dest_path):
             logger.info(f"[📦] Using cached BGM: {dest_path}")
@@ -78,6 +91,7 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
+        logger.info(f"[✅] Downloaded BGM saved: {dest_path}")
         return dest_path
 
     except requests.RequestException as e:

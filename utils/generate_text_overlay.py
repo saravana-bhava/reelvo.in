@@ -34,8 +34,10 @@ def generate_text_overlay(
         language (str): Language hint ('en' or 'hi') to auto-select fallback font.
         script_text (str): Text content to render.
     """
-
     logger.info(f"[🖋️] Rendering text overlay → {text_image_path}")
+
+    if not script_text.strip():
+        raise ValueError("[❌] Cannot render empty script text.")
 
     # Font resolution
     font_path = None
@@ -78,24 +80,28 @@ def generate_text_overlay(
         if bbox[2] <= CANVAS_WIDTH - MARGIN:
             current_line = test_line
         else:
-            lines.append(current_line)
+            if current_line:
+                lines.append(current_line)
             current_line = word
     if current_line:
         lines.append(current_line)
 
     # Compute vertical centering
-    line_height = draw.textbbox((0, 0), "A", font=font)[3] + 15
+    line_height = draw.textbbox((0, 0), "A", font=font)[3] + 18
     total_text_height = line_height * len(lines)
     y = (CANVAS_HEIGHT - total_text_height) // 2
 
-    # Draw lines
+    # Draw each line centered
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         x = (CANVAS_WIDTH - bbox[2]) // 2
         draw.text((x, y), line, font=font, fill="white")
         y += line_height
 
-    # Save image
+    # Ensure folder exists
+    os.makedirs(os.path.dirname(text_image_path), exist_ok=True)
+
+    # Save as RGB
     image.convert("RGB").save(text_image_path)
     logger.info(f"[✅] Overlay image saved → {text_image_path}")
 
@@ -111,4 +117,10 @@ if __name__ == "__main__":
     text_image_path = sys.argv[1]
     language = sys.argv[2]
     script_text = " ".join(sys.argv[3:])  # Allows multi-word input
-    generate_text_overlay(text_image_path, language, script_text)
+
+    try:
+        generate_text_overlay(text_image_path, language, script_text)
+        print(f"✅ Saved: {text_image_path}")
+    except Exception as e:
+        logger.error(f"[❌] Error generating text overlay: {e}")
+        sys.exit(1)

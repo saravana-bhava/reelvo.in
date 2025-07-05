@@ -28,7 +28,15 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def get_video_duration(filepath: str) -> Optional[float]:
-    """Returns video duration in seconds using ffprobe."""
+    """
+    Get duration of a video file using ffprobe.
+
+    Args:
+        filepath (str): Path to video.
+
+    Returns:
+        Optional[float]: Duration in seconds or None.
+    """
     try:
         result = subprocess.run(
             [
@@ -50,12 +58,12 @@ def get_video_duration(filepath: str) -> Optional[float]:
 
 def trim_video(input_path: str, output_path: str, max_duration: int = 30) -> bool:
     """
-    Trims a video to the specified duration using FFmpeg.
+    Trim video to max_duration using FFmpeg.
 
     Args:
-        input_path: Source file.
-        output_path: Trimmed file path.
-        max_duration: Max duration in seconds.
+        input_path (str): Source video path.
+        output_path (str): Trimmed output path.
+        max_duration (int): Max duration in seconds.
 
     Returns:
         bool: True if success, else False.
@@ -73,7 +81,7 @@ def trim_video(input_path: str, output_path: str, max_duration: int = 30) -> boo
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT
         )
-        logger.info(f"[✂️] Trimmed video to {max_duration}s → {output_path}")
+        logger.info(f"[✂️] Trimmed to {max_duration}s → {output_path}")
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"[❌] FFmpeg trim error: {e}")
@@ -88,17 +96,17 @@ def download_video(
     return_url: bool = False
 ) -> str | Tuple[Optional[str], Optional[str]]:
     """
-    Downloads a video, validates/trims duration, and caches it.
+    Download video from URL, validate duration, optionally trim and cache.
 
     Args:
-        url: Source URL.
-        output_path: Target local path.
-        min_duration: Minimum allowed duration.
-        max_duration: Maximum allowed duration.
-        return_url: If True, returns (output_path, url), else just output_path.
+        url (str): Video URL.
+        output_path (str): Final output file path.
+        min_duration (int): Minimum duration in seconds.
+        max_duration (int): Maximum duration in seconds.
+        return_url (bool): If True, return tuple with URL.
 
     Returns:
-        str or tuple: Final path (or path, url) if valid, else None.
+        str | tuple: Output path (or path, url), or None on failure.
     """
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -106,17 +114,17 @@ def download_video(
         hashed = hashlib.md5(url.encode()).hexdigest()
         cached_path = os.path.join(CACHE_DIR, f"{hashed}.mp4")
 
-        # Use cached file if valid
+        # Use cached version
         if not DISABLE_CACHE and os.path.exists(cached_path):
-            logger.info(f"[📦] Using cached video for: {url}")
+            logger.info(f"[📦] Using cached version for: {url}")
             duration = get_video_duration(cached_path)
             if duration and duration >= min_duration:
                 shutil.copyfile(cached_path, output_path)
                 return (output_path, url) if return_url else output_path
-            logger.warning("[⚠️] Cached video invalid or too short. Deleting...")
+            logger.warning("[⚠️] Cached video too short. Removing...")
             os.remove(cached_path)
 
-        # Download video to temp path
+        # Download to temp file
         logger.info(f"[⬇️] Downloading from: {url}")
         temp_path = output_path + ".tmp"
         with requests.get(url, stream=True, timeout=15) as r:
@@ -127,14 +135,14 @@ def download_video(
 
         duration = get_video_duration(temp_path)
         if duration is None:
-            logger.warning("[⚠️] Could not get duration. Saving as-is.")
+            logger.warning("[⚠️] No duration detected. Saving as-is.")
             os.rename(temp_path, output_path)
             if not DISABLE_CACHE:
                 shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else output_path
 
         if duration < min_duration:
-            logger.warning(f"[⏹️] Skipping: too short ({duration:.2f}s < {min_duration}s)")
+            logger.warning(f"[⏹️] Too short: {duration:.2f}s < {min_duration}s")
             os.remove(temp_path)
             return (None, None) if return_url else None
 
@@ -146,7 +154,7 @@ def download_video(
                 shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else (output_path if success else None)
 
-        # Finalize video (valid duration)
+        # Finalize valid video
         os.rename(temp_path, output_path)
         logger.info(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
         if not DISABLE_CACHE:
@@ -155,5 +163,5 @@ def download_video(
         return (output_path, url) if return_url else output_path
 
     except Exception as e:
-        logger.error(f"[❌] Video download error: {e}")
+        logger.error(f"[❌] Download error: {e}")
         return (None, None) if return_url else None
