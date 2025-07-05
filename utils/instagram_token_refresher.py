@@ -7,7 +7,7 @@ import logging
 import requests
 
 # Setup
-ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 OUTPUT_BASE = os.path.join(ROOT_DIR, "output")
 logger = logging.getLogger("instagram_refresher")
 logging.basicConfig(level=logging.INFO)
