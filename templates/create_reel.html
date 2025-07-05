@@ -149,7 +149,7 @@ window.addEventListener("DOMContentLoaded", toggleVoiceInputs);
 <h3>🎞️ Your Previous Reels</h3>
 <ul>
   {% for v in videos %}
-    <li><a href="{{ url_for('reels.serve_video', user_name=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
+    <li><a href="{{ url_for('reels.serve_video', user_email=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
   {% else %}
     <li>No reels found.</li>
   {% endfor %}

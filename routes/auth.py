@@ -9,6 +9,7 @@ import threading
 import secrets
 import smtplib
 from email.mime.text import MIMEText
+from email.utils import formataddr
 from flask import Blueprint, render_template, request, redirect, session, url_for, flash, current_app
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -58,16 +59,18 @@ def send_email(to_email, subject, body):
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
     smtp_user = os.getenv("SMTP_USERNAME")
     smtp_pass = os.getenv("SMTP_PASSWORD")
+    sender_name = os.getenv("SMTP_SENDER_NAME", "Support")
     from_email = os.getenv("SMTP_FROM_EMAIL", smtp_user)
 
     msg = MIMEText(body)
     msg["Subject"] = subject
-    msg["From"] = from_email
+    msg["From"] = formataddr((sender_name, from_email))
     msg["To"] = to_email
 
     try:
         with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
+            if os.getenv("SMTP_USE_TLS", "true").lower() == "true":
+                server.starttls()
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
         return True
@@ -144,7 +147,7 @@ def forgot_password():
         if email in users:
             token = generate_reset_token(email, current_app.secret_key)
             reset_url = url_for("auth.reset_password", token=token, _external=True)
-            body = f"Click the link below to reset your password:\n\n{reset_url}\n\nIf you didn't request this, please ignore it."
+            body = f"Hi,\n\nClick the link below to reset your password:\n\n{reset_url}\n\nIf you didn't request this, please ignore it.\n\n— Reelvo.ai Team"
             subject = "Password Reset - Reelvo.ai"
             if send_email(email, subject, body):
                 flash("If this email is registered, a reset link has been sent.", "info")

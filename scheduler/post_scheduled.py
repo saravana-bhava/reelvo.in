@@ -56,10 +56,10 @@ def post_due_reels():
     history = load_json(HISTORY_FILE)
     today_str = datetime.now().strftime("%Y-%m-%d")
 
-    for user_name, user_schedule in schedule.items():
-        token_data = get_user_token_data(user_name)
+    for user_email, user_schedule in schedule.items():
+        token_data = get_user_token_data(user_email)
         if not token_data or "access_token" not in token_data:
-            logger.warning(f"[{user_name}] ⚠️ No valid Instagram token found.")
+            logger.warning(f"[{user_email}] ⚠️ No valid Instagram token found.")
             continue
 
         for video, metadata in user_schedule.items():
@@ -70,24 +70,24 @@ def post_due_reels():
             if not scheduled_date or scheduled_date > today_str:
                 continue
 
-            caption = metadata.get("script") or history.get(user_name, {}).get(video, "")
-            video_path = os.path.join(OUTPUT_DIR, user_name, "videos", video)
+            caption = metadata.get("script") or history.get(user_email, {}).get(video, "")
+            video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
 
             if not os.path.exists(video_path):
-                logger.warning(f"[{user_name}] ❌ Video not found: {video_path}")
+                logger.warning(f"[{user_email}] ❌ Video not found: {video_path}")
                 continue
 
-            logger.info(f"[{user_name}] ⏰ Posting scheduled reel: {video}")
+            logger.info(f"[{user_email}] ⏰ Posting scheduled reel: {video}")
             try:
-                success = post_to_instagram(user_name, video_path, caption)
+                success = post_to_instagram(user_email, video_path, caption)
                 if success:
                     metadata["posted"] = True
                     metadata["posted_at"] = datetime.now().isoformat()
-                    logger.info(f"[{user_name}] ✅ Posted: {video}")
+                    logger.info(f"[{user_email}] ✅ Posted: {video}")
                 else:
-                    logger.warning(f"[{user_name}] ⚠️ Failed to post: {video}")
+                    logger.warning(f"[{user_email}] ⚠️ Failed to post: {video}")
             except Exception as e:
-                logger.exception(f"[{user_name}] ❌ Exception posting {video}: {e}")
+                logger.exception(f"[{user_email}] ❌ Exception posting {video}: {e}")
 
     save_json(SCHEDULE_FILE, schedule)
     logger.info("✅ Finished scheduled posting process.")

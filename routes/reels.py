@@ -33,13 +33,13 @@ def create_reel():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user = session["user"]
-    videos_path = os.path.join("output", user, "videos")
+    user_email = session["user"]
+    videos_path = os.path.join("output", user_email, "videos")
     os.makedirs(videos_path, exist_ok=True)
     videos = os.listdir(videos_path)
 
     script_text = ""
-    user_script_dir = os.path.join("output", user, "scripts")
+    user_script_dir = os.path.join("output", user_email, "scripts")
     os.makedirs(user_script_dir, exist_ok=True)
     scripts = sorted(
         [f for f in os.listdir(user_script_dir) if f.endswith(".txt")],
@@ -56,7 +56,7 @@ def create_reel():
 
     return render_template(
         "create_reel.html",
-        user=user,
+        user=user_email,
         videos=videos,
         script_text=script_text,
         themes=themes
@@ -68,7 +68,7 @@ def create_reel_action():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user_name = session["user"]
+    user_email = session["user"]
     theme = request.form.get("theme")
     custom_topic = request.form.get("custom_topic", "").strip()
     language = request.form.get("language", "en")
@@ -84,9 +84,9 @@ def create_reel_action():
         flash("Script is required.", "error")
         return redirect(url_for("reels.create_reel"))
 
-    logger.info(f"🎬 Starting reel for: User: {user_name} | Theme: {theme_name} | Language: {language}")
+    logger.info(f"🎬 Starting reel for: User: {user_email} | Theme: {theme_name} | Language: {language}")
 
-    output_dir = os.path.join("output", user_name)
+    output_dir = os.path.join("output", user_email)
     scripts_dir = os.path.join(output_dir, "scripts")
     images_dir = os.path.join(output_dir, "images")
     tts_dir = os.path.join(output_dir, "tts")
@@ -216,17 +216,17 @@ def create_reel_action():
         return redirect(url_for("reels.create_reel"))
 
     logger.info("[🌐] Upload to Google Drive...")
-    upload_url = upload_to_google_drive(video_path, user_name)
+    upload_url = upload_to_google_drive(video_path, user_email)
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
 
-    add_reel_to_history(user_name, os.path.basename(video_path), script_text)
+    add_reel_to_history(user_email, os.path.basename(video_path), script_text)
     return redirect(url_for("reels.create_reel"))
 
 
 @reels_bp.route("/generate-script", methods=["POST"])
 def generate_script_ajax():
     data = request.get_json()
-    user_name = session["user"]
+    user_email = session["user"]
     topic = data.get("custom_topic", "").strip()
     theme = data.get("theme")
     language = data.get("language", "en")
@@ -236,7 +236,7 @@ def generate_script_ajax():
 
     try:
         script_path = generate_script_for_user(
-            user_name=user_name,
+            user_name=user_email,
             folder_name="scripts",
             theme_name=topic if topic else theme,
             language=language,
@@ -249,9 +249,9 @@ def generate_script_ajax():
         return jsonify({"error": str(e)}), 500
 
 
-@reels_bp.route("/videos/<user_name>/<filename>")
-def serve_video(user_name, filename):
-    return send_from_directory(os.path.join("output", user_name, "videos"), filename)
+@reels_bp.route("/videos/<user_email>/<filename>")
+def serve_video(user_email, filename):
+    return send_from_directory(os.path.join("output", user_email, "videos"), filename)
 
 
 @reels_bp.route("/reels", methods=["GET"])
@@ -259,9 +259,9 @@ def list_reels():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user = session["user"]
-    video_folder = os.path.join("output", user, "videos")
+    user_email = session["user"]
+    video_folder = os.path.join("output", user_email, "videos")
     os.makedirs(video_folder, exist_ok=True)
 
     videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
-    return render_template("reels.html", user=user, videos=videos)
+    return render_template("reels.html", user=user_email, videos=videos)

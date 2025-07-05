@@ -187,7 +187,7 @@
     <a href="{{ url_for('reels.create_reel') }}">Create Reel</a>
     <a href="{{ url_for('reels.list_reels') }}">Reel History</a>
     <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}">Scheduled Reels</a>
-    {% if session.user %}
+    {% if session.get('user') %}
       <form action="{{ url_for('instagram.disconnect_instagram') }}" method="post" class="logout-form">
         <button type="submit">Disconnect Instagram</button>
       </form>

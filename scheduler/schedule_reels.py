@@ -40,15 +40,15 @@ def save_json(path: str, data: dict) -> None:
         print(f"❌ Failed to save schedule file: {e}")
 
 
-def schedule_reels_for_user(user_name: str) -> None:
+def schedule_reels_for_user(user_email: str) -> None:
     """
     Schedule all unscheduled reels for a given user, one per day.
     """
     history = load_json(REEL_HISTORY_PATH)
     schedule = load_json(SCHEDULE_PATH)
 
-    user_history = history.get(user_name, {})
-    user_schedule = schedule.get(user_name, {})
+    user_history = history.get(user_email, {})
+    user_schedule = schedule.get(user_email, {})
 
     if not isinstance(user_schedule, dict):
         user_schedule = {}
@@ -74,12 +74,12 @@ def schedule_reels_for_user(user_name: str) -> None:
         post_date += timedelta(days=1)
         newly_scheduled += 1
 
-    schedule[user_name] = user_schedule
+    schedule[user_email] = user_schedule
     save_json(SCHEDULE_PATH, schedule)
 
-    print(f"✅ Scheduled {newly_scheduled} new reel(s) for user: {user_name}")
+    print(f"✅ Scheduled {newly_scheduled} new reel(s) for user: {user_email}")
 
 
 if __name__ == "__main__":
-    user_arg = sys.argv[1] if len(sys.argv) > 1 else "demo_user"
+    user_arg = sys.argv[1] if len(sys.argv) > 1 else "demo@example.com"
     schedule_reels_for_user(user_arg)

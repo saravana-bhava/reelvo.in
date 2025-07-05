@@ -6,7 +6,6 @@ from flask import (
 )
 import os
 import json
-from datetime import datetime
 
 schedule_bp = Blueprint("schedule", __name__)
 SCHEDULE_PATH = "db/scheduled_posts.json"
@@ -39,10 +38,10 @@ def list_scheduled_jobs_view():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user_name = session["user"]
+    user_email = session["user"]
     all_schedules = load_all_schedules()
-    scheduled = all_schedules.get(user_name, [])
-    return render_template("scheduled.html", user=user_name, scheduled=scheduled)
+    scheduled = all_schedules.get(user_email, [])
+    return render_template("scheduled.html", user=user_email, scheduled=scheduled)
 
 
 @schedule_bp.route("/scheduled", methods=["POST"])
@@ -51,9 +50,9 @@ def update_schedule():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user_name = session["user"]
+    user_email = session["user"]
     all_schedules = load_all_schedules()
-    scheduled = all_schedules.get(user_name, [])
+    scheduled = all_schedules.get(user_email, [])
     updated_schedule = []
 
     for i, item in enumerate(scheduled):
@@ -77,7 +76,7 @@ def update_schedule():
 
         updated_schedule.append(item)
 
-    all_schedules[user_name] = updated_schedule
+    all_schedules[user_email] = updated_schedule
     save_all_schedules(all_schedules)
     flash("✅ Schedule updated successfully.")
     return redirect(url_for("schedule.list_scheduled_jobs_view"))

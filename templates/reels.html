@@ -16,7 +16,7 @@
           </video>
           <div style="margin-top: 12px;">
             <strong>{{ vid }}</strong>
-            {% if scripts and scripts[vid] %}
+            {% if scripts and scripts.get(vid) %}
               <pre aria-label="Script for {{ vid }}"
                    style="background: #f8f9fa; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; margin-top: 8px; font-size: 14px;">
 {{ scripts[vid] }}
@@ -31,6 +31,6 @@
   {% endif %}
 
   <div style="margin-top: 40px;">
-    <a class="button" href="{{ url_for('dashboard.dashboard') }}">⬅️ Back to Dashboard</a>
+    <a class="button" href="{{ url_for('dashboard.dashboard') }}" role="button" aria-label="Back to Dashboard">⬅️ Back to Dashboard</a>
   </div>
 {% endblock %}
