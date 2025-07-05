@@ -28,7 +28,7 @@ def save_all_schedules(data: dict) -> None:
     try:
         with open(SCHEDULE_PATH, "w") as f:
             json.dump(data, f, indent=2)
-    except IOError as e:
+    except IOError:
         flash("❌ Failed to save schedule data.", "error")
 
 
@@ -56,6 +56,10 @@ def update_schedule():
     updated_schedule = []
 
     for i, item in enumerate(scheduled):
+        # Ensure item is a dictionary
+        if not isinstance(item, dict):
+            continue
+
         if item.get("posted"):
             updated_schedule.append(item)
             continue

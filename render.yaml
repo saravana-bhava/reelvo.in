@@ -28,7 +28,7 @@ services:
     # 🔐 Environment variables (define securely via dashboard)
     # ───────────────────────────────────────────────
     envVars:
-      - key: ENV
+      - key: FLASK_ENV
         value: production
 
       # Feature toggles

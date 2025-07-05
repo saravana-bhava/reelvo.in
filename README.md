@@ -58,7 +58,7 @@ cd reelvo-ai
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 sudo apt-get install -y ffmpeg
-ENV=development ./start.sh
+FLASK_ENV=development ./start.sh
 ```
 
 Then visit: [http://localhost:5000/reelvo.ai](http://localhost:5000/reelvo.ai)
@@ -89,6 +89,7 @@ python run_all.py demo                   # Regenerate all reels for demo user
 
 ```env
 # Core
+FLASK_ENV=production
 FLASK_SECRET_KEY=your_flask_secret_key
 DEFAULT_USERNAME=demo
 

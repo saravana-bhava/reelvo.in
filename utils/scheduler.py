@@ -25,42 +25,40 @@ def scheduler_runner():
             with open(SCHEDULED_PATH, "r") as f:
                 all_jobs = json.load(f)
 
-            updated_all_jobs = {}
+            for user_email, jobs in all_jobs.items():
+                if not isinstance(jobs, dict):
+                    continue
 
-            for user_name, jobs in all_jobs.items():
-                updated_jobs = []
-                for job in jobs:
+                for video_name, job in jobs.items():
                     try:
-                        if (
-                            job.get("status") == "pending"
-                            and datetime.now().isoformat() >= job.get("scheduled_time", "")
-                        ):
-                            logger.info(f"📤 Posting scheduled reel for {user_name}...")
-
-                            post_result = post_to_instagram(
-                                video_path=job["video_path"],
-                                caption=job.get("caption", "Scheduled post"),
-                                user_name=user_name
-                            )
-
-                            job["status"] = "posted"
-                            job["result"] = post_result
-                            logger.info(f"[✅] Successfully posted: {job['video_path']}")
-                        else:
-                            updated_jobs.append(job)
+                        if job.get("posted"):
                             continue
 
+                        scheduled_for = job.get("scheduled_for")
+                        if not scheduled_for:
+                            continue
+
+                        # Check if scheduled time is due
+                        scheduled_time = datetime.fromisoformat(scheduled_for)
+                        if datetime.now() >= scheduled_time:
+                            logger.info(f"📤 Posting scheduled reel for {user_email}...")
+
+                            post_result = post_to_instagram(
+                                video_path=job.get("video_path", f"output/final/{video_name}"),
+                                caption=job.get("caption", "Scheduled post"),
+                                user_name=user_email
+                            )
+
+                            job["posted"] = True
+                            job["result"] = post_result
+                            logger.info(f"[✅] Successfully posted: {video_name}")
+
                     except Exception as e:
-                        job["status"] = "error"
                         job["error"] = str(e)
-                        logger.error(f"[❌] Failed to post: {e}")
-
-                    updated_jobs.append(job)
-
-                updated_all_jobs[user_name] = updated_jobs
+                        logger.error(f"[❌] Failed to post {video_name} for {user_email}: {e}")
 
             with open(SCHEDULED_PATH, "w") as f:
-                json.dump(updated_all_jobs, f, indent=2)
+                json.dump(all_jobs, f, indent=2)
 
         except Exception as e:
             logger.warning(f"[⚠️] Failed to process scheduled jobs: {e}")

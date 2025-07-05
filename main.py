@@ -36,12 +36,14 @@ flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
 # Load SMTP settings into config
-flask_app.config["SMTP_HOST"] = os.getenv("SMTP_HOST")
-flask_app.config["SMTP_PORT"] = int(os.getenv("SMTP_PORT", 587))
-flask_app.config["SMTP_USERNAME"] = os.getenv("SMTP_USERNAME")
-flask_app.config["SMTP_PASSWORD"] = os.getenv("SMTP_PASSWORD")
-flask_app.config["SMTP_SENDER_NAME"] = os.getenv("SMTP_SENDER_NAME", "Reelvo.ai")
-flask_app.config["SMTP_USE_TLS"] = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+flask_app.config.update(
+    SMTP_HOST=os.getenv("SMTP_HOST"),
+    SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
+    SMTP_USERNAME=os.getenv("SMTP_USERNAME"),
+    SMTP_PASSWORD=os.getenv("SMTP_PASSWORD"),
+    SMTP_SENDER_NAME=os.getenv("SMTP_SENDER_NAME", "Reelvo.ai"),
+    SMTP_USE_TLS=os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+)
 
 # Register blueprints
 flask_app.register_blueprint(auth_bp)
@@ -54,6 +56,7 @@ flask_app.register_blueprint(schedule_bp)
 # ----------------- Background Threads -----------------
 
 def start_background_tasks():
+    logger.info("Starting background tasks...")
     Thread(target=refresh_instagram_tokens, daemon=True).start()
     Thread(target=scheduler_runner, daemon=True).start()
 
@@ -64,14 +67,18 @@ def run():
     start_background_tasks()
 
     port = int(os.getenv("PORT", 5000))
+    protocol = os.getenv("PROTOCOL", "https")
     host = os.getenv("HOST", "0.0.0.0")
-    logger.info(f"🚀 Production server starting at http://{host}:{port}")
+    logger.info(f"🚀 Production server starting at {protocol}://{host}:{port}")
 
-    # Development server (use_debugger=True is not for production)
-    run_simple(host, port, flask_app, use_debugger=True, use_reloader=True)
-
-    # Uncomment below for production use:
-    # serve(flask_app, host=host, port=port)
+    if os.getenv("FLASK_ENV", "production").lower() == "development":
+        logger.warning("⚠️ Running in development mode with debugger enabled!")
+        run_simple(host, port, flask_app, use_debugger=True, use_reloader=True)
+    else:
+        # In production, use a production-grade WSGI server like Waitress or Gunicorn
+        # Uncomment below to use Waitress:
+        # serve(flask_app, host=host, port=port)
+        run_simple(host, port, flask_app, use_debugger=False, use_reloader=False)
 
 if __name__ == "__main__":
     run()

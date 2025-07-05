@@ -24,7 +24,7 @@ fi
 # ─────────────────────────────────────────────
 # Determine environment mode
 # ─────────────────────────────────────────────
-MODE=${ENV:-production}
+MODE=${FLASK_ENV:-production}
 PORT=${PORT:-5000}
 
 if [[ "$MODE" == "development" ]]; then
