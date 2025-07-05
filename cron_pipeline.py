@@ -21,7 +21,7 @@ logger = logging.getLogger("cron_pipeline")
 
 # Constants
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
-DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "demo")
+DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL", "developer@sazm.in")
 SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "5"))  # Delay between categories (in seconds)
 
 
@@ -54,7 +54,7 @@ def run_all_categories_for_user(user_name: str):
 
 if __name__ == "__main__":
     try:
-        user = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_USERNAME
+        user = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_EMAIL
         run_all_categories_for_user(user)
     except Exception as main_err:
         logger.exception(f"❌ Fatal error in CRON pipeline: {main_err}")

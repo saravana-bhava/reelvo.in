@@ -91,7 +91,7 @@ python run_all.py demo                   # Regenerate all reels for demo user
 # Core
 FLASK_ENV=production
 FLASK_SECRET_KEY=your_flask_secret_key
-DEFAULT_USERNAME=demo
+DEFAULT_EMAIL=developer@sazm.in
 
 # OpenAI
 USE_OPENAI=true

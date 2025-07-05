@@ -23,7 +23,7 @@ logger = logging.getLogger("run_all")
 
 # Constants
 CATEGORIES = ["motivation", "success", "life", "inspiration", "sad"]
-DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "demo")
+DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL", "developer@sazm.in")
 SLEEP_BETWEEN = int(os.getenv("SLEEP_BETWEEN_RUNS", "2"))  # Delay (seconds) between reels
 
 
@@ -56,7 +56,7 @@ def run_all_categories(user_name: str) -> None:
 
 if __name__ == "__main__":
     try:
-        user_arg = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_USERNAME
+        user_arg = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_EMAIL
         run_all_categories(user_arg)
     except Exception as e:
         logger.exception(f"Fatal error in batch runner: {e}")
