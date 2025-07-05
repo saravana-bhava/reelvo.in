@@ -2,7 +2,7 @@
 
 from flask import (
     Blueprint, render_template, request,
-    redirect, session, url_for, flash
+    redirect, session, url_for, flash, current_app
 )
 import os
 import json
@@ -17,7 +17,8 @@ def load_all_schedules() -> dict:
         try:
             with open(SCHEDULE_PATH, "r") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, IOError) as e:
+            current_app.logger.error(f"Error loading schedules: {e}")
             return {}
     return {}
 
@@ -28,7 +29,8 @@ def save_all_schedules(data: dict) -> None:
     try:
         with open(SCHEDULE_PATH, "w") as f:
             json.dump(data, f, indent=2)
-    except IOError:
+    except IOError as e:
+        current_app.logger.error(f"Error saving schedules: {e}")
         flash("❌ Failed to save schedule data.", "error")
 
 
@@ -41,6 +43,8 @@ def list_scheduled_jobs_view():
     user_email = session["user"]
     all_schedules = load_all_schedules()
     scheduled = all_schedules.get(user_email, [])
+
+    current_app.logger.debug(f"User {user_email} loaded {len(scheduled)} scheduled items.")
     return render_template("scheduled.html", user=user_email, scheduled=scheduled)
 
 
@@ -56,8 +60,8 @@ def update_schedule():
     updated_schedule = []
 
     for i, item in enumerate(scheduled):
-        # Ensure item is a dictionary
         if not isinstance(item, dict):
+            current_app.logger.warning(f"Skipping invalid item at index {i}")
             continue
 
         if item.get("posted"):
@@ -69,6 +73,7 @@ def update_schedule():
         delete_key = f"delete_{i}"
 
         if delete_key in request.form:
+            current_app.logger.info(f"User {user_email} deleted item: {item}")
             continue  # Skip entry marked for deletion
 
         if video_key in request.form and date_key in request.form:
@@ -77,6 +82,7 @@ def update_schedule():
 
             if video_name == item.get("video") and new_date:
                 item["scheduled_for"] = new_date
+                current_app.logger.info(f"User {user_email} rescheduled {video_name} to {new_date}")
 
         updated_schedule.append(item)
 

@@ -1,10 +1,9 @@
 # File: routes/instagram.py
 
-from flask import Blueprint, request, redirect, session, flash, url_for, jsonify
+from flask import Blueprint, request, redirect, session, flash, url_for, jsonify, current_app
 from datetime import timedelta
 import requests
 import os
-import logging
 
 from utils.user_db import save_user_tokens, get_instagram_credentials, log_post
 from utils.instagram import post_to_instagram
@@ -13,11 +12,8 @@ instagram_bp = Blueprint("instagram", __name__)
 
 INSTAGRAM_APP_ID = os.getenv("FB_APP_ID", "")
 INSTAGRAM_APP_SECRET = os.getenv("FB_APP_SECRET", "")
-REDIRECT_URI = os.getenv("FB_REDIRECT_URI",f"{os.getenv('PROTOCOL', 'https')}://{os.getenv('HOST', 'localhost')}/instagram/callback")
+REDIRECT_URI = os.getenv("FB_REDIRECT_URI", f"{os.getenv('PROTOCOL', 'https')}://{os.getenv('HOST', 'localhost')}/instagram/callback")
 GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
-
-logger = logging.getLogger(__name__)
-
 
 def safe_get(url, params=None, timeout=10):
     try:
@@ -25,22 +21,20 @@ def safe_get(url, params=None, timeout=10):
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        logger.error(f"Request to {url} failed: {e}")
+        current_app.logger.error(f"Request to {url} failed: {e}")
         return None
-
 
 @instagram_bp.route("/connect-instagram", methods=["GET"])
 def connect_instagram():
     auth_url = (
-        f"https://www.facebook.com/v19.0/dialog/oauth"
+        "https://www.facebook.com/v19.0/dialog/oauth"
         f"?client_id={INSTAGRAM_APP_ID}"
         f"&redirect_uri={REDIRECT_URI}"
-        f"&scope=pages_show_list,pages_read_engagement,pages_manage_metadata,"
-        f"instagram_basic,instagram_content_publish,business_management"
-        f"&auth_type=rerequest"
+        "&scope=pages_show_list,pages_read_engagement,pages_manage_metadata,"
+        "instagram_basic,instagram_content_publish,business_management"
+        "&auth_type=rerequest"
     )
     return redirect(auth_url)
-
 
 @instagram_bp.route("/instagram/callback", methods=["GET"])
 def instagram_callback():
@@ -88,12 +82,11 @@ def instagram_callback():
         # Step 3: Get Facebook Pages
         pages_json = safe_get(
             f"{GRAPH_API_BASE}/me/accounts",
-            params={"access_token": long_access_token},
-            timeout=10
+            params={"access_token": long_access_token}
         )
         pages = pages_json.get("data", []) if pages_json else []
 
-        # Step 3.1: Fallback via Business Manager
+        # Step 3.1: Try via Business Manager if pages not found
         if not pages:
             biz_json = safe_get(
                 f"{GRAPH_API_BASE}/me/businesses",
@@ -105,7 +98,6 @@ def instagram_callback():
                 biz_id = biz.get("id")
                 if not biz_id:
                     continue
-
                 owned_json = safe_get(
                     f"{GRAPH_API_BASE}/{biz_id}/owned_pages",
                     params={"access_token": long_access_token}
@@ -143,11 +135,10 @@ def instagram_callback():
             flash("✅ Instagram account connected successfully!", "success")
 
     except Exception as e:
-        logger.exception("OAuth Instagram callback failed.")
+        current_app.logger.exception("OAuth Instagram callback failed.")
         flash("❌ Instagram connection failed. Please try again later.", "error")
 
     return redirect(url_for("dashboard.dashboard"))
-
 
 @instagram_bp.route("/disconnect-instagram", methods=["POST"])
 def disconnect_instagram():
@@ -160,12 +151,11 @@ def disconnect_instagram():
         try:
             os.remove(token_path)
         except Exception as e:
-            logger.error(f"Failed to delete token file {token_path}: {e}")
+            current_app.logger.error(f"Failed to delete token file {token_path}: {e}")
 
     session["connected"] = False
     flash("ℹ️ Instagram disconnected.", "info")
     return redirect(url_for("dashboard.dashboard"))
-
 
 @instagram_bp.route("/api/post-reel", methods=["POST"])
 def api_post_reel():
@@ -190,5 +180,5 @@ def api_post_reel():
         )
         return jsonify({"success": True, "message": result_html})
     except Exception as e:
-        logger.exception("Failed to post reel to Instagram.")
+        current_app.logger.exception("Failed to post reel to Instagram.")
         return jsonify({"error": "Failed to post to Instagram"}), 500

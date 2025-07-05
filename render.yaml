@@ -22,10 +22,11 @@ services:
     # ⚙️ Deploy settings
     # ───────────────────────────────────────────────
     autoDeploy: true
-    plan: free  # Upgrade to 'standard' or 'pro' for production use
+    plan: free  # ⬆️ Upgrade to 'standard' or 'pro' for high concurrency & performance
 
     # ───────────────────────────────────────────────
-    # 🔐 Environment variables (define securely via dashboard)
+    # 🔐 Environment variables (set values in dashboard)
+    # Avoid putting secrets directly in this file!
     # ───────────────────────────────────────────────
     envVars:
       - key: FLASK_ENV
@@ -34,23 +35,18 @@ services:
       # Feature toggles
       - key: USE_OPENAI
         value: false
-      - key: USE_ELEVENLABS
-        value: true
       - key: USE_GOOGLE_CLOUD_TTS
         value: false
 
-      # API keys (keep secrets in dashboard, not in repo)
+      # API keys (set in dashboard UI for security)
       - key: OPENAI_API_KEY
-        sync: false
-      - key: ELEVENLABS_API_KEY
         sync: false
 
       # TTS configuration
-      - key: ELEVENLABS_VOICE_ID
-        value: 9BWtsMINqrJLrRacOk9x
       - key: GOOGLE_CLOUD_TTS_VOICE
         value: en-US-Wavenet-D
 
-      # Google Cloud credentials path (adjust for runtime env)
-      - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: /var/www/html/SazM/reelvo.ai/secure/credentials.json
+      # Optional: Provide the credential content using Render's secret file feature
+      # Or inject base64 via another environment var
+      # - key: GOOGLE_APPLICATION_CREDENTIALS
+      #   value: /etc/credentials/google.json

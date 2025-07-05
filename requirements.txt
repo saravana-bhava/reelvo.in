@@ -1,12 +1,12 @@
 # ========================
-# reelvo.ai Requirements
+# File: requirements.txt — reelvo.ai Requirements
 # ========================
 
 # ------------------------
 # Web Framework
 # ------------------------
-flask
-waitress  # WSGI server for production
+flask>=2.2
+waitress>=2.1  # WSGI server for production
 
 # ------------------------
 # AI Integration (OpenAI)
@@ -16,36 +16,36 @@ openai>=1.0.0
 # ------------------------
 # HTTP Clients
 # ------------------------
-requests
+requests>=2.28
 httpx<0.26  # Prevents breaking changes in async handling
 
 # ------------------------
 # Text-to-Speech
 # ------------------------
 google-cloud-texttospeech>=2.27.0
-gTTS
+gTTS>=2.3.2
 
 # ------------------------
 # Audio / Video Processing
 # ------------------------
-ffmpeg-python
-freesound-python
+ffmpeg-python>=0.2.0
+freesound-python>=2.1.2
 moviepy==1.0.3
-numpy
-opencv-python
-pydub
+numpy>=1.23
+opencv-python>=4.7.0
+pydub>=0.25.1
 Pillow>=9.0.0
 
 # ------------------------
 # Subtitles
 # ------------------------
-srt
+srt>=3.5.0
 
 # ------------------------
 # Utilities
 # ------------------------
-tqdm
-python-dotenv  # Loads environment variables from .env
+tqdm>=4.64
+python-dotenv>=1.0.0  # Loads environment variables from .env
 
 # ------------------------
 # Whisper for Subtitle Alignment (includes torch)
@@ -55,9 +55,9 @@ git+https://github.com/openai/whisper.git
 # ------------------------
 # Google Drive API
 # ------------------------
-google-api-python-client
-google-auth
-google-auth-oauthlib
+google-api-python-client>=2.98.0
+google-auth>=2.22.0
+google-auth-oauthlib>=1.0.0
 
 # ------------------------
 # Optional: Torch Installation Overrides

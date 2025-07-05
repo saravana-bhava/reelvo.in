@@ -55,12 +55,13 @@ def verify_reset_token(token_str, secret_key):
 
 # SMTP email sender
 def send_email(to_email, subject, body):
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USERNAME")
-    smtp_pass = os.getenv("SMTP_PASSWORD")
-    sender_name = os.getenv("SMTP_SENDER_NAME", "Support")
-    from_email = os.getenv("SMTP_FROM_EMAIL", smtp_user)
+    config = current_app.config
+    smtp_host = config.get("SMTP_HOST")
+    smtp_port = int(config.get("SMTP_PORT", 587))
+    smtp_user = config.get("SMTP_USERNAME")
+    smtp_pass = config.get("SMTP_PASSWORD")
+    sender_name = config.get("SMTP_SENDER_NAME", "Support")
+    from_email = config.get("SMTP_FROM_EMAIL", smtp_user)
 
     msg = MIMEText(body)
     msg["Subject"] = subject
@@ -69,13 +70,13 @@ def send_email(to_email, subject, body):
 
     try:
         with smtplib.SMTP(smtp_host, smtp_port) as server:
-            if os.getenv("SMTP_USE_TLS", "true").lower() == "true":
+            if config.get("SMTP_USE_TLS", True):
                 server.starttls()
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
         return True
     except Exception as e:
-        print(f"Email send failed: {e}")
+        current_app.logger.error(f"[SMTP Error] Failed to send email to {to_email}: {e}")
         return False
 
 # Routes
@@ -147,7 +148,16 @@ def forgot_password():
         if email in users:
             token = generate_reset_token(email, current_app.secret_key)
             reset_url = url_for("auth.reset_password", token=token, _external=True)
-            body = f"Hi,\n\nClick the link below to reset your password:\n\n{reset_url}\n\nIf you didn't request this, please ignore it.\n\n— Reelvo.ai Team"
+            body = f"""Hi,
+
+Click the link below to reset your password:
+
+{reset_url}
+
+If you didn't request this, please ignore it.
+
+— Reelvo.ai Team
+"""
             subject = "Password Reset - Reelvo.ai"
             if send_email(email, subject, body):
                 flash("If this email is registered, a reset link has been sent.", "info")

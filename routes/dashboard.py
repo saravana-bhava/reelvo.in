@@ -1,6 +1,6 @@
 # File: routes/dashboard.py
 
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, current_app
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -11,5 +11,7 @@ def dashboard():
 
     user_email = session["user"]
     connected = session.get("connected", False)
+
+    current_app.logger.debug(f"Dashboard accessed by: {user_email} (Connected: {connected})")
 
     return render_template("dashboard.html", user_email=user_email, connected=connected)

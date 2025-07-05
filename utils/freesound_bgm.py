@@ -63,9 +63,9 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
             logger.warning("[⚠️] No high-quality preview found.")
             return None
 
-        os.makedirs("assets/bgm_cache", exist_ok=True)
+        os.makedirs("cache/bgm", exist_ok=True)
         file_name = f"{query.lower().replace(' ', '_')}_{language}.mp3"
-        dest_path = os.path.join("assets/bgm_cache", file_name)
+        dest_path = os.path.join("cache/bgm", file_name)
 
         if os.path.exists(dest_path):
             logger.info(f"[📦] Using cached BGM: {dest_path}")
