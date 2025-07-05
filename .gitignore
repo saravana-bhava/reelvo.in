@@ -1,5 +1,3 @@
-# File: .gitignore
-
 # ─────────────────────────────────────────────
 # Python Bytecode
 # ─────────────────────────────────────────────
@@ -33,6 +31,7 @@ secure/
 # ─────────────────────────────────────────────
 # Output Media & Generated Assets
 # ─────────────────────────────────────────────
+db/
 output/
 *.avi
 *.jsonl
@@ -44,6 +43,7 @@ output/
 *.png
 *.srt
 *.webm
+*.wav
 
 # ─────────────────────────────────────────────
 # Build Artifacts
@@ -60,6 +60,7 @@ dist/
 *.log
 *.tmp
 *.bak.*
+*.out
 
 # ─────────────────────────────────────────────
 # System-Specific Files
@@ -82,6 +83,8 @@ Thumbs.db
 # ─────────────────────────────────────────────
 __tests__/
 tests/
+test/
+*.test.py
 
 # ─────────────────────────────────────────────
 # Python Testing Tools
@@ -97,6 +100,7 @@ cache/
 docs/
 temp/
 user_tokens/
+db/reel_logs/
 
 # ─────────────────────────────────────────────
 # FFmpeg Intermediate Files

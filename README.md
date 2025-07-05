@@ -1,51 +1,55 @@
 # 🎬 AI Instagram Reels Automation Platform (MVP)
 
-A streamlined AI-powered platform that helps creators **automatically generate Instagram Reels**.  
-Users choose a niche, AI writes a script, TTS converts it to voice, FFmpeg builds a vertical video, and the output is uploaded to Google Drive — optionally auto-posted to Instagram.
+An AI-powered platform that **automatically generates and schedules Instagram Reels** using GPT scripts, TTS voices, and stock video footage — optionally auto-posted to Instagram and backed up on Google Drive.
 
 ---
 
 ## 🚀 FEATURES
 
-- 🔐 Simple login interface (no signup required)
-- 🎯 Niche selection: *Motivation*, *Sad*, *Inspiration*, *Success*, *Life*
-- 🧠 Script generation using OpenAI GPT (with fallback support)
-- 🗣️ Text-to-Speech via **ElevenLabs**, **Google TTS**, or **gTTS**
-- 🎞️ Video generation using **FFmpeg** (with optional VEED fallback)
-- 🎬 Subtitles (auto-generated from TTS and overlaid via SRT)
-- 💾 Videos saved to `/output/<user_name>/`
-- ☁️ Upload to Google Drive (public sharable link)
-- 📲 Auto-post to Instagram Reels (Graph API integration)
-- ⏱️ Scheduler-ready (via cron or BullMQ-compatible)
-- 🛣️ Subpath-ready: served under `/reelvo.ai` via `DispatcherMiddleware`
+- 🧠 **AI script generation** via GPT with fallbacks  
+- 🗣️ **Voiceover** Google Cloud TTS / gTTS  
+- 🎞️ **Stock footage** pulled from Pexels & Pixabay  
+- 🎬 **Subtitled videos** created with FFmpeg  
+- 📁 **Stored locally** per user in `/output/<email>/`  
+- ☁️ **Uploaded to Google Drive**  
+- 📲 **Auto-posts** to Instagram via Graph API  
+- 🕒 **Scheduler** for daily auto-posting (via CRON)  
+- 🔄 Modular scripts (for pipeline, post, schedule, batch)  
 
 ---
 
 ## 🛠 TECH STACK
 
-**Backend:** Python + Flask  
-**Video Engine:** FFmpeg + Pexels / Pixabay stock clips  
-**TTS:** ElevenLabs / Google Cloud TTS / gTTS  
-**AI Scripts:** OpenAI GPT  
-**Storage:** Local + Google Drive  
-**Frontend:** Plain HTML + CSS (Bootstrap-inspired)  
-**Deployment:** Render / Railway / Docker-ready
+| Layer     | Tech                                  |
+|-----------|---------------------------------------|
+| Backend   | Python + Flask                        |
+| AI        | OpenAI GPT                            |
+| TTS       | Google TTS / gTTS                     |
+| Video     | FFmpeg + stock clips (Pexels/Pixabay) |
+| Storage   | Local filesystem + Google Drive       |
+| Auth      | Instagram Graph API + Tokens          |
+| Frontend  | HTML + CSS (Bootstrap-inspired)       |
+| Deploy    | Render / Railway / Docker-compatible  |
 
 ---
 
-## 📁 FOLDER STRUCTURE
+## 📁 PROJECT STRUCTURE
 
 ```
 .
-├── app.py                 # Flask app, mounted at /reelvo.ai
-├── install.sh             # FFmpeg installer script
-├── start.sh               # Run with Flask/Gunicorn
-├── requirements.txt       # Dependencies list
-├── render.yaml            # Render deployment config
-├── templates/             # HTML templates (login, dashboard)
-├── utils/                 # All TTS, subtitle, script tools
-├── output/                # Output videos per user
-└── secure/                # OAuth credentials (.gitignored)
+├── app.py
+├── install.sh
+├── start.sh
+├── requirements.txt
+├── render.yaml
+├── templates/
+├── routes/
+├── utils/
+├── scripts/
+├── scripts/logs/
+├── db/
+├── secure/
+└── output/
 ```
 
 ---
@@ -55,85 +59,136 @@ Users choose a niche, AI writes a script, TTS converts it to voice, FFmpeg build
 ```bash
 git clone https://github.com/your-org/reelvo-ai.git
 cd reelvo-ai
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 sudo apt-get install -y ffmpeg
 FLASK_ENV=development ./start.sh
 ```
 
-Then visit: [http://localhost:5000/reelvo.ai](http://localhost:5000/reelvo.ai)
+Visit: [http://localhost:5000/reelvo.ai](http://localhost:5000/reelvo.ai)
 
 ---
 
-## 🧪 MANUAL TESTING
+## 🧪 TESTING SCRIPTS (MANUAL)
 
 ```bash
-python utils/fallback_ffmpeg.py          # Generate fallback reel
-python run_pipeline.py motivation demo   # Run end-to-end for 'motivation' theme
-python run_all.py demo                   # Regenerate all reels for demo user
+# Run full generation pipeline for one category
+python scripts/run_generation_pipeline.py motivation developer@sazm.in
+
+# Run all 5 categories for one user
+python scripts/run_all_tasks.py developer@sazm.in
+
+# Run auto-post and schedule check (use in CRON)
+python scripts/run_category_pipeline.py
+
+# Schedule all unscheduled reels
+python scripts/schedule_reels.py developer@sazm.in
+
+# Post reels due for today
+python scripts/post_scheduled_reels.py developer@sazm.in
 ```
 
 ---
 
-## 🚢 DEPLOYMENT (RENDER.COM)
-
-1. Push repo to GitHub
-2. Connect to [https://render.com](https://render.com)
-3. Render will detect `render.yaml` automatically
-4. Add `.env` variables via dashboard
-5. Click **Deploy**
-
----
-
-## 🔐 ENVIRONMENT VARIABLES (`.env`)
+## 🔐 ENVIRONMENT CONFIG (`.env`)
 
 ```env
-# Core
-FLASK_ENV=production
-FLASK_SECRET_KEY=your_flask_secret_key
+# File: .env
+
+# ─────────────────────────────────────────────
+# ENVIRONMENT
+# ─────────────────────────────────────────────
 DEFAULT_EMAIL=developer@sazm.in
-
-# OpenAI
-USE_OPENAI=true
-OPENAI_API_KEY=sk-...
-
-# ElevenLabs TTS
-USE_ELEVENLABS=true
-ELEVENLABS_API_KEY=...
-ELEVENLABS_VOICE_ID=9BWtsMINqrJLrRacOk9x
-
-# Google Cloud TTS
-USE_GOOGLE_CLOUD_TTS=false
-GOOGLE_CLOUD_TTS_VOICE=en-US-Wavenet-D
-GOOGLE_APPLICATION_CREDENTIALS=secure/credentials.json
-
-# Instagram (Graph API)
-FB_APP_ID=...
-FB_APP_SECRET=...
-FB_PAGE_ACCESS_TOKEN=...
-INSTAGRAM_BUSINESS_ID=...
-
-# Google Drive
-GOOGLE_DRIVE_PARENT_FOLDER_ID=...
-GOOGLE_APPLICATION_CREDENTIALS=secure/credentials.json
-
-# Misc
+DISABLE_CACHE=false
+FLASK_ENV=production
+FLASK_SECRET_KEY=your-production-secret-key
+HOST=reelvo-ai.dev.sazm.in
+LOG_LEVEL=INFO
+PORT=5000
+PROTOCOL=https
 SLEEP_BETWEEN_RUNS=2
+
+# ──────────────────────────────────────────────────
+# SMTP EMAIL SETTINGS (for password reset)
+# ──────────────────────────────────────────────────
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-smtp-email@example.com
+SMTP_PASSWORD=your-smtp-password
+SMTP_SENDER_NAME=Reelvo.ai Support
+SMTP_USE_TLS=true
+
+# ──────────────────────────────────────────────────
+# OPENAI SETTINGS
+# ──────────────────────────────────────────────────
+USE_OPENAI=false
+PROVIDER=openrouter
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=deepseek/deepseek-chat-v3-0324:free
+
+# ──────────────────────────────────────────────────
+# GOOGLE CLOUD TTS SETTINGS
+# ──────────────────────────────────────────────────
+USE_GOOGLE_CLOUD_TTS=true
+GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/SazM/reelvo.ai/secure/credentials.json
+GOOGLE_CLOUD_TTS_VOICE=hi-IN-Wavenet-A
+
+# ──────────────────────────────────────────────────
+# GOOGLE DRIVE
+# ──────────────────────────────────────────────────
+UPLOAD_TO_DRIVE=true
+GOOGLE_DRIVE_PARENT_FOLDER_ID=your-google-drive-folder-id
+
+# ──────────────────────────────────────────────────
+# INSTAGRAM GRAPH API SETTINGS
+# ──────────────────────────────────────────────────
+POST_TO_IG=true
+FB_APP_ID=your-fb-app-id
+FB_APP_SECRET=your-fb-app-secret
+
+# ──────────────────────────────────────────────────
+# PEXELS API SETTINGS
+# ──────────────────────────────────────────────────
+USE_PEXELS=true
+PEXELS_API_KEY=your-pexels-api-key
+
+# ──────────────────────────────────────────────────
+# PIXABAY API SETTINGS
+# ──────────────────────────────────────────────────
+USE_PIXABAY=true
+PIXABAY_API_KEY=your-pixabay-api-key
+
+# ──────────────────────────────────────────────────
+# FREESOUND API SETTINGS
+# ──────────────────────────────────────────────────
+FREESOUND_API_CLIENT=your-freesound-client-id
+FREESOUND_API_KEY=your-freesound-api-key
 ```
+
+---
+
+## 📦 DEPLOYMENT (RENDER.COM)
+
+1. Push repo to GitHub  
+2. Create a new Web Service on [https://render.com](https://render.com)  
+3. Add required `.env` variables in Render dashboard  
+4. Render auto-detects `render.yaml`  
+5. Click **Deploy**
 
 ---
 
 ## 👨‍💻 AUTHOR
 
 **Saravana Bhava**  
-🌐 [https://sazm.in](https://sazm.in)  
-📬 mail@sazm.in
+🔗 [https://sazm.in](https://sazm.in)  
+📧 mail@sazm.in
 
 ---
 
 ## 📄 LICENSE
 
-This project is under **private internal development** for MVP/demo use only.  
-For licensing or access, please contact the author directly.
+Private MVP – Not open source.  
+For demo access, licensing, or deployment rights, contact the author directly.
 
----
+

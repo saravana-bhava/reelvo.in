@@ -1,4 +1,4 @@
-# File: scheduler/post_scheduled.py
+# File: scripts/post_scheduled_reels.py
 
 """
 Posts reels scheduled for today using unified schedule (db/scheduled_posts.json).
@@ -12,20 +12,24 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 import smtplib
 from email.mime.text import MIMEText
-from flask import Flask  # Only to load config if needed
+from dotenv import load_dotenv
 from utils.instagram_posting import post_to_instagram
 from utils.user_db import get_user_token_data
 
-# Constants
+# Load environment variables
+load_dotenv()
+
+# Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, "..", "db")
-OUTPUT_DIR = os.path.join(BASE_DIR, "..", "output")
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
+DB_DIR = os.path.join(ROOT_DIR, "db")
+OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
 SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
 HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "post_scheduled.log")
-EMAIL_TEMPLATE = os.path.join(BASE_DIR, "email_alert_template.txt")
+EMAIL_TEMPLATE = os.path.join(BASE_DIR, "templates", "email_alert_template.txt")
 
-# Logging with rotation
+# Setup logger with rotation
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logger = logging.getLogger("scheduled_reels")
 logger.setLevel(logging.INFO)
@@ -34,37 +38,28 @@ formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Email alert function
+# Email alert
 def send_email_alert(subject, message):
     try:
         with open(EMAIL_TEMPLATE, "r", encoding="utf-8") as f:
-            template = f.read()
-
-        body = template.format(log_path=LOG_FILE, error_message=message)
-
-        smtp_host = os.getenv("SMTP_HOST")
-        smtp_port = int(os.getenv("SMTP_PORT", 587))
-        smtp_user = os.getenv("SMTP_USERNAME")
-        smtp_pass = os.getenv("SMTP_PASSWORD")
-        from_email = os.getenv("SMTP_FROM_EMAIL", smtp_user)
-        to_email = os.getenv("ALERT_EMAIL", smtp_user)
+            body = f.read().format(log_path=LOG_FILE, error_message=message)
 
         msg = MIMEText(body)
         msg["Subject"] = subject
-        msg["From"] = from_email
-        msg["To"] = to_email
+        msg["From"] = os.getenv("SMTP_FROM_EMAIL", os.getenv("SMTP_USERNAME"))
+        msg["To"] = os.getenv("ALERT_EMAIL", msg["From"])
 
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
+        with smtplib.SMTP(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT", 587))) as server:
             if os.getenv("SMTP_USE_TLS", "true").lower() == "true":
                 server.starttls()
-            server.login(smtp_user, smtp_pass)
+            server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
             server.send_message(msg)
 
-        logger.info(f"Email alert sent to {to_email}")
+        logger.info(f"Email alert sent to {msg['To']}")
     except Exception as e:
         logger.error(f"Failed to send email alert: {e}")
 
-# Helper functions
+# JSON utils
 def load_json(path):
     if os.path.exists(path):
         try:
@@ -81,13 +76,12 @@ def save_json(path, data):
     except Exception as e:
         logger.error(f"Failed to save {path}: {e}")
 
-# Main poster logic
+# Main logic
 def post_due_reels():
-    logger.info("\U0001f4e4 Starting scheduled reel poster...")
+    logger.info("📤 Starting scheduled reel poster...")
     schedule = load_json(SCHEDULE_FILE)
     history = load_json(HISTORY_FILE)
     today = datetime.now().strftime("%Y-%m-%d")
-
     failures = []
 
     for user_email, jobs in schedule.items():
@@ -117,8 +111,8 @@ def post_due_reels():
                 continue
 
             caption = item.get("script") or history.get(user_email, {}).get(video, "")
-
             logger.info(f"[{user_email}] Posting: {video}")
+
             try:
                 success = post_to_instagram(user_email, video_path, caption)
                 if success:
@@ -135,8 +129,7 @@ def post_due_reels():
     logger.info("✅ Finished scheduled posting.")
 
     if failures:
-        message = "\n".join(failures)
-        send_email_alert("[Alert] Reel Posting Failures", message)
+        send_email_alert("[Alert] Reel Posting Failures", "\n".join(failures))
 
 if __name__ == "__main__":
     post_due_reels()

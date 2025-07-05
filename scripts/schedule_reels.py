@@ -1,8 +1,8 @@
-# File: scheduler/schedule_reels.py
+# File: scripts/schedule_reels.py
 
 """
 Assigns posting times for unscheduled reels (1 per day at 4PM).
-Updates db/scheduled_posts.json (used by post_scheduled.py).
+Updates db/scheduled_posts.json (used by post_scheduled_reels.py).
 """
 
 import os
@@ -11,18 +11,20 @@ import sys
 import logging
 from datetime import datetime, timedelta
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, "..", "db")
-
-# Paths
+# Constants
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DB_DIR = os.path.join(ROOT_DIR, "db")
 REEL_HISTORY_PATH = os.path.join(DB_DIR, "reel_history.json")
 SCHEDULE_PATH = os.path.join(DB_DIR, "scheduled_posts.json")
 DEFAULT_POST_HOUR = 16  # 4PM
 
-# Logging setup
+# Logging
+LOG_PATH = os.path.join(ROOT_DIR, "scheduler", "logs", "schedule_reels.log")
+os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.FileHandler(LOG_PATH), logging.StreamHandler()],
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger("schedule_reels")
@@ -98,7 +100,7 @@ def schedule_reels_for_user(user_email: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python schedule_reels.py <user_email>")
+        print("Usage: python scripts/schedule_reels.py <user_email>")
         sys.exit(1)
 
     email = sys.argv[1].strip().lower()
