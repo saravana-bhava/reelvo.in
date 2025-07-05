@@ -12,6 +12,6 @@ def dashboard():
     user_email = session["user"]
     connected = session.get("connected", False)
 
-    current_app.logger.debug(f"Dashboard accessed by: {user_email} (Connected: {connected})")
+    current_app.logger.debug(f"[Dashboard] Accessed by: {user_email} | Connected: {connected}")
 
     return render_template("dashboard.html", user_email=user_email, connected=connected)

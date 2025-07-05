@@ -1,108 +1,123 @@
-# File: scheduler/post_scheduled.py
-
-"""
-Posts scheduled reels for today to Instagram.
-Should be triggered daily, e.g.:
-0 16 * * * /usr/bin/python3 /path/to/post_scheduled.py
-"""
+# File: scheduler/publish_scheduled_reels.py
 
 import os
 import json
 import logging
 from datetime import datetime
-from utils.instagram_posting import post_to_instagram
-from utils.user_db import get_user_token_data
+from dotenv import load_dotenv
+from flask import Flask
+from utils.instagram import post_to_instagram
+from utils.user_db import get_instagram_credentials
+from utils.reel_history import add_reel_to_history
+from routes.auth import send_email
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, "..", "db")
+# Load environment variables
+load_dotenv()
 
-# File paths
-HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
-SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
-OUTPUT_DIR = "output"
-
-# Logging config
+# Setup logging
+os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
+    filename="logs/publish.log",
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
-logger = logging.getLogger("post_scheduled")
+logger = logging.getLogger("scheduler")
+
+# Load scheduled posts
+SCHEDULE_PATH = "db/scheduled_posts.json"
+DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL", "developer@sazm.in")
 
 
-def load_json(path):
-    if os.path.exists(path):
+def load_scheduled():
+    if os.path.exists(SCHEDULE_PATH):
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(SCHEDULE_PATH, "r") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
-            logger.error(f"❌ Failed to load JSON from {path}: {e}")
-            return {}
+        except json.JSONDecodeError:
+            logger.error("❌ Failed to load scheduled_posts.json (invalid JSON)")
     return {}
 
 
-def save_json(path, data):
+def save_scheduled(data):
+    os.makedirs(os.path.dirname(SCHEDULE_PATH), exist_ok=True)
     try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        with open(SCHEDULE_PATH, "w") as f:
+            json.dump(data, f, indent=2)
     except Exception as e:
-        logger.error(f"❌ Failed to save JSON to {path}: {e}")
+        logger.error(f"❌ Failed to save updated schedule: {e}")
+
+
+def send_notification(email, subject, body):
+    app = Flask(__name__)
+    app.config.update(
+        SMTP_HOST=os.getenv("SMTP_HOST"),
+        SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
+        SMTP_USERNAME=os.getenv("SMTP_USERNAME"),
+        SMTP_PASSWORD=os.getenv("SMTP_PASSWORD"),
+        SMTP_SENDER_NAME=os.getenv("SMTP_SENDER_NAME", "Reelvo.ai"),
+        SMTP_USE_TLS=os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+    )
+    with app.app_context():
+        try:
+            send_email(email, subject, body)
+        except Exception as e:
+            logger.error(f"❌ Failed to send email: {e}")
 
 
 def post_due_reels():
-    logger.info("📤 Starting scheduled reel poster...")
+    all_schedules = load_scheduled()
+    updated = False
+    now = datetime.now()
 
-    schedule = load_json(SCHEDULE_FILE)
-    history = load_json(HISTORY_FILE)
-    today = datetime.now().strftime("%Y-%m-%d")
-
-    for user_email, user_schedule in schedule.items():
-        token_data = get_user_token_data(user_email)
-        if not token_data or "access_token" not in token_data:
-            logger.warning(f"[{user_email}] ⚠️ No valid Instagram token.")
-            continue
-
-        if not isinstance(user_schedule, list):
-            logger.warning(f"[{user_email}] ⚠️ Malformed schedule. Skipping.")
-            continue
-
-        for metadata in user_schedule:
-            if not isinstance(metadata, dict):
+    for user, posts in all_schedules.items():
+        for post in posts:
+            if post.get("posted"):
                 continue
 
-            if metadata.get("posted"):
+            scheduled_for = post.get("scheduled_for")
+            if not scheduled_for:
                 continue
 
-            scheduled_date = metadata.get("scheduled_for")
-            video = metadata.get("video")
-
-            if not video or not scheduled_date or scheduled_date > today:
-                continue
-
-            video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
-            if not os.path.exists(video_path):
-                logger.warning(f"[{user_email}] ❌ Video not found: {video_path}")
-                continue
-
-            # Caption fallback
-            caption = metadata.get("script") or history.get(user_email, {}).get(video, "")
-
-            logger.info(f"[{user_email}] ⏰ Posting: {video}")
             try:
-                success = post_to_instagram(user_email, video_path, caption)
-                if success:
-                    metadata["posted"] = True
-                    metadata["posted_at"] = datetime.now().isoformat()
-                    logger.info(f"[{user_email}] ✅ Posted: {video}")
-                else:
-                    logger.warning(f"[{user_email}] ⚠️ Failed to post: {video}")
-            except Exception as e:
-                logger.exception(f"[{user_email}] ❌ Exception posting {video}: {e}")
+                scheduled_dt = datetime.fromisoformat(scheduled_for)
+            except ValueError:
+                logger.warning(f"⚠️ Invalid datetime format for user {user}: {scheduled_for}")
+                continue
 
-    save_json(SCHEDULE_FILE, schedule)
-    logger.info("✅ Finished scheduled posting.")
+            if scheduled_dt > now:
+                continue  # Not yet due
+
+            video_path = os.path.join("output", user, "videos", post["video"])
+            if not os.path.exists(video_path):
+                logger.error(f"🚫 Video not found: {video_path}")
+                continue
+
+            caption = post.get("caption", "")
+            video_url = ""  # Optionally use a generated public link
+
+            try:
+                html_result = post_to_instagram(
+                    video_path=video_path,
+                    caption=caption,
+                    user_name=user,
+                    video_url=video_url
+                )
+                post["posted"] = True
+                add_reel_to_history(user, post["video"], caption)
+                logger.info(f"✅ Posted: {post['video']} for {user}")
+                send_notification(user, "🎉 Reel Posted Successfully", f"Your reel '{post['video']}' was posted at {now}.\n\n{html_result}")
+                updated = True
+            except Exception as e:
+                logger.exception(f"❌ Failed to post reel for {user}: {e}")
+                send_notification(user, "❌ Failed to Post Reel", f"An error occurred while posting your reel '{post['video']}':\n\n{e}")
+
+    if updated:
+        save_scheduled(all_schedules)
 
 
 if __name__ == "__main__":
-    post_due_reels()
+    try:
+        post_due_reels()
+    except Exception as e:
+        logger.exception(f"💥 Fatal error in publish script: {e}")

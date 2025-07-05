@@ -17,7 +17,8 @@ auth_bp = Blueprint("auth", __name__)
 USERS_FILE = "db/users.json"
 user_file_lock = threading.Lock()
 
-# Load and save users
+# ----------------- User Data Helpers -----------------
+
 def load_users():
     if not os.path.exists(USERS_FILE):
         return {}
@@ -31,7 +32,8 @@ def save_users(users):
     with user_file_lock, open(USERS_FILE, "w") as f:
         json.dump(users, f, indent=2)
 
-# Token generator
+# ----------------- Token Logic -----------------
+
 def generate_reset_token(email, secret_key, expires_in=3600):
     expires = int(time.time()) + expires_in
     data = f"{email}|{expires}"
@@ -39,7 +41,6 @@ def generate_reset_token(email, secret_key, expires_in=3600):
     sig = hmac.new(secret_key.encode(), f"{data}|{token}".encode(), hashlib.sha256).hexdigest()
     return f"{email}|{expires}|{token}|{sig}"
 
-# Token validator
 def verify_reset_token(token_str, secret_key):
     try:
         email, expires, token, sig = token_str.split("|")
@@ -52,7 +53,8 @@ def verify_reset_token(token_str, secret_key):
         pass
     return None
 
-# SMTP email sender
+# ----------------- SMTP Email -----------------
+
 def send_email(to_email, subject, body):
     config = current_app.config
     smtp_host = config.get("SMTP_HOST")
@@ -78,7 +80,8 @@ def send_email(to_email, subject, body):
         current_app.logger.error(f"[SMTP Error] Failed to send email to {to_email}: {e}")
         return False
 
-# Routes
+# ----------------- Routes -----------------
+
 @auth_bp.route("/")
 def index():
     if "user" in session:
