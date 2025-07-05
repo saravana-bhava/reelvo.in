@@ -2,7 +2,7 @@
 
 """
 Generates short Instagram reel scripts using OpenAI or fallback.
-Saves output to: output/{user_name}/scripts/{theme_name}_{language}_text.txt
+Saves output to: output/{user_email}/scripts/{theme_name}_{language}_text.txt
 Supports: English and Hindi
 """
 
@@ -131,7 +131,7 @@ def generate_script(prompt: str, language: str = "en") -> str:
 
 
 def generate_script_for_user(
-    user_name: str,
+    user_email: str,
     folder_name: str,
     theme_name: str,
     language: str = "en",
@@ -140,9 +140,9 @@ def generate_script_for_user(
     """
     Wrapper to generate and store script for a user.
     """
-    logger.info(f"[📝] Generating script for User: '{user_name}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
+    logger.info(f"[📝] Generating script for User: '{user_email}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
 
-    output_dir = os.path.join("output", user_name, folder_name)
+    output_dir = os.path.join("output", user_email, folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     script_path = os.path.join(output_dir, f"{theme_name}_{language}_text.txt")
@@ -164,17 +164,17 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 6:
-        print("Usage: python utils/generate_script.py <user_name> <folder_name> <theme_name> <language> <prompt>")
+        print("Usage: python utils/generate_script.py <user_email> <folder_name> <theme_name> <language> <prompt>")
         sys.exit(1)
 
-    user_name = sys.argv[1]
+    user_email = sys.argv[1]
     folder_name = sys.argv[2]
     theme_name = sys.argv[3]
     language = sys.argv[4]
     prompt = sys.argv[5]
 
     script_path = generate_script_for_user(
-        user_name=user_name,
+        user_email=user_email,
         folder_name=folder_name,
         theme_name=theme_name,
         language=language,

@@ -23,41 +23,39 @@ logger = logging.getLogger("token_refresher")
 logging.basicConfig(level=logging.INFO)
 
 # Constants
-CLIENT_ID = os.getenv("IG_CLIENT_ID")
-CLIENT_SECRET = os.getenv("IG_CLIENT_SECRET")
 REFRESH_URL = "https://graph.instagram.com/refresh_access_token"
 REFRESH_INTERVAL = 600  # 10 minutes
 
 
-def refresh_token_if_needed(user_name: str) -> None:
+def refresh_token_if_needed(user_email: str) -> None:
     """
     Refresh the Instagram access token for a user if it's expiring soon.
 
     Args:
-        user_name: The user to refresh token for.
+        user_email: The user to refresh token for.
     """
-    tokens = load_user_tokens(user_name)
+    tokens = load_user_tokens(user_email)
     if not tokens:
-        logger.warning(f"[⚠️] No tokens found for {user_name}")
+        logger.warning(f"[⚠️] No tokens found for {user_email}")
         return
 
     try:
         expires_at_str = tokens.get("expires_at")
         refresh_token = tokens.get("refresh_token")
         if not expires_at_str or not refresh_token:
-            logger.warning(f"[⚠️] Missing token data for {user_name}")
+            logger.warning(f"[⚠️] Missing token data for {user_email}")
             return
 
         expires_at = datetime.fromisoformat(expires_at_str)
 
-        # Skip if more than 5 minutes left
+        # Skip if more than 5 minutes remain
         if datetime.utcnow() + timedelta(minutes=5) < expires_at:
-            logger.info(f"[✅] Token for {user_name} is still valid.")
+            logger.info(f"[✅] Token for {user_email} is still valid.")
             return
 
-        logger.info(f"[🔄] Refreshing token for {user_name}...")
+        logger.info(f"[🔄] Refreshing token for {user_email}...")
 
-        response = requests.post(
+        response = requests.get(
             REFRESH_URL,
             params={
                 "grant_type": "ig_refresh_token",
@@ -70,39 +68,39 @@ def refresh_token_if_needed(user_name: str) -> None:
 
         if "access_token" in data:
             update_access_token(
-                user_name,
+                user_email=user_email,
                 new_access_token=data["access_token"],
                 expires_in=data.get("expires_in", 3600)
             )
-            logger.info(f"[✅] Token refreshed for {user_name}")
+            logger.info(f"[✅] Token refreshed for {user_email}")
         else:
-            logger.warning(f"[⚠️] Failed to refresh token for {user_name}: {data}")
+            logger.warning(f"[⚠️] Token refresh failed for {user_email}: {data}")
 
     except Exception as e:
-        logger.exception(f"[❌] Error refreshing token for {user_name}: {e}")
+        logger.exception(f"[❌] Exception refreshing token for {user_email}: {e}")
 
 
-def token_refresh_daemon(user_names: List[str]) -> None:
+def token_refresh_daemon(user_emails: List[str]) -> None:
     """
     Run a background loop that refreshes tokens for all users every 10 minutes.
 
     Args:
-        user_names: List of user names whose tokens should be checked.
+        user_emails: List of user emails whose tokens should be checked.
     """
     while True:
-        logger.info("[🔁] Running token refresh daemon cycle...")
-        for user_name in user_names:
-            refresh_token_if_needed(user_name)
+        logger.info("[🔁] Running token refresh cycle...")
+        for user_email in user_emails:
+            refresh_token_if_needed(user_email)
         time.sleep(REFRESH_INTERVAL)
 
 
-def start_token_refresh_daemon(user_names: List[str]) -> None:
+def start_token_refresh_daemon(user_emails: List[str]) -> None:
     """
     Start the token refresh process in a background daemon thread.
 
     Args:
-        user_names: List of user names to monitor.
+        user_emails: List of user emails to monitor.
     """
-    thread = Thread(target=token_refresh_daemon, args=(user_names,), daemon=True)
+    thread = Thread(target=token_refresh_daemon, args=(user_emails,), daemon=True)
     thread.start()
-    logger.info("[🧵] Token refresher thread started.")
+    logger.info("[🧵] Token refresher daemon thread started.")

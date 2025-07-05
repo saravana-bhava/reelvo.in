@@ -49,43 +49,43 @@ def _safe_write_json(file_path: str, data: dict) -> None:
         logger.exception(f"[❌] Failed to write JSON: {file_path}: {e}")
 
 
-def save_instagram_credentials(user_name: str, access_token: str, ig_account_id: str) -> None:
+def save_instagram_credentials(user_email: str, access_token: str, ig_account_id: str) -> None:
     """
     Save Instagram access token and IG business account ID for the user.
     """
     data = _safe_read_json(ACCOUNTS_FILE)
-    data[user_name] = {
+    data[user_email] = {
         "access_token": access_token,
         "ig_account_id": ig_account_id
     }
     _safe_write_json(ACCOUNTS_FILE, data)
-    logger.info(f"[✅] IG credentials saved for user: {user_name}")
+    logger.info(f"[✅] IG credentials saved for user: {user_email}")
 
 
-def get_instagram_credentials(user_name: str) -> Optional[dict]:
+def get_instagram_credentials(user_email: str) -> Optional[dict]:
     """
     Retrieve Instagram credentials (access token, IG account ID) for a user.
     """
     data = _safe_read_json(ACCOUNTS_FILE)
-    return data.get(user_name)
+    return data.get(user_email)
 
 
-def log_post(user_name: str, video_path: str, caption: str, drive_url: str) -> None:
+def log_post(user_email: str, video_path: str, caption: str, drive_url: str) -> None:
     """
     Log a successful Instagram post by the user.
 
     Args:
-        user_name (str): user_name of the poster
+        user_email (str): user_email of the poster
         video_path (str): Path to local video file
         caption (str): Caption posted
         drive_url (str): Instagram permalink
     """
     data = _safe_read_json(HISTORY_FILE)
 
-    if user_name not in data:
-        data[user_name] = []
+    if user_email not in data:
+        data[user_email] = []
 
-    data[user_name].append({
+    data[user_email].append({
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "video_path": video_path,
         "caption": caption,
@@ -93,4 +93,4 @@ def log_post(user_name: str, video_path: str, caption: str, drive_url: str) -> N
     })
 
     _safe_write_json(HISTORY_FILE, data)
-    logger.info(f"[📦] Logged post for {user_name}: {drive_url}")
+    logger.info(f"[📦] Logged post for {user_email}: {drive_url}")

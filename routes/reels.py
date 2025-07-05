@@ -226,7 +226,7 @@ def generate_script_ajax():
             return jsonify({"error": "Please provide a theme or custom topic."}), 400
 
         script_path = generate_script_for_user(
-            user_name=user_email,
+            user_email=user_email,
             folder_name="scripts",
             theme_name=topic or theme,
             language=language,

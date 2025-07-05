@@ -178,7 +178,7 @@ def api_post_reel():
         result_html = post_to_instagram(
             video_path=video_path,
             caption=caption,
-            user_name=user_email,
+            user_email=user_email,
             video_url=video_url
         )
         return jsonify({"success": True, "message": result_html})

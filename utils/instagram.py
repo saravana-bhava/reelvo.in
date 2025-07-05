@@ -10,6 +10,7 @@ import time
 import requests
 from urllib.parse import urlencode
 from utils.user_db import get_instagram_credentials, log_post
+from utils.google_drive import upload_to_google_drive
 
 # Constants
 INSTAGRAM_API_URL = "https://graph.facebook.com/v19.0"
@@ -24,17 +25,18 @@ except ImportError:
 def post_to_instagram(
     video_path: str,
     caption: str,
-    user_name: str,
+    user_email: str,
     video_url: str = "",
     task_id: str = None
 ) -> str:
     """
     Uploads a Reel to Instagram using a hosted video URL.
+    If video_url is not provided, uploads to Google Drive.
     Returns an HTML-safe result message.
     """
     update_progress(task_id, "📡 Connecting to Instagram...", 91)
 
-    creds = get_instagram_credentials(user_name)
+    creds = get_instagram_credentials(user_email)
     if not creds:
         return "❌ No Instagram credentials found for user."
 
@@ -44,11 +46,12 @@ def post_to_instagram(
     if not access_token or not user_id:
         return "❌ Instagram access token or user ID is missing."
 
+    # ✅ Upload to Google Drive if video_url is not provided
     if not video_url or not video_url.startswith("http"):
-        return (
-            "❌ A valid `video_url` is required for Instagram upload. "
-            "Direct uploads are not supported unless using a Facebook Page."
-        )
+        update_progress(task_id, "☁️ Uploading video to Drive...", 92)
+        video_url, error = upload_to_google_drive(video_path, user_email, task_id=task_id)
+        if error:
+            return f"❌ {error}"
 
     try:
         # Step 1: Create media container
@@ -82,7 +85,7 @@ def post_to_instagram(
         # Step 3: Optional - Fetch permalink
         permalink = "URL not available"
         if media_id:
-            time.sleep(3)  # Allow Instagram time to generate permalink
+            time.sleep(3)
             r3 = requests.get(
                 f"{INSTAGRAM_API_URL}/{media_id}",
                 params={"fields": "permalink", "access_token": access_token},
@@ -92,7 +95,7 @@ def post_to_instagram(
                 permalink = r3.json().get("permalink", permalink)
 
         # Log it
-        log_post(user_name, video_path=video_path, caption=caption, drive_url=permalink)
+        log_post(user_email, video_path=video_path, caption=caption, drive_url=permalink)
         update_progress(task_id, "✅ Instagram upload complete", 98)
 
         if permalink.startswith("http"):

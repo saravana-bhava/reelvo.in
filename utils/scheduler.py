@@ -14,6 +14,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 from utils.instagram import post_to_instagram
+from utils.reel_history import add_reel_to_history
 
 # Constants
 SCHEDULED_PATH = "db/scheduled_posts.json"
@@ -60,16 +61,30 @@ def scheduler_runner() -> None:
                             video_path = job.get("video_path") or f"output/final/{video_name}"
                             caption = job.get("caption", "Scheduled post")
 
+                            # Post to Instagram
                             post_result = post_to_instagram(
                                 video_path=video_path,
                                 caption=caption,
-                                user_name=user_email
+                                user_email=user_email
                             )
 
-                            # Update job status
+                            # Update job state
                             job["posted"] = True
                             job["result"] = post_result
                             logger.info(f"[✅] Posted successfully → {video_name}")
+
+                            # Log to reel history
+                            script_text = job.get("script", "")
+                            permalink = post_result.get("permalink") if isinstance(post_result, dict) else None
+                            timestamp = datetime.utcnow().isoformat() + "Z"
+                            add_reel_to_history(
+                                user_email=user_email,
+                                filename=video_name,
+                                script=script_text,
+                                caption=caption,
+                                permalink=permalink,
+                                timestamp=timestamp
+                            )
 
                     except Exception as e:
                         job["error"] = str(e)

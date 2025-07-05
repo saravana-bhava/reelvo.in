@@ -9,15 +9,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from utils.generate_tts_audio import generate_tts_from_text, generate_tts_from_file
 
-TEST_USERNAME = "test"
+TEST_EMAIL = "developer@sazm.in"
 OUTPUT_ROOT = "output"
-SCRIPTS_DIR = os.path.join(OUTPUT_ROOT, TEST_USERNAME, "scripts")
-TTS_DIR = os.path.join(OUTPUT_ROOT, TEST_USERNAME, "tts")
+SCRIPTS_DIR = os.path.join(OUTPUT_ROOT, TEST_EMAIL, "scripts")
+TTS_DIR = os.path.join(OUTPUT_ROOT, TEST_EMAIL, "tts")
 
 @pytest.fixture
 def setup_output_file():
     os.makedirs(TTS_DIR, exist_ok=True)
-    path = os.path.join(OUTPUT_ROOT, TEST_USERNAME, "tts", "test_output.mp3")
+    path = os.path.join(OUTPUT_ROOT, TEST_EMAIL, "tts", "test_output.mp3")
     if os.path.exists(path):
         os.remove(path)
     yield path
@@ -27,7 +27,7 @@ def setup_output_file():
 @pytest.fixture
 def setup_input_script():
     os.makedirs(SCRIPTS_DIR, exist_ok=True)
-    text_path = os.path.join(OUTPUT_ROOT, TEST_USERNAME, "scripts", "demo_text.txt")
+    text_path = os.path.join(OUTPUT_ROOT, TEST_EMAIL, "scripts", "demo_text.txt")
     with open(text_path, "w", encoding="utf-8") as f:
         f.write("This is a test script for file-based TTS.")
     yield text_path
@@ -36,7 +36,7 @@ def setup_input_script():
 
 @pytest.fixture
 def cleanup_voice_file():
-    voice_path = os.path.join(OUTPUT_ROOT, TEST_USERNAME, "tts", "demo_voice_en.mp3")
+    voice_path = os.path.join(OUTPUT_ROOT, TEST_EMAIL, "tts", "demo_voice_en.mp3")
     if os.path.exists(voice_path):
         os.remove(voice_path)
     yield voice_path
@@ -48,7 +48,7 @@ def test_generate_tts_audio_from_text(setup_output_file):
     out_path = setup_output_file
     path, duration = generate_tts_from_text(
         text=text,
-        user_name=TEST_USERNAME,
+        user_email=TEST_EMAIL,
         output_path=out_path,
         theme="motivation",
         task_id=None,
@@ -65,7 +65,7 @@ def test_generate_tts_audio_hindi(setup_output_file):
     out_path = setup_output_file
     path, duration = generate_tts_from_text(
         text=text,
-        user_name=TEST_USERNAME,
+        user_email=TEST_EMAIL,
         output_path=out_path,
         theme="motivation",
         task_id=None,
@@ -80,7 +80,7 @@ def test_generate_tts_audio_hindi(setup_output_file):
 def test_generate_tts_audio_from_file(setup_input_script, cleanup_voice_file):
     path, duration = generate_tts_from_file(
         theme="motivation",
-        user_name=TEST_USERNAME,
+        user_email=TEST_EMAIL,
         output_root=OUTPUT_ROOT,
         task_id=None,
         language="en",

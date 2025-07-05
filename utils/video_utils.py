@@ -28,15 +28,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def get_video_duration(filepath: str) -> Optional[float]:
-    """
-    Get duration of a video file using ffprobe.
-
-    Args:
-        filepath (str): Path to video.
-
-    Returns:
-        Optional[float]: Duration in seconds or None.
-    """
+    """Get duration of a video file using ffprobe."""
     try:
         result = subprocess.run(
             [
@@ -57,17 +49,7 @@ def get_video_duration(filepath: str) -> Optional[float]:
 
 
 def trim_video(input_path: str, output_path: str, max_duration: int = 30) -> bool:
-    """
-    Trim video to max_duration using FFmpeg.
-
-    Args:
-        input_path (str): Source video path.
-        output_path (str): Trimmed output path.
-        max_duration (int): Max duration in seconds.
-
-    Returns:
-        bool: True if success, else False.
-    """
+    """Trim video to max_duration using FFmpeg."""
     try:
         subprocess.run(
             [
@@ -98,13 +80,6 @@ def download_video(
     """
     Download video from URL, validate duration, optionally trim and cache.
 
-    Args:
-        url (str): Video URL.
-        output_path (str): Final output file path.
-        min_duration (int): Minimum duration in seconds.
-        max_duration (int): Maximum duration in seconds.
-        return_url (bool): If True, return tuple with URL.
-
     Returns:
         str | tuple: Output path (or path, url), or None on failure.
     """
@@ -114,7 +89,6 @@ def download_video(
         hashed = hashlib.md5(url.encode()).hexdigest()
         cached_path = os.path.join(CACHE_DIR, f"{hashed}.mp4")
 
-        # Use cached version
         if not DISABLE_CACHE and os.path.exists(cached_path):
             logger.info(f"[📦] Using cached version for: {url}")
             duration = get_video_duration(cached_path)
@@ -124,7 +98,6 @@ def download_video(
             logger.warning("[⚠️] Cached video too short. Removing...")
             os.remove(cached_path)
 
-        # Download to temp file
         logger.info(f"[⬇️] Downloading from: {url}")
         temp_path = output_path + ".tmp"
         with requests.get(url, stream=True, timeout=15) as r:
@@ -154,7 +127,6 @@ def download_video(
                 shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else (output_path if success else None)
 
-        # Finalize valid video
         os.rename(temp_path, output_path)
         logger.info(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
         if not DISABLE_CACHE:

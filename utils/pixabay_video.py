@@ -1,7 +1,7 @@
 # File: utils/pixabay_video.py
 
 """
-Fetches a vertical video clip (1080x1920, 5–60s) from Pixabay based on a keyword.
+Fetches a vertical video clip (1080x1920+, 5–60s) from Pixabay based on a keyword.
 Avoids reused URLs and ensures video quality meets Instagram Reel specs.
 """
 
@@ -31,7 +31,7 @@ def fetch_pixabay_video(
     max_duration: int = 6
 ) -> Optional[str]:
     """
-    Searches Pixabay for a portrait (1080x1920) video matching the theme.
+    Searches Pixabay for a vertical (1080x1920+) video matching the theme.
 
     Args:
         theme (str): Category keyword like 'motivation' or 'life'.
@@ -67,13 +67,11 @@ def fetch_pixabay_video(
         response.raise_for_status()
         hits = response.json().get("hits", [])
 
-        if not hits:
-            logger.warning("[⚠️] No Pixabay results found.")
-            return None
+        logger.info(f"[ℹ️] Found {len(hits)} results on Pixabay.")
 
         for result in hits:
             duration = result.get("duration", 0)
-            if not (min_duration <= duration <= 60):
+            if not (min_duration <= duration <= max_duration):
                 continue
 
             video_options = result.get("videos", {})
@@ -89,10 +87,10 @@ def fetch_pixabay_video(
                 if (
                     url
                     and url not in used_urls
-                    and width == 1080
-                    and height == 1920
+                    and width >= 1080
+                    and height >= 1920
                 ):
-                    logger.info(f"[🎞️] Found candidate: {url} ({duration}s, {quality})")
+                    logger.info(f"[🎞️] Candidate: {url} ({width}x{height}, {duration}s, {quality})")
 
                     success = download_video(
                         url,
@@ -107,7 +105,7 @@ def fetch_pixabay_video(
                     else:
                         logger.warning("[⚠️] Download failed, trying next...")
 
-        logger.warning("[⚠️] No valid vertical 1080x1920 video found on Pixabay.")
+        logger.warning("[⚠️] No valid vertical 1080x1920+ video found on Pixabay.")
         return None
 
     except requests.exceptions.RequestException as e:
@@ -116,3 +114,21 @@ def fetch_pixabay_video(
         logger.exception(f"[❌] Unexpected error during Pixabay fetch: {e}")
 
     return None
+
+
+# CLI support
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) != 3:
+        print("Usage: python utils/pixabay_video.py <theme> <output_path>")
+        sys.exit(1)
+
+    theme = sys.argv[1]
+    output = sys.argv[2]
+
+    result = fetch_pixabay_video(theme, output)
+    if result:
+        print(f"✅ Downloaded from: {result}")
+    else:
+        print("❌ No suitable video found.")

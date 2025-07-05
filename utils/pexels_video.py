@@ -1,7 +1,7 @@
 # File: utils/pexels_video.py
 
 """
-Fetches a portrait video clip (1080x1920, 5–60s) from Pexels based on a category keyword.
+Fetches a portrait video clip (1080x1920+, 5–60s) from Pexels based on a category keyword.
 Avoids reusing video URLs stored in `used_urls` during a session.
 """
 
@@ -31,7 +31,7 @@ def fetch_pexels_video(
     max_duration: int = 6
 ) -> Optional[str]:
     """
-    Fetches a suitable 1080x1920 portrait video from Pexels matching the category.
+    Fetches a suitable 1080x1920+ portrait video from Pexels matching the category.
 
     Args:
         category (str): Search keyword like "motivation", "life", etc.
@@ -66,13 +66,14 @@ def fetch_pexels_video(
         )
         response.raise_for_status()
         videos = response.json().get("videos", [])
+        logger.info(f"[ℹ️] Fetched {len(videos)} videos from Pexels.")
     except requests.exceptions.RequestException as e:
         logger.warning(f"[❌] Failed to fetch from Pexels: {e}")
         return None
 
     for video in videos:
         duration = video.get("duration", 0)
-        if not (min_duration <= duration <= 60):
+        if not (min_duration <= duration <= max_duration):
             continue
 
         for file in video.get("video_files", []):
@@ -82,11 +83,11 @@ def fetch_pexels_video(
 
             if (
                 url
-                and width == 1080
-                and height == 1920
+                and width >= 1080
+                and height >= 1920
                 and url not in used_urls
             ):
-                logger.info(f"[🎞️] Candidate found: {url} ({duration}s)")
+                logger.info(f"[🎞️] Candidate found: {url} ({width}x{height}, {duration}s)")
 
                 success = download_video(
                     url, output_path,
@@ -101,5 +102,23 @@ def fetch_pexels_video(
                 else:
                     logger.warning("[⚠️] Download failed, trying next candidate...")
 
-    logger.warning("[⚠️] No valid 1080x1920 portrait video found on Pexels.")
+    logger.warning("[⚠️] No valid 1080x1920+ portrait video found on Pexels.")
     return None
+
+
+# CLI test mode
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) != 3:
+        print("Usage: python utils/pexels_video.py <category> <output_path>")
+        sys.exit(1)
+
+    category = sys.argv[1]
+    output_path = sys.argv[2]
+
+    result = fetch_pexels_video(category, output_path)
+    if result:
+        print(f"✅ Downloaded from: {result}")
+    else:
+        print("❌ No suitable video found.")
