@@ -5,6 +5,8 @@ import logging
 from flask import Flask
 from threading import Thread
 from werkzeug.serving import run_simple
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 # from waitress import serve  # Uncomment this for real production use
 
 from utils.scheduler import scheduler_runner
@@ -34,6 +36,9 @@ logger = logging.getLogger("reelvo")
 
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
+
+# ✅ Trust proxy headers to detect HTTPS properly
+flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
 
 # Load SMTP settings into config
 flask_app.config.update(
