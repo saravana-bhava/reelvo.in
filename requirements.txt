@@ -28,8 +28,9 @@ gTTS>=2.3.2
 # ------------------------
 # Audio / Video Processing
 # ------------------------
+deep_translator
 ffmpeg-python>=0.2.0
-freesound-python>=2.1.2
+freesound-python
 moviepy==1.0.3
 numpy>=1.23
 opencv-python>=4.7.0
