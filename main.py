@@ -6,7 +6,7 @@ from flask import Flask
 from threading import Thread
 from werkzeug.serving import run_simple
 from werkzeug.middleware.proxy_fix import ProxyFix
-# from waitress import serve  # Uncomment this for real production use
+from waitress import serve
 
 from utils.scheduler import scheduler_runner
 from utils.instagram_token_refresher import refresh_instagram_tokens
@@ -66,8 +66,8 @@ def run():
     start_background_tasks()
 
     port = int(os.getenv("PORT", 5000))
-    protocol = os.getenv("PROTOCOL", "https")
-    host = os.getenv("HOST", "0.0.0.0")
+    protocol = "http"
+    host = "0.0.0.0"
 
     logger.info(f"🚀 Production server starting at {protocol}://{host}:{port}")
 
@@ -77,8 +77,13 @@ def run():
     else:
         # For production, prefer a WSGI server like Waitress or Gunicorn
         # To use Waitress, uncomment below:
-        # serve(flask_app, host=host, port=port)
-        run_simple(host, port, flask_app, use_debugger=False, use_reloader=False)
+        serve(flask_app, host=host, port=port)
 
 if __name__ == "__main__":
     run()
+
+from flask import redirect, url_for
+
+@flask_app.route("/")
+def index():
+    return redirect(url_for("auth.login"))
