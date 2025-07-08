@@ -9,6 +9,7 @@
         class="form-card"
         aria-label="Registration Form">
 
+    <!-- Email Field -->
     <label for="email" class="form-label">
       📧 Email Address
     </label>
@@ -20,6 +21,7 @@
            autocomplete="email"
            class="form-input" />
 
+    <!-- Password Field -->
     <label for="password" class="form-label">
       🔒 Choose Password
     </label>
@@ -31,10 +33,12 @@
            autocomplete="new-password"
            class="form-input" />
 
+    <!-- Submit Button -->
     <button type="submit" class="button button-success" style="width: 100%;">
       ✅ Register
     </button>
 
+    <!-- Footer Link -->
     <div class="form-footer">
       Already have an account?
       <a href="{{ url_for('auth.login') }}" class="link-primary">

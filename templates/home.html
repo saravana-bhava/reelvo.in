@@ -28,6 +28,10 @@
     border-radius: 8px;
     text-decoration: none;
   }
+  .hero .btn:hover {
+    background-color: #2563eb;
+  }
+
   .features, .how-it-works {
     display: flex;
     flex-wrap: wrap;
@@ -51,10 +55,21 @@
     color: #666;
     font-size: 0.95rem;
   }
+
   .section-heading {
     text-align: center;
     font-size: 1.8rem;
-    margin-bottom: 2rem;
+    margin: 4rem 0 2rem;
+    width: 100%;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 {
+      font-size: 2rem;
+    }
+    .section-heading {
+      font-size: 1.5rem;
+    }
   }
 </style>
 

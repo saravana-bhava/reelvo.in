@@ -1,17 +1,33 @@
+/* Root Theme Variables */
+:root {
+  --primary: #1e88e5;
+  --primary-dark: #1565c0;
+  --danger: #dc3545;
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --muted: #6c757d;
+  --text-dark: #333;
+  --text-muted: #888;
+  --bg-light: #f7f9fc;
+  --bg-white: #fff;
+  --font-main: Arial, sans-serif;
+}
+
 /* Main layout */
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f7f9fc;
-  color: #333;
+  font-family: var(--font-main);
+  background: var(--bg-light);
+  color: var(--text-dark);
   font-size: 16px;
   line-height: 1.6;
 }
 
 /* Header */
 header {
-  background: #1e88e5;
-  color: #fff;
+  background: var(--primary);
+  color: white;
   padding: 16px;
   text-align: center;
 }
@@ -21,7 +37,7 @@ header h1 {
 
 /* Navigation */
 nav {
-  background: #1565c0;
+  background: var(--primary-dark);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -30,7 +46,7 @@ nav {
   padding: 12px;
 }
 nav a {
-  color: #fff;
+  color: white;
   text-decoration: none;
   font-weight: bold;
   transition: opacity 0.2s ease;
@@ -47,8 +63,8 @@ nav a.active {
 }
 .logout-form button {
   background: transparent;
-  color: #fff;
-  border: 1px solid #fff;
+  color: white;
+  border: 1px solid white;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 14px;
@@ -86,7 +102,7 @@ select {
 /* Buttons */
 button,
 .button {
-  background: #1e88e5;
+  background: var(--primary);
   color: white;
   padding: 12px 24px;
   border: none;
@@ -96,25 +112,39 @@ button,
   text-decoration: none;
   display: inline-block;
   transition: background 0.2s ease;
+  min-height: 44px;
+  min-width: 44px;
 }
 button:hover,
 .button:hover {
-  background: #1565c0;
+  background: var(--primary-dark);
+}
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+button:disabled,
+.button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Button Variants */
-.button-danger { background-color: #dc3545; }
-.button-primary { background-color: #007BFF; }
-.button-success { background-color: #28a745; }
-.button-info    { background-color: #17a2b8; }
-.button-warning { background-color: #ffc107; color: black; }
-.button-muted   { background-color: #6c757d; }
+.button-danger   { background-color: var(--danger); }
+.button-primary  { background-color: #007BFF; }
+.button-success  { background-color: var(--success); }
+.button-info     { background-color: var(--info); }
+.button-warning  { background-color: var(--warning); color: #212529; }
+.button-muted    { background-color: var(--muted); }
 
 .button-danger,
 .button-primary,
 .button-success,
 .button-info,
-.button-warning,
 .button-muted {
   color: white;
 }
@@ -167,6 +197,10 @@ button:hover,
   border: 1px solid #ddd;
   border-radius: 8px;
   margin-bottom: 30px;
+  transition: box-shadow 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 .action-buttons {
   display: flex;
@@ -180,7 +214,7 @@ button:hover,
   margin: 40px 0 24px;
 }
 .text-muted {
-  color: #888;
+  color: var(--text-muted);
 }
 
 .link-small,
@@ -190,14 +224,14 @@ button:hover,
 }
 .link-small {
   font-size: 14px;
-  color: #007BFF;
+  color: var(--primary);
 }
 .link-primary {
-  color: #007BFF;
+  color: var(--primary);
   font-weight: bold;
 }
 .link-success {
-  color: #28a745;
+  color: var(--success);
   font-weight: bold;
 }
 .link-small:hover,
@@ -210,7 +244,7 @@ button:hover,
 .form-card {
   max-width: 400px;
   margin: 30px auto;
-  background: #fff;
+  background: white;
   padding: 30px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -243,7 +277,7 @@ button:hover,
 .form-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: white;
   box-shadow: 0 1px 6px rgba(0,0,0,0.05);
   border-radius: 8px;
   overflow: hidden;
@@ -271,10 +305,14 @@ button:hover,
   gap: 24px;
 }
 .video-card {
-  background: #fff;
+  background: white;
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease;
+}
+.video-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .video-player {
   border-radius: 6px;

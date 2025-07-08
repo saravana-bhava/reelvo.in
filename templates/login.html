@@ -2,50 +2,55 @@
 {% block title %}Login - Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 class="page-heading">🔐 Login to Reelvo.ai</h2>
+<h2 class="page-heading">🔐 Login to Reelvo.ai</h2>
 
-  <form method="post"
-        action="{{ url_for('auth.login') }}"
-        class="form-card"
-        aria-label="Login Form">
+<form method="post"
+      action="{{ url_for('auth.login') }}"
+      class="form-card"
+      aria-label="Login Form">
 
-    <label for="email" class="form-label">
-      📧 Email Address
-    </label>
-    <input type="email"
-           id="email"
-           name="email"
-           placeholder="Enter your email..."
-           required
-           autocomplete="email"
-           class="form-input" />
+  <!-- Email Input -->
+  <label for="email" class="form-label">
+    📧 Email Address
+  </label>
+  <input type="email"
+         id="email"
+         name="email"
+         placeholder="Enter your email..."
+         required
+         autocomplete="email"
+         class="form-input" />
 
-    <label for="password" class="form-label">
-      🔑 Password
-    </label>
-    <input type="password"
-           id="password"
-           name="password"
-           placeholder="Enter your password..."
-           required
-           autocomplete="current-password"
-           class="form-input" />
+  <!-- Password Input -->
+  <label for="password" class="form-label">
+    🔑 Password
+  </label>
+  <input type="password"
+         id="password"
+         name="password"
+         placeholder="Enter your password..."
+         required
+         autocomplete="current-password"
+         class="form-input" />
 
-    <div class="form-link-right">
-      <a href="{{ url_for('auth.forgot_password') }}" class="link-small">
-        ❓ Forgot Password?
-      </a>
-    </div>
+  <!-- Forgot Password Link -->
+  <div class="form-link-right">
+    <a href="{{ url_for('auth.forgot_password') }}" class="link-small">
+      ❓ Forgot Password?
+    </a>
+  </div>
 
-    <button type="submit" class="button button-primary" style="width: 100%;">
-      🚀 Login
-    </button>
+  <!-- Submit Button -->
+  <button type="submit" class="button button-primary" style="width: 100%;">
+    🚀 Login
+  </button>
 
-    <div class="form-footer">
-      Don't have an account?
-      <a href="{{ url_for('auth.register') }}" class="link-success">
-        Register here
-      </a>
-    </div>
-  </form>
+  <!-- Registration Prompt -->
+  <div class="form-footer">
+    Don't have an account?
+    <a href="{{ url_for('auth.register') }}" class="link-success">
+      Register here
+    </a>
+  </div>
+</form>
 {% endblock %}

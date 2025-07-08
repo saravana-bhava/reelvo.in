@@ -2,12 +2,13 @@
 {% block title %}Reel History | Reelvo.ai{% endblock %}
 
 {% block content %}
-  <h2 class="page-heading">📂 Reel History for <span style="color:#007BFF">{{ user }}</span></h2>
+  <h2 class="page-heading">📂 Reel History for <span class="user-highlight">{{ user }}</span></h2>
 
   {% if videos %}
     <div class="video-grid">
       {% for vid in videos %}
         <div class="video-card">
+          <!-- Video Player -->
           <video width="100%" height="auto" controls
                  class="video-player"
                  aria-label="Reel: {{ vid }}">
@@ -15,6 +16,7 @@
             Your browser does not support the video tag.
           </video>
 
+          <!-- Metadata and Script -->
           <div class="video-meta">
             <strong>{{ vid }}</strong>
             {% if scripts and scripts.get(vid) %}
@@ -28,6 +30,7 @@
     <p class="no-reels">❌ No reels found yet.</p>
   {% endif %}
 
+  <!-- Back to Dashboard -->
   <div style="margin-top: 40px;">
     <a class="button" href="{{ url_for('dashboard.dashboard') }}"
        role="button" aria-label="Back to Dashboard">

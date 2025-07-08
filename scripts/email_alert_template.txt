@@ -2,8 +2,10 @@
 
 One or more scheduled reels failed to post today.
 
-Error Details:
+🛑 Error Details:
 {error_message}
 
-Check logs at:
+🗂 Log File:
 {log_path}
+
+Please investigate and take action.

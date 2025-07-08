@@ -3,6 +3,8 @@
 """
 Assigns posting times for unscheduled reels (1 per day at 4PM).
 Updates db/scheduled_posts.json (used by post_scheduled_reels.py).
+Usage:
+    python scripts/schedule_reels.py <user_email>
 """
 
 import os
@@ -18,7 +20,7 @@ REEL_HISTORY_PATH = os.path.join(DB_DIR, "reel_history.json")
 SCHEDULE_PATH = os.path.join(DB_DIR, "scheduled_posts.json")
 DEFAULT_POST_HOUR = 16  # 4PM
 
-# Logging
+# Logging setup
 LOG_PATH = os.path.join(ROOT_DIR, "scheduler", "logs", "schedule_reels.log")
 os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
 logging.basicConfig(
@@ -60,17 +62,27 @@ def schedule_reels_for_user(user_email: str):
         logger.warning(f"[{user_email}] ⚠️ No valid reel history found.")
         return
 
-    scheduled_video_names = {item.get("video") for item in user_schedule if isinstance(item, dict)}
+    scheduled_video_names = {
+        item.get("video") for item in user_schedule if isinstance(item, dict)
+    }
 
-    # Start from latest scheduled date or today
-    all_dates = [item.get("scheduled_for") for item in user_schedule if "scheduled_for" in item]
+    # Determine starting post date
     start_date = datetime.now().replace(hour=DEFAULT_POST_HOUR, minute=0, second=0, microsecond=0)
-    if all_dates:
+    all_dates = [
+        item.get("scheduled_for") for item in user_schedule if isinstance(item, dict)
+    ]
+
+    valid_dates = []
+    for d in all_dates:
         try:
-            latest = max(datetime.strptime(d, "%Y-%m-%d") for d in all_dates)
-            start_date = max(start_date, latest + timedelta(days=1))
+            valid_dates.append(datetime.strptime(d, "%Y-%m-%d"))
         except Exception:
-            pass
+            logger.warning(f"[{user_email}] ⚠️ Skipping invalid date format: {d}")
+
+    if valid_dates:
+        latest = max(valid_dates)
+        next_date = latest + timedelta(days=1)
+        start_date = max(start_date, next_date)
 
     count = 0
     for video, script in user_history.items():
@@ -81,7 +93,7 @@ def schedule_reels_for_user(user_email: str):
         item = {
             "video": video,
             "video_path": video_path,
-            "script": script,
+            "script": script or "[No script found]",
             "scheduled_for": start_date.strftime("%Y-%m-%d"),
             "posted": False
         }
@@ -99,7 +111,7 @@ def schedule_reels_for_user(user_email: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 2:
         print("Usage: python scripts/schedule_reels.py <user_email>")
         sys.exit(1)
 
