@@ -186,8 +186,17 @@ def create_reel_action():
 
     # Fetch and join clips
     clips = fetch_multiple_clips(temp_dir, theme_name, language, english_script_text, audio_duration)
+
     if not clips:
-        return redirect_with_form_data("❌ No video clips found.")
+        logger.warning("No video clips found from external source. Using fallback clips.")
+        fallback_clips_dir = os.path.join("assets", "clips")
+        fallback_clips = [
+            os.path.join(fallback_clips_dir, f)
+            for f in os.listdir(fallback_clips_dir)
+            if f.lower().endswith((".mp4", ".mov", ".webm"))
+        ]
+        fallback_clips.sort()  # Optional: make order consistent
+        clips = fallback_clips[:5]  # Use first 5 fallback clips
 
     combined_video_path = concatenate_clips(temp_dir, theme_name, language, clips)
     if not combined_video_path:
