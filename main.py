@@ -20,10 +20,10 @@ from routes.progress import progress_bp
 from routes.instagram import instagram_bp
 from routes.schedule import schedule_bp
 
-# ----------------- Load Environment -----------------
+# Load environment variables
 load_dotenv()
 
-# ----------------- Logging Setup -----------------
+# Logging setup
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -31,14 +31,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("reelvo")
 
-# ----------------- Flask App Setup -----------------
+# Flask app initialization
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
-# ✅ Trust proxy headers (especially for HTTPS on Render or Cloudflare)
+# Enable proxy headers (important for HTTPS on reverse proxies like Cloudflare)
 flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
 
-# ----------------- SMTP Configuration -----------------
+# SMTP configuration
 flask_app.config.update(
     SMTP_HOST=os.getenv("SMTP_HOST"),
     SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
@@ -49,34 +49,40 @@ flask_app.config.update(
     PREFERRED_URL_SCHEME="https"
 )
 
-# ----------------- Register Blueprints -----------------
-flask_app.register_blueprint(home_bp)
-flask_app.register_blueprint(auth_bp)
-flask_app.register_blueprint(dashboard_bp)
-flask_app.register_blueprint(reels_bp)
-flask_app.register_blueprint(progress_bp)
-flask_app.register_blueprint(instagram_bp)
-flask_app.register_blueprint(schedule_bp)
+# Register Blueprints
+for bp in [
+    home_bp, auth_bp, dashboard_bp, reels_bp,
+    progress_bp, instagram_bp, schedule_bp
+]:
+    flask_app.register_blueprint(bp)
 
-# ----------------- Background Threads -----------------
+# Background task starter
 def start_background_tasks():
     logger.info("🔄 Starting background tasks...")
-    Thread(target=refresh_instagram_tokens, daemon=True, name="InstagramTokenRefresher").start()
-    Thread(target=scheduler_runner, daemon=True, name="SchedulerRunner").start()
+    Thread(
+        target=refresh_instagram_tokens,
+        daemon=True,
+        name="InstagramTokenRefresher"
+    ).start()
+    Thread(
+        target=scheduler_runner,
+        daemon=True,
+        name="SchedulerRunner"
+    ).start()
 
-# ----------------- Start Server -----------------
+# Application runner
 def run():
     os.makedirs("output", exist_ok=True)
     start_background_tasks()
 
     port = int(os.getenv("PORT", 5000))
     host = "0.0.0.0"
-    protocol = "http"
+    dev_mode = os.getenv("FLASK_ENV", "production").lower() == "development"
 
-    logger.info(f"🚀 Production server starting at {protocol}://{host}:{port}")
+    logger.info(f"🚀 Starting server at http://{host}:{port} ({'Dev' if dev_mode else 'Prod'} Mode)")
 
-    if os.getenv("FLASK_ENV", "production").lower() == "development":
-        logger.warning("⚠️ Running in development mode with debugger enabled!")
+    if dev_mode:
+        logger.warning("⚠️ Running in development mode with debugger!")
         run_simple(host, port, flask_app, use_debugger=True, use_reloader=True)
     else:
         serve(flask_app, host=host, port=port)

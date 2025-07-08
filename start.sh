@@ -33,8 +33,8 @@ fi
 # ─────────────────────────────────────────────
 # Determine environment mode
 # ─────────────────────────────────────────────
-MODE=${FLASK_ENV:-production}
-PORT=${PORT:-5000}
+MODE="${FLASK_ENV:-production}"
+PORT="${PORT:-5000}"
 
 if [[ "$MODE" == "development" ]]; then
     echo -e "${YELLOW}👟 Running in development mode on port ${PORT} with Flask...${NC}"
@@ -42,8 +42,9 @@ if [[ "$MODE" == "development" ]]; then
 else
     echo -e "${GREEN}🧱 Running in production mode on port ${PORT} with Gunicorn...${NC}"
     if ! command -v gunicorn &> /dev/null; then
-        echo -e "${RED}❌ Gunicorn not installed. Please install it with: pip install gunicorn${NC}"
+        echo -e "${RED}❌ Gunicorn not installed.${NC}"
+        echo -e "${YELLOW}👉 Run: pip install gunicorn${NC}"
         exit 1
     fi
-    exec gunicorn main:flask_app --bind 0.0.0.0:$PORT
+    exec gunicorn main:flask_app --bind "0.0.0.0:$PORT"
 fi

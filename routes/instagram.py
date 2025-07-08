@@ -13,20 +13,29 @@ instagram_bp = Blueprint("instagram", __name__)
 # Constants
 INSTAGRAM_APP_ID = os.getenv("FB_APP_ID", "")
 INSTAGRAM_APP_SECRET = os.getenv("FB_APP_SECRET", "")
-REDIRECT_URI = os.getenv("FB_REDIRECT_URI", f"{os.getenv('PROTOCOL', 'https')}://{os.getenv('HOST', 'localhost')}/instagram/callback")
+REDIRECT_URI = os.getenv(
+    "FB_REDIRECT_URI",
+    f"{os.getenv('PROTOCOL', 'https')}://{os.getenv('HOST', 'localhost')}/instagram/callback"
+)
 GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 
-# Safe GET wrapper
+# --------------------------
+# Helpers
+# --------------------------
+
 def safe_get(url, params=None, timeout=10):
     try:
         response = requests.get(url, params=params, timeout=timeout)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        current_app.logger.error(f"[HTTP] GET {url} failed: {e}")
+        current_app.logger.error(f"[HTTP GET] {url} failed: {e}")
         return None
 
-# Step 1: Start OAuth connection
+# --------------------------
+# OAuth Connect
+# --------------------------
+
 @instagram_bp.route("/connect-instagram", methods=["GET"])
 def connect_instagram():
     auth_url = (
@@ -39,7 +48,10 @@ def connect_instagram():
     )
     return redirect(auth_url)
 
-# Step 2: OAuth Callback
+# --------------------------
+# OAuth Callback
+# --------------------------
+
 @instagram_bp.route("/instagram/callback", methods=["GET"])
 def instagram_callback():
     code = request.args.get("code")
@@ -48,7 +60,7 @@ def instagram_callback():
         return redirect(url_for("dashboard.dashboard"))
 
     try:
-        # Exchange code for short-lived token
+        # Step 1: Short-lived token
         token_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
@@ -60,88 +72,82 @@ def instagram_callback():
             timeout=15
         )
         if not token_data or "access_token" not in token_data:
-            flash("❌ Failed to get short-lived access token.", "error")
+            flash("❌ Failed to obtain short-lived token.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        short_access_token = token_data["access_token"]
+        short_token = token_data["access_token"]
 
-        # Exchange for long-lived token
+        # Step 2: Exchange for long-lived token
         long_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
                 "grant_type": "fb_exchange_token",
                 "client_id": INSTAGRAM_APP_ID,
                 "client_secret": INSTAGRAM_APP_SECRET,
-                "fb_exchange_token": short_access_token,
-            },
-            timeout=10
+                "fb_exchange_token": short_token,
+            }
         )
         if not long_data or "access_token" not in long_data:
-            flash("❌ Failed to get long-lived access token.", "error")
+            flash("❌ Failed to obtain long-lived token.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        long_access_token = long_data["access_token"]
-        expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)  # default: 60 days
+        long_token = long_data["access_token"]
+        expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)
 
-        # Get pages
-        pages_json = safe_get(
-            f"{GRAPH_API_BASE}/me/accounts",
-            params={"access_token": long_access_token}
-        )
-        pages = pages_json.get("data", []) if pages_json else []
+        # Step 3: Fetch user's Pages
+        pages_data = safe_get(f"{GRAPH_API_BASE}/me/accounts", params={"access_token": long_token})
+        pages = pages_data.get("data", []) if pages_data else []
 
-        # Fallback: try Business Manager
+        # Fallback if pages empty
         if not pages:
-            biz_json = safe_get(f"{GRAPH_API_BASE}/me/businesses", params={"access_token": long_access_token})
-            businesses = biz_json.get("data", []) if biz_json else []
-
-            for biz in businesses:
+            biz_data = safe_get(f"{GRAPH_API_BASE}/me/businesses", params={"access_token": long_token})
+            for biz in (biz_data.get("data", []) if biz_data else []):
                 biz_id = biz.get("id")
                 if not biz_id:
                     continue
-                owned_json = safe_get(
-                    f"{GRAPH_API_BASE}/{biz_id}/owned_pages",
-                    params={"access_token": long_access_token}
-                )
-                if owned_json and "data" in owned_json and owned_json["data"]:
-                    pages = owned_json["data"]
+                owned_pages = safe_get(f"{GRAPH_API_BASE}/{biz_id}/owned_pages", params={"access_token": long_token})
+                if owned_pages and "data" in owned_pages and owned_pages["data"]:
+                    pages = owned_pages["data"]
                     break
 
         if not pages:
-            flash("❌ No Facebook Pages found. Ensure you have admin rights.", "error")
+            flash("❌ No Facebook Pages found. Check admin permissions.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
         page_id = pages[0].get("id")
         if not page_id:
-            flash("❌ Page ID missing from Facebook response.", "error")
+            flash("❌ Missing Page ID.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Get IG business account
-        ig_json = safe_get(
+        # Step 4: Get Instagram business account
+        ig_data = safe_get(
             f"{GRAPH_API_BASE}/{page_id}",
-            params={"fields": "instagram_business_account", "access_token": long_access_token}
+            params={"fields": "instagram_business_account", "access_token": long_token}
         )
-        ig_account = ig_json.get("instagram_business_account", {}) if ig_json else {}
+        ig_account = ig_data.get("instagram_business_account", {}) if ig_data else {}
         ig_user_id = ig_account.get("id")
 
         if not ig_user_id:
-            flash("❌ Instagram business account not linked to Page.", "error")
+            flash("❌ Instagram account not linked to Page.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
         # Save tokens
         user_email = session.get("user")
         if user_email:
-            save_user_tokens(user_email, long_access_token, "", expires_in)
+            save_user_tokens(user_email, long_token, "", expires_in)
             session["connected"] = True
-            flash("✅ Instagram account connected successfully!", "success")
+            flash("✅ Instagram connected successfully!", "success")
 
     except Exception:
-        current_app.logger.exception("[OAuth] Instagram callback failed.")
-        flash("❌ Instagram connection failed. Please try again later.", "error")
+        current_app.logger.exception("[OAuth] Instagram callback error")
+        flash("❌ Instagram connection failed. Try again later.", "error")
 
     return redirect(url_for("dashboard.dashboard"))
 
+# --------------------------
 # Disconnect Instagram
+# --------------------------
+
 @instagram_bp.route("/disconnect-instagram", methods=["POST"])
 def disconnect_instagram():
     user_email = session.get("user")
@@ -149,17 +155,20 @@ def disconnect_instagram():
         return redirect(url_for("auth.index"))
 
     token_path = f"user_tokens/{user_email}.json"
-    if os.path.exists(token_path):
-        try:
+    try:
+        if os.path.exists(token_path):
             os.remove(token_path)
-        except Exception as e:
-            current_app.logger.error(f"[Disconnect] Failed to delete token file: {e}")
+    except Exception as e:
+        current_app.logger.error(f"[Disconnect] Token delete failed: {e}")
 
     session["connected"] = False
     flash("ℹ️ Instagram disconnected.", "info")
     return redirect(url_for("dashboard.dashboard"))
 
-# API: Post a reel
+# --------------------------
+# API: Post Reel to Instagram
+# --------------------------
+
 @instagram_bp.route("/api/post-reel", methods=["POST"])
 def api_post_reel():
     data = request.get_json()
@@ -183,5 +192,5 @@ def api_post_reel():
         )
         return jsonify({"success": True, "message": result_html})
     except Exception:
-        current_app.logger.exception("[Instagram] Failed to post reel.")
+        current_app.logger.exception("[Instagram] Reel post failed")
         return jsonify({"error": "Failed to post to Instagram"}), 500

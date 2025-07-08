@@ -52,8 +52,8 @@ def verify_reset_token(token_str, secret_key):
         expected_sig = hmac.new(secret_key.encode(), f"{email}|{expires}|{token}".encode(), hashlib.sha256).hexdigest()
         if hmac.compare_digest(sig, expected_sig):
             return email
-    except Exception:
-        current_app.logger.warning("Invalid token format or verification failed.")
+    except Exception as e:
+        current_app.logger.warning(f"[Token Error] Verification failed: {e}")
     return None
 
 # ----------------- SMTP Email -----------------
@@ -166,7 +166,7 @@ If you didn't request this, please ignore it.
             subject = "Password Reset - Reelvo.ai"
             send_email(email, subject, body)
 
-        # Always respond the same to prevent user enumeration
+        # Prevent user enumeration
         flash("If this email is registered, a reset link has been sent.", "info")
         return redirect(url_for("auth.forgot_password"))
 

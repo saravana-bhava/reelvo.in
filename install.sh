@@ -23,11 +23,11 @@ else
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         sudo apt-get update -qq
         sudo apt-get install -y ffmpeg
+        echo -e "${GREEN}✅ FFmpeg installed successfully.${NC}"
     else
         echo -e "${RED}❌ Unsupported OS for automatic FFmpeg installation. Please install FFmpeg manually.${NC}"
         exit 1
     fi
-    echo -e "${GREEN}✅ FFmpeg installed successfully.${NC}"
 fi
 
 # ─────────────────────────────────────────────

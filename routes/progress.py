@@ -5,12 +5,12 @@ from utils.progress_tracker import progress_status
 
 progress_bp = Blueprint("progress", __name__)
 
-
 @progress_bp.route("/progress/<task_id>", methods=["GET"])
 def get_progress(task_id):
     """
-    Returns the current progress of a task.
-    Called periodically from the frontend while generating a reel.
+    API Endpoint to check progress of a given task_id.
+
+    This is typically called from the frontend while a reel is being generated.
     """
     status = progress_status.get(task_id)
 

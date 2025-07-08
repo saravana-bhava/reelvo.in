@@ -22,11 +22,12 @@ services:
     # ⚙️ Deploy settings
     # ───────────────────────────────────────────────
     autoDeploy: true
-    plan: free  # Consider 'starter' or higher for faster performance & background jobs
+    plan: free  # Consider 'starter' or higher for background tasks & better perf
 
     # ───────────────────────────────────────────────
-    # 🔐 Environment variables (set values in dashboard)
-    # Avoid putting secrets directly in this file!
+    # 🔐 Environment variables
+    # (Values are configured via Render Dashboard)
+    # Avoid hardcoding secrets here
     # ───────────────────────────────────────────────
     envVars:
       - key: FLASK_ENV
@@ -38,18 +39,15 @@ services:
       - key: USE_GOOGLE_CLOUD_TTS
         value: false
 
-      # API keys (do NOT hardcode)
+      # API keys (should be set in Render UI or synced)
       - key: OPENAI_API_KEY
         sync: false
 
-      # TTS configuration
+      # TTS Configuration
       - key: GOOGLE_CLOUD_TTS_VOICE
         value: en-US-Wavenet-D
 
-      # You may also configure GOOGLE_APPLICATION_CREDENTIALS via:
-      # - Render's Secret Files (recommended)
-      # - base64 env var and decode in runtime
-      # Example (if needed):
+      # For Google Cloud credentials (optional methods)
+      # Recommended: Render Secret Files or base64 decode in runtime
       # - key: GOOGLE_APPLICATION_CREDENTIALS
       #   value: /etc/secrets/credentials.json
-'['

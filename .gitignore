@@ -32,33 +32,38 @@ secure/
 # Output Media & Generated Assets
 # ─────────────────────────────────────────────
 db/
+db/reel_logs/
 output/
-*.avi
 *.jsonl
-*.jpeg
-*.jpg
 *.marks.json
-*.mov
-*.mp4
-*.png
 *.srt
+*.avi
+*.mp4
+*.mov
 *.webm
+*.mkv
+*.ts
+*.part
 *.wav
+*.jpg
+*.jpeg
+*.png
+*.ffmpeg.*
 
 # ─────────────────────────────────────────────
 # Build Artifacts
 # ─────────────────────────────────────────────
 *.egg-info/
-*.spec  # PyInstaller
+*.spec
 build/
 dist/
 
 # ─────────────────────────────────────────────
 # Logs & Temporary Files
 # ─────────────────────────────────────────────
-*.bak
 *.log
 *.tmp
+*.bak
 *.bak.*
 *.out
 
@@ -100,15 +105,6 @@ cache/
 docs/
 temp/
 user_tokens/
-db/reel_logs/
-
-# ─────────────────────────────────────────────
-# FFmpeg Intermediate Files
-# ─────────────────────────────────────────────
-*.ffmpeg.*
-*.mkv
-*.part
-*.ts
 
 # ─────────────────────────────────────────────
 # Frontend (Node, Next.js, etc.)
