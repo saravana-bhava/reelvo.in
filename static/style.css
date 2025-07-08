@@ -35,6 +35,11 @@ header h1 {
   margin: 0;
 }
 
+/* Footer */
+footer.footer {
+  text-align: center;
+}
+
 /* Navigation */
 nav {
   background: var(--primary-dark);
