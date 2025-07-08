@@ -4,7 +4,7 @@ import os
 import logging
 from threading import Thread
 
-from flask import Flask, redirect, url_for
+from flask import Flask
 from werkzeug.serving import run_simple
 from werkzeug.middleware.proxy_fix import ProxyFix
 from waitress import serve
@@ -57,11 +57,6 @@ flask_app.register_blueprint(reels_bp)
 flask_app.register_blueprint(progress_bp)
 flask_app.register_blueprint(instagram_bp)
 flask_app.register_blueprint(schedule_bp)
-
-# ----------------- Root Redirect -----------------
-@flask_app.route("/")
-def index():
-    return redirect(url_for("home.home"))
 
 # ----------------- Background Threads -----------------
 def start_background_tasks():
