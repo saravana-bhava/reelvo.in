@@ -10,7 +10,10 @@ import secrets
 import smtplib
 from email.mime.text import MIMEText
 from email.utils import formataddr
-from flask import Blueprint, render_template, request, redirect, session, url_for, flash, current_app
+from flask import (
+    Blueprint, render_template, request, redirect, session,
+    url_for, flash, current_app
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 
 auth_bp = Blueprint("auth", __name__)
@@ -50,7 +53,7 @@ def verify_reset_token(token_str, secret_key):
         if hmac.compare_digest(sig, expected_sig):
             return email
     except Exception:
-        pass
+        current_app.logger.warning("Invalid token format or verification failed.")
     return None
 
 # ----------------- SMTP Email -----------------
@@ -161,13 +164,10 @@ If you didn't request this, please ignore it.
 — Reelvo.ai Team
 """
             subject = "Password Reset - Reelvo.ai"
-            if send_email(email, subject, body):
-                flash("If this email is registered, a reset link has been sent.", "info")
-            else:
-                flash("Failed to send reset email. Please try again later.", "danger")
-        else:
-            flash("If this email is registered, a reset link has been sent.", "info")
+            send_email(email, subject, body)
 
+        # Always respond the same to prevent user enumeration
+        flash("If this email is registered, a reset link has been sent.", "info")
         return redirect(url_for("auth.forgot_password"))
 
     return render_template("forgot_password.html")

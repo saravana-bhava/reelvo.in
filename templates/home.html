@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Home - Reelvo.ai{% endblock %}
+
+{% block content %}
+<style>
+  .hero {
+    text-align: center;
+    padding: 4rem 1rem;
+    background-color: #f8f9ff;
+    border-radius: 1rem;
+    margin-bottom: 3rem;
+  }
+  .hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .hero p {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+  }
+  .hero .btn {
+    background-color: #3B82F6;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+  }
+  .features, .how-it-works {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    margin-bottom: 4rem;
+  }
+  .feature, .step {
+    flex: 1 1 250px;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+  }
+  .feature h3, .step h3 {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+  }
+  .feature p, .step p {
+    color: #666;
+    font-size: 0.95rem;
+  }
+  .section-heading {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+  }
+</style>
+
+<div class="hero">
+  <h1>Let AI Create & Post Reels While You Sleep</h1>
+  <p>Save time and grow your Instagram with automated video generation and publishing.</p>
+  <a href="{{ url_for('auth.register') }}" class="btn">Get Early Access</a>
+</div>
+
+<div class="features">
+  <div class="feature">
+    <div style="font-size: 2rem;">🧠</div>
+    <h3>AI Powered</h3>
+    <p>Scripted videos generated using advanced AI technology.</p>
+  </div>
+  <div class="feature">
+    <div style="font-size: 2rem;">✅</div>
+    <h3>Auto-Posting</h3>
+    <p>Schedule reels to be published to your Instagram automatically.</p>
+  </div>
+  <div class="feature">
+    <div style="font-size: 2rem;">📊</div>
+    <h3>Analytics</h3>
+    <p>Track the performance of your reels with detailed insights.</p>
+  </div>
+</div>
+
+<div class="how-it-works">
+  <h2 class="section-heading">How It Works</h2>
+  <div class="step">
+    <div style="font-size: 2rem;">✍️</div>
+    <h3>Script</h3>
+    <p>Auto video creation with AI-generated scripts.</p>
+  </div>
+  <div class="step">
+    <div style="font-size: 2rem;">🎬</div>
+    <h3>Create</h3>
+    <p>Generate videos automatically with voiceover and visuals.</p>
+  </div>
+  <div class="step">
+    <div style="font-size: 2rem;">📱</div>
+    <h3>Post</h3>
+    <p>Auto-publish reels to Instagram on your schedule.</p>
+  </div>
+</div>
+{% endblock %}
