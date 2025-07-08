@@ -59,8 +59,13 @@ def create_reel():
         "create_reel.html",
         user=user_email,
         videos=videos,
-        script_text=latest_script,
-        themes=themes
+        themes=themes,
+        selected_theme=request.args.get("theme", ""),
+        custom_topic=request.args.get("custom_topic", ""),
+        language=request.args.get("language", "en"),
+        voice_option=request.args.get("voice_option", "tts"),
+        voice_artist=request.args.get("voice_artist", ""),
+        script_text=request.args.get("script", latest_script)
     )
 
 
@@ -81,23 +86,29 @@ def create_reel_action():
     subtitles_enabled = "subtitles" in request.form
     watermark_enabled = "watermark" in request.form
 
+    def redirect_with_form_data(msg):
+        flash(msg, "error")
+        return redirect(url_for("reels.create_reel",
+            theme=theme,
+            custom_topic=custom_topic,
+            language=language,
+            voice_option="tts" if use_tts else "upload",
+            voice_artist=voice,
+            script=script_text
+        ))
+
     if not (theme or custom_topic):
-        flash("You must select a theme or enter a custom topic.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("You must select a theme or enter a custom topic.")
     if not script_text:
-        flash("Script is required.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("Script is required.")
     if use_tts and not voice:
-        flash("Please select a voice for TTS.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("Please select a voice for TTS.")
     if not use_tts and not custom_voice_file:
-        flash("You must upload a voice file or choose TTS.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("You must upload a voice file or choose TTS.")
 
     raw_theme = custom_topic or theme or "default"
     if len(raw_theme) > 100:
-        flash("Topic name too long.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("Topic name too long.")
 
     theme_name = secure_filename(raw_theme)
     logger.info(f"🎬 Starting reel: User={user_email} | Theme={theme_name} | Language={language}")
@@ -142,12 +153,10 @@ def create_reel_action():
             ]).decode().strip())
 
         if audio_duration < 2.0:
-            flash("Audio too short. Must be at least 2 seconds.", "error")
-            return redirect(url_for("reels.create_reel"))
+            return redirect_with_form_data("Audio too short. Must be at least 2 seconds.")
     except Exception:
         logger.exception("Voice/audio error")
-        flash("Error processing audio file.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("Error processing audio file.")
 
     # Generate subtitles
     srt_path = ""
@@ -178,13 +187,11 @@ def create_reel_action():
     # Fetch and join clips
     clips = fetch_multiple_clips(temp_dir, theme_name, language, english_script_text, audio_duration)
     if not clips:
-        flash("❌ No video clips found.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("❌ No video clips found.")
 
     combined_video_path = concatenate_clips(temp_dir, theme_name, language, clips)
     if not combined_video_path:
-        flash("❌ Video clips could not be combined.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("❌ Video clips could not be combined.")
 
     # Video composition
     inputs = ["-i", combined_video_path, "-i", audio_to_use]
@@ -228,8 +235,7 @@ def create_reel_action():
 
     video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
     if not video_path:
-        flash("❌ Video could not be generated.", "error")
-        return redirect(url_for("reels.create_reel"))
+        return redirect_with_form_data("❌ Video could not be generated.")
 
     upload_url = upload_to_google_drive(video_path, user_email)
     add_reel_to_history(user_email, os.path.basename(video_path), script_text)
