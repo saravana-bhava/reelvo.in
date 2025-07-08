@@ -63,8 +63,8 @@
   <label for="script"><strong>✏️ Edit Script:</strong></label>
   <textarea id="script" name="script" rows="6" required>{{ script_text }}</textarea>
 
-  <label><input type="checkbox" name="subtitles" checked /> Include Subtitles</label><br>
-  <label><input type="checkbox" name="watermark" checked /> Include Watermark</label><br><br>
+  <label><input type="checkbox" name="subtitles" {% if subtitles_checked %}checked{% endif %}/> Include Subtitles</label><br>
+  <label><input type="checkbox" name="watermark" {% if watermark_checked %}checked{% endif %}/> Include Watermark</label><br><br>
 
   <button type="submit">📦 Create Reel</button>
 </form>

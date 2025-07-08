@@ -6,7 +6,7 @@ import logging
 import subprocess
 from flask import (
     Blueprint, request, render_template, session, redirect,
-    url_for, flash, jsonify, send_from_directory, current_app
+    url_for, flash, jsonify, send_from_directory
 )
 from werkzeug.utils import secure_filename
 
@@ -20,7 +20,6 @@ from utils.fetch_bgm import fetch_bgm
 from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video
 from utils.google_drive import upload_to_google_drive
-from utils.instagram import post_to_instagram
 from utils.reel_history import add_reel_to_history
 
 reels_bp = Blueprint("reels", __name__)
@@ -43,10 +42,7 @@ def create_reel():
     os.makedirs(scripts_dir, exist_ok=True)
 
     videos = os.listdir(videos_dir)
-    scripts = sorted(
-        [f for f in os.listdir(scripts_dir) if f.endswith(".txt")],
-        reverse=True
-    )
+    scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
     latest_script = ""
     if scripts:
         with open(os.path.join(scripts_dir, scripts[0]), encoding="utf-8") as f:
@@ -65,7 +61,9 @@ def create_reel():
         language=request.args.get("language", "en"),
         voice_option=request.args.get("voice_option", "tts"),
         voice_artist=request.args.get("voice_artist", ""),
-        script_text=request.args.get("script", latest_script)
+        script_text=request.args.get("script", latest_script),
+        subtitles_checked="subtitles" in request.args,
+        watermark_checked="watermark" in request.args
     )
 
 
@@ -94,7 +92,9 @@ def create_reel_action():
             language=language,
             voice_option="tts" if use_tts else "upload",
             voice_artist=voice,
-            script=script_text
+            script=script_text,
+            subtitles="1" if subtitles_enabled else "",
+            watermark="1" if watermark_enabled else ""
         ))
 
     if not (theme or custom_topic):
