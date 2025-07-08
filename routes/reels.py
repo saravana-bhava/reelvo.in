@@ -61,21 +61,41 @@ def create_reel_action():
         return redirect(url_for("auth.index"))
 
     user_email = session["user"]
-    theme = request.form.get("theme")
+
+    # Get and clean inputs
+    theme = request.form.get("theme", "").strip()
     custom_topic = request.form.get("custom_topic", "").strip()
-    language = request.form.get("language", "en")
+    language = request.form.get("language", "en").strip()
     script_text = request.form.get("script", "").strip()
     use_tts = request.form.get("voice_option") == "tts"
-    voice = request.form.get("voice_artist")
+    voice = request.form.get("voice_artist", "").strip()
     custom_voice_file = request.files.get("custom_voice")
     subtitles_enabled = "subtitles" in request.form
     watermark_enabled = "watermark" in request.form
-    theme_name = secure_filename(custom_topic if custom_topic else theme)
+
+    # Validate inputs
+    if not (theme or custom_topic):
+        flash("You must select a theme or enter a custom topic.", "error")
+        return redirect(url_for("reels.create_reel"))
 
     if not script_text:
         flash("Script is required.", "error")
         return redirect(url_for("reels.create_reel"))
 
+    if use_tts and not voice:
+        flash("Please select a voice for TTS.", "error")
+        return redirect(url_for("reels.create_reel"))
+
+    if not use_tts and not custom_voice_file:
+        flash("You must upload a voice file or choose TTS.", "error")
+        return redirect(url_for("reels.create_reel"))
+
+    raw_theme = custom_topic or theme or "default"
+    if len(raw_theme) > 100:
+        flash("Topic name too long.", "error")
+        return redirect(url_for("reels.create_reel"))
+
+    theme_name = secure_filename(raw_theme)
     logger.info(f"🎬 Starting reel: User={user_email} | Theme={theme_name} | Language={language}")
 
     output_dir = os.path.join("output", user_email)
@@ -256,7 +276,6 @@ def list_reels():
     os.makedirs(video_folder, exist_ok=True)
     videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
 
-    # Optional: pass script previews
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}
     if os.path.exists(scripts_path):

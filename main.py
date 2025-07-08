@@ -45,6 +45,7 @@ flask_app.config.update(
     SMTP_SENDER_NAME=os.getenv("SMTP_SENDER_NAME", "Reelvo.ai"),
     SMTP_USE_TLS=os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 )
+flask_app.config["PREFERRED_URL_SCHEME"] = "https"
 
 # ----------------- Register Blueprints -----------------
 flask_app.register_blueprint(auth_bp)
