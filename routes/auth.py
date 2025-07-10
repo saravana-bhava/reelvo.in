@@ -161,9 +161,9 @@ Click the link below to reset your password:
 
 If you didn't request this, please ignore it.
 
-— Reelvo.ai Team
+— Reelvo Team
 """
-            subject = "Password Reset - Reelvo.ai"
+            subject = "Password Reset - Reelvo"
             send_email(email, subject, body)
 
         # Prevent user enumeration

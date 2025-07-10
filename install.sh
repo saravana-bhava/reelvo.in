@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# File: install.sh — Setup script for reelvo.ai
+# File: install.sh — Setup script for reelvo
 set -euo pipefail
 
 # ─────────────────────────────────────────────
@@ -11,7 +11,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}🔧 Starting Reelvo.ai system setup...${NC}"
+echo -e "${GREEN}🔧 Starting Reelvo system setup...${NC}"
 
 # ─────────────────────────────────────────────
 # FFmpeg Installation Check

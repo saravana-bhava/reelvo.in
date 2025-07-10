@@ -44,7 +44,7 @@ flask_app.config.update(
     SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
     SMTP_USERNAME=os.getenv("SMTP_USERNAME"),
     SMTP_PASSWORD=os.getenv("SMTP_PASSWORD"),
-    SMTP_SENDER_NAME=os.getenv("SMTP_SENDER_NAME", "Reelvo.ai"),
+    SMTP_SENDER_NAME=os.getenv("SMTP_SENDER_NAME", "Reelvo"),
     SMTP_USE_TLS=os.getenv("SMTP_USE_TLS", "true").lower() == "true",
     PREFERRED_URL_SCHEME="https"
 )

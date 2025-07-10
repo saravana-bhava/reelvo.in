@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# File: start.sh — Boot script for Reelvo.ai
+# File: start.sh — Boot script for Reelvo
 set -euo pipefail
 
 # ─────────────────────────────────────────────
@@ -11,7 +11,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${GREEN}🚀 Starting Reelvo.ai application...${NC}"
+echo -e "${GREEN}🚀 Starting Reelvo application...${NC}"
 
 # ─────────────────────────────────────────────
 # Ensure FFmpeg is installed

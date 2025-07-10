@@ -1,4 +1,4 @@
-# File: render.yaml — Render deployment config for reelvo.ai
+# File: render.yaml — Render deployment config for reelvo
 
 services:
   - type: web

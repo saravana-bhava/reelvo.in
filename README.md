@@ -115,7 +115,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=your-smtp-email@example.com
 SMTP_PASSWORD=your-smtp-password
-SMTP_SENDER_NAME=Reelvo.ai Support
+SMTP_SENDER_NAME=Reelvo Support
 SMTP_USE_TLS=true
 
 # ──────────────────────────────────────────────────

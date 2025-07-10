@@ -1,5 +1,5 @@
 # ========================
-# File: requirements.txt — reelvo.ai Requirements
+# File: requirements.txt — reelvo Requirements
 # ========================
 
 # ------------------------
