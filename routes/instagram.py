@@ -1,6 +1,6 @@
 # File: routes/instagram.py
 
-from flask import Blueprint, request, redirect, session, flash, url_for, jsonify, current_app
+from flask import Blueprint, request, redirect, session, flash, url_for, jsonify, current_app, send_from_directory
 from datetime import timedelta
 import requests
 import os
@@ -223,3 +223,8 @@ def api_post_reel():
     except Exception:
         current_app.logger.exception("[Instagram] Reel post failed")
         return jsonify({"error": "Failed to post to Instagram"}), 500
+
+@instagram_bp.route("/watermark/<user_email>/logo.png")
+def serve_video(user_email):
+    """Serve a generated watermark file."""
+    return send_from_directory(os.path.join("output", user_email, "watermark"), "logo.png")

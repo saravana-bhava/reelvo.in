@@ -5,9 +5,9 @@
 <h2 class="page-heading">👤 Your Profile</h2>
 
 <section class="card" style="text-align: center;">
-  {% set logo_path = 'output/' + user + '/watermark/logo.png' %}
+  {% set logo_path = 'watermark/' + user + '/logo.png' %}
   {% if session.get("connected") and session.get("instagram_profile_picture") %}
-    <img src="{{ url_for('static', filename=logo_path) }}"
+    <img src="/{{ logo_path }}"
          alt="Instagram Profile"
          style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 0.5rem;" />
   {% endif %}

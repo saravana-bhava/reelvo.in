@@ -11,7 +11,7 @@
   }
 
   .sidebar {
-    flex: 0 0 200px;
+    flex: 0 0 210px;
     border-right: 1px solid #ddd;
     padding-right: 1rem;
   }
@@ -120,9 +120,9 @@
 
   <!-- Sidebar -->
   <aside class="sidebar">
-    {% set logo_path = 'output/' + user + '/watermark/logo.png' %}
+    {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
     {% if session.instagram_profile_picture and logo_path|safe %}
-      <img src="{{ url_for('static', filename=logo_path) }}"
+      <img src="/{{ logo_path }}"
            alt="Instagram Profile Picture"
            class="profile-pic" />
     {% else %}
@@ -130,7 +130,7 @@
            alt="Default User Avatar"
            class="profile-pic" />
     {% endif %}
-    <div class="username">{{ user }}</div>
+    <div class="username">{{ user_email }}</div>
 
     {% if not session.get("connected") %}
     <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
