@@ -120,15 +120,29 @@
 
   <!-- Sidebar -->
   <aside class="sidebar">
-    <img src="{{ url_for('static', filename='images/avatar.png') }}"
-         alt="User profile photo" class="profile-pic" />
+    {% if session.instagram_profile_picture %}
+      <img src="{{ session.instagram_profile_picture }}"
+           alt="Instagram Profile Picture"
+           class="profile-pic" />
+    {% else %}
+      <img src="{{ url_for('static', filename='images/avatar.png') }}"
+           alt="Default User Avatar"
+           class="profile-pic" />
+    {% endif %}
     <div class="username">{{ user }}</div>
-    <ul>
-      <li>🎞️ Reels</li>
-      <li>🎬 Video Creation</li>
-      <li>📤 Self-Uploading</li>
-      <li>⏱️ Real-Time Posting</li>
-    </ul>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <a href="{{ url_for('reels.create_reel') }}" class="button button-success">🎬 Create Reel</a>
+      <a href="{{ url_for('reels.list_reels') }}" class="button button-info">📂 Reel History</a>
+      <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}" class="button button-warning">🗓️ Scheduled Reels</a>
+      <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}" class="button button-secondary">📊 Analytics</a>
+      <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}" class="button button-secondary">🤝 Refer & Earn</a>
+      <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-secondary">💳 Upgrade Plan</a>
+      <a href="mailto:support@reelvo.in" class="button button-muted" target="_blank">🆘 Help Center</a>
+      <a href="{{ url_for('auth.logout') }}" class="button button-muted">🚪 Logout</a>
+    </div>
+
   </aside>
 
   <!-- Main -->
@@ -152,22 +166,16 @@
       {% endfor %}
     </div>
 
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      <a href="{{ url_for('reels.create_reel') }}" class="button button-success">🎬 Create Reel</a>
-      <a href="{{ url_for('reels.list_reels') }}" class="button button-info">📂 Reel History</a>
-      <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}" class="button button-warning">🗓️ Scheduled Reels</a>
-      <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}" class="button button-secondary">📊 Analytics</a>
-      <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}" class="button button-secondary">🤝 Refer & Earn</a>
-      <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-secondary">💳 Upgrade Plan</a>
-      <a href="mailto:support@reelvo.in" class="button button-muted">🆘 Help Center</a>
-      <a href="{{ url_for('auth.logout') }}" class="button button-muted">🚪 Logout</a>
-    </div>
-
   </section>
 
   <!-- Video Process Column -->
   <aside class="process-box">
+    <ul>
+      <li>🎞️ Reels</li>
+      <li>🎬 Video Creation</li>
+      <li>📤 Self-Uploading</li>
+      <li>⏱️ Real-Time Posting</li>
+    </ul>
     <h3>🎥 Video Create Process</h3>
     <div class="process-step"><span>📝</span> Enter Script</div>
     <div class="process-step"><span>🎬</span> Generate Video</div>

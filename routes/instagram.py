@@ -119,7 +119,7 @@ def instagram_callback():
             flash("❌ Missing Page ID.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Step 4: Get Instagram business account
+        # Step 4: Get Instagram business account ID
         ig_data = safe_get(
             f"{GRAPH_API_BASE}/{page_id}",
             params={"fields": "instagram_business_account", "access_token": long_token}
@@ -131,11 +131,19 @@ def instagram_callback():
             flash("❌ Instagram account not linked to Page.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Save tokens
+        # Step 5: Fetch Instagram profile picture
+        profile_data = safe_get(
+            f"{GRAPH_API_BASE}/{ig_user_id}",
+            params={"fields": "username,profile_picture_url", "access_token": long_token}
+        )
+        profile_picture_url = profile_data.get("profile_picture_url") if profile_data else None
+
+        # Save session state and tokens
         user_email = session.get("user")
         if user_email:
             save_user_tokens(user_email, long_token, "", expires_in)
             session["connected"] = True
+            session["instagram_profile_picture"] = profile_picture_url
             flash("✅ Instagram connected successfully!", "success")
 
     except Exception:

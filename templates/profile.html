@@ -4,34 +4,49 @@
 {% block content %}
 <h2 class="page-heading">👤 Your Profile</h2>
 
-<section class="card">
-    <h3>📧 Email</h3>
-    <p><strong>{{ user }}</strong></p>
+<section class="card" style="text-align: center;">
+  {% if session.get("instagram_profile_picture") %}
+    <img src="{{ session.get('instagram_profile_picture') }}"
+         alt="Instagram Profile"
+         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 0.5rem;" />
+  {% endif %}
+
+  <h3>📧 Email</h3>
+  <p><strong>{{ user }}</strong></p>
 </section>
 
 <section class="card">
     <h3>🔗 Instagram</h3>
-    {% if session.get("ig_connected") %}
+    {% if session.get("connected") %}
     <p>✅ Instagram is connected.</p>
     <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
-        <button class="button button-danger">Disconnect Instagram</button>
+        <button class="button button-danger">❌ Disconnect Instagram</button>
     </form>
     {% else %}
+    <p>❌ Not connected.</p>
     <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
-        Connect Instagram
+        🔗 Connect Instagram
     </a>
     {% endif %}
 </section>
 
 <section class="card">
-    <h3>🎨 Appearance</h3>
-    <p>Coming soon: Light/Dark mode toggle</p>
+  <h3>🎨 Appearance</h3>
+  <form method="post" action="{{ url_for('profile.toggle_theme') }}">
+    <button class="button button-info">
+      {% if session.get('theme') == 'dark' %}
+      🌞 Switch to Light Mode
+      {% else %}
+      🌙 Switch to Dark Mode
+      {% endif %}
+    </button>
+  </form>
 </section>
 
 <section class="card">
     <h3>🚀 Upgrade Plan</h3>
     <p>You're on the free plan.</p>
-    <a href="#" class="button button-success">Upgrade Now</a>
+    <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-success">💳 Upgrade Now</a>
 </section>
 
 <section class="card">
