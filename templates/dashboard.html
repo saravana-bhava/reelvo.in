@@ -1,50 +1,178 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard | Reelvo{% endblock %}
 
 {% block content %}
-<h2 class="welcome">👋 Welcome, <span class="user-highlight">{{ user }}</span></h2>
+<style>
+  .dashboard-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
 
-<section class="card instagram-status">
-  {% if connected %}
-    <p>✅ Instagram is connected to your account.</p>
-    <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
-      <button type="submit" class="button button-danger" aria-label="Disconnect Instagram">
-        ❌ Disconnect Instagram
-      </button>
-    </form>
-  {% else %}
-    <a href="{{ url_for('instagram.connect_instagram') }}"
-       class="button button-primary"
-       role="button" aria-label="Connect Instagram">
-      🔗 Connect Instagram
-    </a>
-  {% endif %}
-</section>
+  .sidebar {
+    flex: 0 0 200px;
+    border-right: 1px solid #ddd;
+    padding-right: 1rem;
+  }
 
-<section class="action-buttons">
-  <a href="{{ url_for('reels.create_reel') }}"
-     class="button button-success"
-     role="button" aria-label="Create New Reel">
-    🎬 Create New Reel
-  </a>
+  .sidebar img.profile-pic {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 0.5rem;
+  }
 
-  <a href="{{ url_for('reels.list_reels') }}"
-     class="button button-info"
-     role="button" aria-label="View Reel History">
-    📂 View Reel History
-  </a>
+  .sidebar .username {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
 
-  <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
-     class="button button-warning"
-     role="button" aria-label="View Scheduled Reels">
-    🕓 Scheduled Reels
-  </a>
+  .sidebar ul {
+    list-style: none;
+    padding: 0;
+  }
 
-  <a href="{{ url_for('auth.logout') }}"
-     class="button button-muted"
-     role="button" aria-label="Logout">
-    🚪 Logout
-  </a>
-</section>
+  .sidebar ul li {
+    padding: 0.5rem 0;
+  }
+
+  .main-content {
+    flex: 1;
+  }
+
+  .hero-section h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-section p {
+    color: #555;
+    margin-bottom: 1.5rem;
+  }
+
+  .reel-thumbs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .reel-thumbs .reel {
+    text-align: center;
+  }
+
+  .reel-thumbs img {
+    width: 120px;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  .process-box {
+    background: #f8f9fa;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    width: 250px;
+  }
+
+  .process-box h3 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .process-step {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .process-step span {
+    font-size: 1.3rem;
+    margin-right: 0.5rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .action-buttons a {
+    flex: 1 1 180px;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-layout {
+      flex-direction: column;
+    }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 1rem;
+    }
+  }
+</style>
+
+<div class="dashboard-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <img src="{{ url_for('static', filename='images/avatar.png') }}"
+         alt="User profile photo" class="profile-pic" />
+    <div class="username">{{ user }}</div>
+    <ul>
+      <li>🎞️ Reels</li>
+      <li>🎬 Video Creation</li>
+      <li>📤 Self-Uploading</li>
+      <li>⏱️ Real-Time Posting</li>
+    </ul>
+  </aside>
+
+  <!-- Main -->
+  <section class="main-content">
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <h1>Let AI Create & Post Reels While You Sleep</h1>
+      <p>Save time and grow your Instagram with automated video generation and publishing.</p>
+    </div>
+
+    <!-- Recent Reels -->
+    <div class="reel-thumbs">
+      {% for vid in videos[:3] %}
+      <div class="reel">
+        <img src="{{ url_for('reels.thumbnail', filename=vid) }}" alt="Reel thumbnail">
+        <div>{{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}</div>
+      </div>
+      {% else %}
+      <div>No reels found</div>
+      {% endfor %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <a href="{{ url_for('reels.create_reel') }}" class="button button-success">🎬 Create Reel</a>
+      <a href="{{ url_for('reels.list_reels') }}" class="button button-info">📂 Reel History</a>
+      <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}" class="button button-warning">🗓️ Scheduled Reels</a>
+      <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}" class="button button-secondary">📊 Analytics</a>
+      <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}" class="button button-secondary">🤝 Refer & Earn</a>
+      <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-secondary">💳 Upgrade Plan</a>
+      <a href="mailto:support@reelvo.in" class="button button-muted">🆘 Help Center</a>
+      <a href="{{ url_for('auth.logout') }}" class="button button-muted">🚪 Logout</a>
+    </div>
+
+  </section>
+
+  <!-- Video Process Column -->
+  <aside class="process-box">
+    <h3>🎥 Video Create Process</h3>
+    <div class="process-step"><span>📝</span> Enter Script</div>
+    <div class="process-step"><span>🎬</span> Generate Video</div>
+    <div class="process-step"><span>📲</span> Post Reel</div>
+  </aside>
+
+</div>
 {% endblock %}

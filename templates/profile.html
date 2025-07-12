@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Profile | Reelvo{% endblock %}
+
+{% block content %}
+<h2 class="page-heading">👤 Your Profile</h2>
+
+<section class="card">
+    <h3>📧 Email</h3>
+    <p><strong>{{ user }}</strong></p>
+</section>
+
+<section class="card">
+    <h3>🔗 Instagram</h3>
+    {% if session.get("ig_connected") %}
+    <p>✅ Instagram is connected.</p>
+    <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
+        <button class="button button-danger">Disconnect Instagram</button>
+    </form>
+    {% else %}
+    <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
+        Connect Instagram
+    </a>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h3>🎨 Appearance</h3>
+    <p>Coming soon: Light/Dark mode toggle</p>
+</section>
+
+<section class="card">
+    <h3>🚀 Upgrade Plan</h3>
+    <p>You're on the free plan.</p>
+    <a href="#" class="button button-success">Upgrade Now</a>
+</section>
+
+<section class="card">
+    <h3>🤝 Refer & Earn</h3>
+    <p>Share your link: <code>{{ referral_link }}</code></p>
+    <button onclick="navigator.clipboard.writeText('{{ referral_link }}')"
+            class="button button-info">
+        📋 Copy Link
+    </button>
+</section>
+
+<section class="card">
+    <a href="{{ url_for('auth.logout') }}"
+       class="button button-muted" role="button">
+        🚪 Logout
+    </a>
+</section>
+{% endblock %}

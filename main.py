@@ -15,10 +15,12 @@ from utils.instagram_token_refresher import refresh_instagram_tokens
 from routes.home import home_bp
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
+from routes.profile import profile_bp
 from routes.reels import reels_bp
 from routes.progress import progress_bp
 from routes.instagram import instagram_bp
 from routes.schedule import schedule_bp
+from routes.coming_soon import coming_bp
 
 # Load environment variables
 load_dotenv()
@@ -51,8 +53,9 @@ flask_app.config.update(
 
 # Register Blueprints
 for bp in [
-    home_bp, auth_bp, dashboard_bp, reels_bp,
-    progress_bp, instagram_bp, schedule_bp
+    home_bp, auth_bp, dashboard_bp, profile_bp, reels_bp,
+    progress_bp, instagram_bp, schedule_bp, coming_bp
+
 ]:
     flask_app.register_blueprint(bp)
 

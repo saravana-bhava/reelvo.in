@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Coming Soon{% endblock %}
+
+{% block content %}
+<div class="coming-soon-box">
+  <h2>🚧 Coming Soon</h2>
+  <p>{{ feature_name }} is under development.</p>
+  <div class="blurred-section">
+    <p>This feature will be available in a future update.</p>
+  </div>
+  <a href="{{ url_for('dashboard.dashboard') }}" class="button">⬅️ Back to Dashboard</a>
+</div>
+
+<style>
+  .coming-soon-box {
+    text-align: center;
+    padding: 3rem;
+    background: #f4f6fa;
+    border-radius: 10px;
+  }
+  .blurred-section {
+    margin: 2rem auto;
+    padding: 1rem;
+    filter: blur(3px);
+    background: rgba(0,0,0,0.05);
+    width: 70%;
+  }
+</style>
+{% endblock %}

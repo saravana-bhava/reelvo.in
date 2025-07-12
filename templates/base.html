@@ -14,62 +14,69 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header>
-    <h1 aria-label="Reelvo - Home">
-      <span aria-hidden="true">🎞️</span> <span>Reelvo</span>
-    </h1>
-  </header>
+<header>
+  <h1 aria-label="Reelvo - Home">
+    <span aria-hidden="true">🎞️</span> <span>Reelvo</span>
+  </h1>
+</header>
 
-    <nav role="navigation" aria-label="Main navigation">
-      {% set endpoint = request.endpoint %}
+<nav role="navigation" aria-label="Main navigation">
+  {% set endpoint = request.endpoint %}
 
-      {% if session.get('user') %}
-        <a href="{{ url_for('dashboard.dashboard') }}"
-           class="{% if endpoint == 'dashboard.dashboard' %}active{% endif %}">Dashboard</a>
+  {% if session.get('user') %}
+  <a href="{{ url_for('dashboard.dashboard') }}"
+     class="{% if endpoint == 'dashboard.dashboard' %}active{% endif %}">
+    🏠 Dashboard
+  </a>
 
-        <a href="{{ url_for('reels.create_reel') }}"
-           class="{% if endpoint == 'reels.create_reel' %}active{% endif %}">Create Reel</a>
+  <a href="{{ url_for('reels.create_reel') }}"
+     class="{% if endpoint == 'reels.create_reel' %}active{% endif %}">
+    🎬 Create Reel
+  </a>
 
-        <a href="{{ url_for('reels.list_reels') }}"
-           class="{% if endpoint == 'reels.list_reels' %}active{% endif %}">Reel History</a>
+  <a href="{{ url_for('reels.list_reels') }}"
+     class="{% if endpoint == 'reels.list_reels' %}active{% endif %}">
+    📂 Reel History
+  </a>
 
-        <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
-           class="{% if endpoint == 'schedule.list_scheduled_jobs_view' %}active{% endif %}">Scheduled Reels</a>
+  <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
+     class="{% if endpoint == 'schedule.list_scheduled_jobs_view' %}active{% endif %}">
+    🗓️ Scheduled Reels
+  </a>
 
-        <form action="{{ url_for('instagram.disconnect_instagram') }}"
-              method="post"
-              class="logout-form"
-              aria-label="Disconnect Instagram">
-          <button type="submit">Disconnect Instagram</button>
-        </form>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
+  <a href="{{ url_for('profile.user_profile') }}"
+     class="{% if endpoint == 'profile.user_profile' %}active{% endif %}">
+    👤 Profile
+  </a>
 
-      {% else %}
-        <a href="{{ url_for('home.home') }}"
-           class="{% if endpoint == 'home.home' %}active{% endif %}">Home</a>
+  <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
 
-        <a href="{{ url_for('auth.login') }}">Login</a>
-        <a href="{{ url_for('auth.register') }}">Register</a>
-      {% endif %}
-    </nav>
+  {% else %}
+  <a href="{{ url_for('home.home') }}"
+     class="{% if endpoint == 'home.home' %}active{% endif %}">🏠 Home</a>
 
-  <main class="container" role="main">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="flash flash-{{ category }}">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <a href="{{ url_for('auth.login') }}">🔐 Login</a>
+  <a href="{{ url_for('auth.register') }}">📝 Register</a>
+  {% endif %}
+</nav>
 
-    {% block content %}{% endblock %}
-  </main>
+<main class="container" role="main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for category, msg in messages %}
+  <div class="flash flash-{{ category }}">{{ msg }}</div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
 
-  <footer class="footer">
-    <p>
-      &copy; {{ current_year or 2025 }} Reelvo &mdash; All rights reserved. <br>
-      <small>Site design by <a href="https://sazm.in" target="_blank" rel="noopener noreferrer">SazM</a></small>
-    </p>
-  </footer>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <p>
+    &copy; {{ current_year or 2025 }} Reelvo &mdash; All rights reserved. <br>
+    <small>Site design by <a href="https://sazm.in" target="_blank" rel="noopener noreferrer">SazM</a></small>
+  </p>
+</footer>
 </body>
 </html>
