@@ -32,6 +32,19 @@ def safe_get(url, params=None, timeout=10):
         current_app.logger.error(f"[HTTP GET] {url} failed: {e}")
         return None
 
+def download_and_save_image(url, save_path):
+    try:
+        response = requests.get(url, stream=True, timeout=10)
+        response.raise_for_status()
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "wb") as f:
+            for chunk in response.iter_content(1024):
+                f.write(chunk)
+        return True
+    except Exception as e:
+        current_app.logger.error(f"[Download Image] Failed to download {url}: {e}")
+        return False
+
 # --------------------------
 # OAuth Connect
 # --------------------------
@@ -138,12 +151,19 @@ def instagram_callback():
         )
         profile_picture_url = profile_data.get("profile_picture_url") if profile_data else None
 
-        # Save session state and tokens
         user_email = session.get("user")
         if user_email:
+            # Save profile image as watermark
+            if profile_picture_url:
+                local_path = f"output/{user_email}/watermark/logo.png"
+                if download_and_save_image(profile_picture_url, local_path):
+                    session["instagram_profile_picture"] = f"{local_path}"
+                else:
+                    session["instagram_profile_picture"] = None
+
+            # Save token and session state
             save_user_tokens(user_email, long_token, "", expires_in)
             session["connected"] = True
-            session["instagram_profile_picture"] = profile_picture_url
             flash("✅ Instagram connected successfully!", "success")
 
     except Exception:
@@ -170,6 +190,7 @@ def disconnect_instagram():
         current_app.logger.error(f"[Disconnect] Token delete failed: {e}")
 
     session["connected"] = False
+    session.pop("instagram_profile_picture", None)
     flash("ℹ️ Instagram disconnected.", "info")
     return redirect(url_for("dashboard.dashboard"))
 

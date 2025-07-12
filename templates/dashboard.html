@@ -120,8 +120,9 @@
 
   <!-- Sidebar -->
   <aside class="sidebar">
-    {% if session.instagram_profile_picture %}
-      <img src="{{ session.instagram_profile_picture }}"
+    {% set logo_path = 'output/' + user + '/watermark/logo.png' %}
+    {% if session.instagram_profile_picture and logo_path|safe %}
+      <img src="{{ url_for('static', filename=logo_path) }}"
            alt="Instagram Profile Picture"
            class="profile-pic" />
     {% else %}
@@ -130,6 +131,12 @@
            class="profile-pic" />
     {% endif %}
     <div class="username">{{ user }}</div>
+
+    {% if not session.get("connected") %}
+    <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
+    🔗 Connect Instagram
+    </a>
+    {% endif %}
 
     <!-- Action Buttons -->
     <div class="action-buttons">
@@ -170,12 +177,6 @@
 
   <!-- Video Process Column -->
   <aside class="process-box">
-    <ul>
-      <li>🎞️ Reels</li>
-      <li>🎬 Video Creation</li>
-      <li>📤 Self-Uploading</li>
-      <li>⏱️ Real-Time Posting</li>
-    </ul>
     <h3>🎥 Video Create Process</h3>
     <div class="process-step"><span>📝</span> Enter Script</div>
     <div class="process-step"><span>🎬</span> Generate Video</div>

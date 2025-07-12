@@ -5,8 +5,9 @@
 <h2 class="page-heading">👤 Your Profile</h2>
 
 <section class="card" style="text-align: center;">
-  {% if session.get("instagram_profile_picture") %}
-    <img src="{{ session.get('instagram_profile_picture') }}"
+  {% set logo_path = 'output/' + user + '/watermark/logo.png' %}
+  {% if session.get("connected") and session.get("instagram_profile_picture") %}
+    <img src="{{ url_for('static', filename=logo_path) }}"
          alt="Instagram Profile"
          style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 0.5rem;" />
   {% endif %}
@@ -16,18 +17,18 @@
 </section>
 
 <section class="card">
-    <h3>🔗 Instagram</h3>
-    {% if session.get("connected") %}
-    <p>✅ Instagram is connected.</p>
-    <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
-        <button class="button button-danger">❌ Disconnect Instagram</button>
-    </form>
-    {% else %}
-    <p>❌ Not connected.</p>
-    <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
-        🔗 Connect Instagram
-    </a>
-    {% endif %}
+  <h3>🔗 Instagram</h3>
+  {% if session.get("connected") %}
+  <p>✅ Instagram is connected.</p>
+  <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
+    <button class="button button-danger">❌ Disconnect Instagram</button>
+  </form>
+  {% else %}
+  <p>❌ Not connected.</p>
+  <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
+    🔗 Connect Instagram
+  </a>
+  {% endif %}
 </section>
 
 <section class="card">
@@ -44,24 +45,24 @@
 </section>
 
 <section class="card">
-    <h3>🚀 Upgrade Plan</h3>
-    <p>You're on the free plan.</p>
-    <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-success">💳 Upgrade Now</a>
+  <h3>🚀 Upgrade Plan</h3>
+  <p>You're on the free plan.</p>
+  <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-success">💳 Upgrade Now</a>
 </section>
 
 <section class="card">
-    <h3>🤝 Refer & Earn</h3>
-    <p>Share your link: <code>{{ referral_link }}</code></p>
-    <button onclick="navigator.clipboard.writeText('{{ referral_link }}')"
-            class="button button-info">
-        📋 Copy Link
-    </button>
+  <h3>🤝 Refer & Earn</h3>
+  <p>Share your link: <code>{{ referral_link }}</code></p>
+  <button onclick="navigator.clipboard.writeText('{{ referral_link }}')"
+          class="button button-info">
+    📋 Copy Link
+  </button>
 </section>
 
 <section class="card">
-    <a href="{{ url_for('auth.logout') }}"
-       class="button button-muted" role="button">
-        🚪 Logout
-    </a>
+  <a href="{{ url_for('auth.logout') }}"
+     class="button button-muted" role="button">
+    🚪 Logout
+  </a>
 </section>
 {% endblock %}
