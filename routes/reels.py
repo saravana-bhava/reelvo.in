@@ -309,3 +309,43 @@ def list_reels():
                     scripts[f.replace("_text.txt", "_video.mp4")] = file.read().strip()
 
     return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
+
+@reels_bp.route("/reels/delete/<filename>", methods=["POST"])
+def delete_reel(filename):
+    """Delete a specific reel and associated files."""
+    if "user" not in session:
+        return redirect(url_for("auth.index"))
+
+    user_email = session["user"]
+    base_video = os.path.splitext(filename)[0]
+    base_path = os.path.join("output", user_email)
+
+    deleted_any = False
+    try:
+        # Delete video
+        video_path = os.path.join(base_path, "videos", filename)
+        if os.path.exists(video_path):
+            os.remove(video_path)
+            deleted_any = True
+
+        # Delete associated script
+        script_path = os.path.join(base_path, "scripts", base_video.replace("_video", "_text") + ".txt")
+        if os.path.exists(script_path):
+            os.remove(script_path)
+
+        # Delete subtitle
+        srt_path = os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".srt")
+        if os.path.exists(srt_path):
+            os.remove(srt_path)
+
+        # Delete tts
+        tts_path = os.path.join(base_path, "tts", base_video.replace("_video", "_voice") + ".mp3")
+        if os.path.exists(tts_path):
+            os.remove(tts_path)
+
+        flash(f"🗑️ Deleted reel: {filename}", "info" if deleted_any else "warning")
+    except Exception as e:
+        logger.error(f"[Delete Reel] Error deleting {filename}: {e}")
+        flash("❌ Error while deleting reel.", "error")
+
+    return redirect(url_for("reels.list_reels"))
