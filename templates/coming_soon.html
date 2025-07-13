@@ -5,7 +5,7 @@
 <div class="coming-soon-box">
   <h2>🚧 Coming Soon</h2>
   <p>{{ feature_name }} is under development.</p>
-  <div class="blurred-section">
+  <div class="blurred-section" aria-hidden="true">
     <p>This feature will be available in a future update.</p>
   </div>
   <a href="{{ url_for('dashboard.dashboard') }}" class="button">⬅️ Back to Dashboard</a>
@@ -14,16 +14,40 @@
 <style>
   .coming-soon-box {
     text-align: center;
-    padding: 3rem;
-    background: #f4f6fa;
+    padding: 3rem 1rem;
+    background: var(--bg-white);
     border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    max-width: 600px;
+    margin: 0 auto;
   }
+
+  .coming-soon-box h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .coming-soon-box p {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+  }
+
   .blurred-section {
     margin: 2rem auto;
     padding: 1rem;
     filter: blur(3px);
-    background: rgba(0,0,0,0.05);
-    width: 70%;
+    background: rgba(0, 0, 0, 0.05);
+    width: 80%;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .coming-soon-box {
+      padding: 2rem 1rem;
+    }
+    .blurred-section {
+      width: 100%;
+    }
   }
 </style>
 {% endblock %}

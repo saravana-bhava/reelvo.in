@@ -2,12 +2,12 @@
 {% block title %}Create Reel{% endblock %}
 
 {% block content %}
-<h2>🎬 Create Your AI Reel ({{ user }})</h2>
+<h2>🎬 Create Your AI Reel <small style="font-size: 0.6em;">({{ user }})</small></h2>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="flash {{ category }}">{{ message }}</div>
+      <div class="flash flash-{{ category }}">{{ message }}</div>
     {% endfor %}
   {% endif %}
 {% endwith %}

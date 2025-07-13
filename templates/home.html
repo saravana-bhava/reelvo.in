@@ -27,19 +27,24 @@
     border: none;
     border-radius: 8px;
     text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
   }
   .hero .btn:hover {
     background-color: #2563eb;
   }
 
-  .features, .how-it-works {
+  .features,
+  .how-it-works-steps {
     display: flex;
     flex-wrap: wrap;
     gap: 2rem;
     justify-content: center;
     margin-bottom: 4rem;
   }
-  .feature, .step {
+
+  .feature,
+  .step {
     flex: 1 1 250px;
     background: #fff;
     padding: 2rem;
@@ -47,11 +52,15 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     text-align: center;
   }
-  .feature h3, .step h3 {
+
+  .feature h3,
+  .step h3 {
     margin-top: 1rem;
     font-size: 1.2rem;
   }
-  .feature p, .step p {
+
+  .feature p,
+  .step p {
     color: #666;
     font-size: 0.95rem;
   }
@@ -73,46 +82,50 @@
   }
 </style>
 
-<div class="hero">
+<section class="hero" role="region" aria-label="Hero">
   <h1>Let AI Create & Post Reels While You Sleep</h1>
   <p>Save time and grow your Instagram with automated video generation and publishing.</p>
-  <a href="{{ url_for('auth.register') }}" class="btn">Get Early Access</a>
-</div>
+  <a href="{{ url_for('auth.register') }}" class="btn" role="button" aria-label="Get Early Access">
+    🚀 Get Early Access
+  </a>
+</section>
 
-<div class="features">
+<section class="features" role="region" aria-label="Features">
   <div class="feature">
-    <div style="font-size: 2rem;">🧠</div>
+    <div aria-hidden="true" style="font-size: 2rem;">🧠</div>
     <h3>AI Powered</h3>
     <p>Scripted videos generated using advanced AI technology.</p>
   </div>
   <div class="feature">
-    <div style="font-size: 2rem;">✅</div>
+    <div aria-hidden="true" style="font-size: 2rem;">✅</div>
     <h3>Auto-Posting</h3>
     <p>Schedule reels to be published to your Instagram automatically.</p>
   </div>
   <div class="feature">
-    <div style="font-size: 2rem;">📊</div>
+    <div aria-hidden="true" style="font-size: 2rem;">📊</div>
     <h3>Analytics</h3>
     <p>Track the performance of your reels with detailed insights.</p>
   </div>
-</div>
+</section>
 
-<div class="how-it-works">
+<section role="region" aria-label="How It Works">
   <h2 class="section-heading">How It Works</h2>
-  <div class="step">
-    <div style="font-size: 2rem;">✍️</div>
-    <h3>Script</h3>
-    <p>Auto video creation with AI-generated scripts.</p>
+  <div class="how-it-works-steps">
+    <div class="step">
+      <div aria-hidden="true" style="font-size: 2rem;">✍️</div>
+      <h3>Script</h3>
+      <p>Auto video creation with AI-generated scripts.</p>
+    </div>
+    <div class="step">
+      <div aria-hidden="true" style="font-size: 2rem;">🎬</div>
+      <h3>Create</h3>
+      <p>Generate videos automatically with voiceover and visuals.</p>
+    </div>
+    <div class="step">
+      <div aria-hidden="true" style="font-size: 2rem;">📱</div>
+      <h3>Post</h3>
+      <p>Auto-publish reels to Instagram on your schedule.</p>
+    </div>
   </div>
-  <div class="step">
-    <div style="font-size: 2rem;">🎬</div>
-    <h3>Create</h3>
-    <p>Generate videos automatically with voiceover and visuals.</p>
-  </div>
-  <div class="step">
-    <div style="font-size: 2rem;">📱</div>
-    <h3>Post</h3>
-    <p>Auto-publish reels to Instagram on your schedule.</p>
-  </div>
-</div>
+</section>
 {% endblock %}

@@ -136,7 +136,8 @@ def register():
         flash("Registration successful. You can now log in.", "success")
         return redirect(url_for("auth.login"))
 
-    return render_template("register.html")
+    referral_code = request.args.get("ref")
+    return render_template("register.html", referral_code=referral_code)
 
 @auth_bp.route("/logout")
 def logout():

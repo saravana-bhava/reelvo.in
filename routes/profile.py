@@ -1,6 +1,6 @@
 # File: routes/profile.py
 
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, request
 import os
 
 profile_bp = Blueprint("profile", __name__)
@@ -19,4 +19,4 @@ def user_profile():
 @profile_bp.route("/toggle-theme", methods=["POST"])
 def toggle_theme():
     session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
-    return redirect(url_for("profile.user_profile"))
+    return redirect(request.referrer or url_for("profile.user_profile"))

@@ -19,7 +19,8 @@
          placeholder="Enter your email..."
          required
          autocomplete="email"
-         class="form-input" />
+         class="form-input"
+         aria-required="true" />
 
   <!-- Password Input -->
   <label for="password" class="form-label">
@@ -31,7 +32,8 @@
          placeholder="Enter your password..."
          required
          autocomplete="current-password"
-         class="form-input" />
+         class="form-input"
+         aria-required="true" />
 
   <!-- Forgot Password Link -->
   <div class="form-link-right">
@@ -41,13 +43,16 @@
   </div>
 
   <!-- Submit Button -->
-  <button type="submit" class="button button-primary" style="width: 100%;">
+  <button type="submit"
+          class="button button-primary"
+          style="width: 100%;"
+          aria-label="Login to your account">
     🚀 Login
   </button>
 
   <!-- Registration Prompt -->
   <div class="form-footer">
-    Don't have an account?
+    Don’t have an account?
     <a href="{{ url_for('auth.register') }}" class="link-success">
       Register here
     </a>

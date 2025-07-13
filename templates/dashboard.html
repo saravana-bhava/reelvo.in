@@ -28,6 +28,7 @@
     text-align: center;
     font-weight: bold;
     margin-bottom: 1rem;
+    word-break: break-word;
   }
 
   .sidebar ul {
@@ -57,10 +58,12 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
+    flex-wrap: wrap;
   }
 
   .reel-thumbs .reel {
     text-align: center;
+    flex: 1 1 120px;
   }
 
   .reel-thumbs img {
@@ -113,6 +116,10 @@
       border-bottom: 1px solid #ddd;
       padding-bottom: 1rem;
     }
+    .process-box {
+      width: 100%;
+      margin-top: 2rem;
+    }
   }
 </style>
 
@@ -121,24 +128,23 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
-    {% if session.instagram_profile_picture and logo_path|safe %}
+    {% if session.get("instagram_profile_picture") and logo_path %}
       <img src="/{{ logo_path }}"
-           alt="Instagram Profile Picture"
+           alt="User's Instagram Logo"
            class="profile-pic" />
     {% else %}
       <img src="{{ url_for('static', filename='images/avatar.png') }}"
-           alt="Default User Avatar"
+           alt="Default Avatar"
            class="profile-pic" />
     {% endif %}
     <div class="username">{{ user_email }}</div>
 
     {% if not session.get("connected") %}
     <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
-    🔗 Connect Instagram
+      🔗 Connect Instagram
     </a>
     {% endif %}
 
-    <!-- Action Buttons -->
     <div class="action-buttons">
       <a href="{{ url_for('reels.create_reel') }}" class="button button-success">🎬 Create Reel</a>
       <a href="{{ url_for('reels.list_reels') }}" class="button button-info">📂 Reel History</a>
@@ -146,10 +152,9 @@
       <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}" class="button button-secondary">📊 Analytics</a>
       <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}" class="button button-secondary">🤝 Refer & Earn</a>
       <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-secondary">💳 Upgrade Plan</a>
-      <a href="mailto:support@reelvo.in" class="button button-muted" target="_blank">🆘 Help Center</a>
+      <a href="mailto:support@reelvo.in" class="button button-muted" target="_blank" rel="noopener noreferrer">🆘 Help Center</a>
       <a href="{{ url_for('auth.logout') }}" class="button button-muted">🚪 Logout</a>
     </div>
-
   </aside>
 
   <!-- Main -->
@@ -164,12 +169,13 @@
     <!-- Recent Reels -->
     <div class="reel-thumbs">
       {% for vid in videos[:3] %}
-      <div class="reel">
-        <img src="{{ url_for('reels.thumbnail', filename=vid) }}" alt="Reel thumbnail">
-        <div>{{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}</div>
-      </div>
+        <div class="reel">
+          <img src="{{ url_for('reels.thumbnail', filename=vid) }}"
+               alt="Thumbnail for {{ vid | e }}" />
+          <div>{{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}</div>
+        </div>
       {% else %}
-      <div>No reels found</div>
+        <div>No reels found.</div>
       {% endfor %}
     </div>
 

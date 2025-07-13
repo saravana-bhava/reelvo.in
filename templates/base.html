@@ -18,6 +18,19 @@
   <h1 aria-label="Reelvo - Home">
     <span aria-hidden="true">🎞️</span> <span>Reelvo</span>
   </h1>
+
+  <!-- Theme toggle -->
+  {% if session.get('user') %}
+  <form id="theme-toggle-form" method="POST" action="{{ url_for('auth.toggle_theme') }}" style="position: absolute; top: 20px; right: 20px;">
+    <button type="submit" class="button" title="Toggle theme">
+      {% if session.get('theme') == 'dark' %}
+        ☀️ Light Mode
+      {% else %}
+        🌙 Dark Mode
+      {% endif %}
+    </button>
+  </form>
+  {% endif %}
 </header>
 
 <nav role="navigation" aria-label="Main navigation">
