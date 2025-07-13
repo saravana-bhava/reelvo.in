@@ -9,8 +9,7 @@ progress_bp = Blueprint("progress", __name__)
 def get_progress(task_id):
     """
     API Endpoint to check progress of a given task_id.
-
-    This is typically called from the frontend while a reel is being generated.
+    Typically called from the frontend while a reel is being generated.
     """
     status = progress_status.get(task_id)
 

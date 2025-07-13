@@ -19,20 +19,22 @@ def dashboard():
     videos = []
     vid_date_map = {}
 
-    if os.path.exists(video_folder):
+    if os.path.isdir(video_folder):
         for filename in os.listdir(video_folder):
-            if filename.endswith(".mp4"):
+            if filename.lower().endswith(".mp4"):
                 file_path = os.path.join(video_folder, filename)
-                videos.append(filename)
-                created_at = os.path.getmtime(file_path)
-                formatted_date = datetime.fromtimestamp(created_at).strftime("%b %d")
-                vid_date_map[filename] = formatted_date
+                try:
+                    created_at = os.path.getmtime(file_path)
+                    formatted_date = datetime.fromtimestamp(created_at).strftime("%b %d")
+                    videos.append(filename)
+                    vid_date_map[filename] = formatted_date
+                except Exception as e:
+                    current_app.logger.warning(f"[Dashboard] Error reading file: {file_path} - {e}")
 
-        # Sort videos by latest created first
         videos.sort(key=lambda f: os.path.getmtime(os.path.join(video_folder, f)), reverse=True)
 
     current_app.logger.debug(
-        f"[Dashboard] Access by: {user_email} | Instagram Connected: {connected} | {len(videos)} videos"
+        f"[Dashboard] Access by: {user_email} | IG Connected: {connected} | Videos: {len(videos)}"
     )
 
     return render_template(

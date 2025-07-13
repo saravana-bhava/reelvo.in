@@ -13,15 +13,20 @@ from logging.handlers import RotatingFileHandler
 import smtplib
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+
 from utils.instagram_posting import post_to_instagram
 from utils.user_db import get_user_token_data
 
 # Load .env
 load_dotenv()
 
-# Paths
+# ---------------------
+# Constants
+# ---------------------
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
+
 DB_DIR = os.path.join(ROOT_DIR, "db")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
 SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
@@ -29,7 +34,10 @@ HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "post_scheduled.log")
 EMAIL_TEMPLATE = os.path.join(BASE_DIR, "templates", "email_alert_template.txt")
 
-# Logging setup
+# ---------------------
+# Logging Setup
+# ---------------------
+
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logger = logging.getLogger("scheduled_reels")
 logger.setLevel(logging.INFO)
@@ -37,8 +45,12 @@ handler = RotatingFileHandler(LOG_FILE, maxBytes=2 * 1024 * 1024, backupCount=3)
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"))
 logger.addHandler(handler)
 
-# Email alert
+# ---------------------
+# Helper Functions
+# ---------------------
+
 def send_email_alert(subject, message):
+    """Send alert email on posting failure."""
     try:
         with open(EMAIL_TEMPLATE, "r", encoding="utf-8") as f:
             body = f.read().format(log_path=LOG_FILE, error_message=message)
@@ -58,8 +70,8 @@ def send_email_alert(subject, message):
     except Exception as e:
         logger.error(f"❌ Failed to send email alert: {e}")
 
-# JSON helpers
 def load_json(path):
+    """Safely load JSON data from file."""
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -69,14 +81,19 @@ def load_json(path):
     return {}
 
 def save_json(path, data):
+    """Safely save JSON data to file."""
     try:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         logger.error(f"❌ Failed to save {path}: {e}")
 
-# Main function
+# ---------------------
+# Main Logic
+# ---------------------
+
 def post_due_reels():
+    """Post reels scheduled for today."""
     logger.info("📤 Starting scheduled reel poster...")
     schedule = load_json(SCHEDULE_FILE)
     history = load_json(HISTORY_FILE)
@@ -99,12 +116,13 @@ def post_due_reels():
 
             scheduled_date = item.get("scheduled_for")
             video = item.get("video")
-            if not video or not scheduled_date:
+
+            if not scheduled_date or not video:
                 logger.warning(f"[{user_email}] ⚠️ Missing required fields in schedule entry.")
                 continue
 
             if scheduled_date > today:
-                continue  # Not due yet
+                continue  # Future post
 
             video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
             if not os.path.exists(video_path):
@@ -134,6 +152,9 @@ def post_due_reels():
     if failures:
         send_email_alert("[Alert] Reel Posting Failures", "\n".join(failures))
 
-# Entry point
+# ---------------------
+# Entry Point
+# ---------------------
+
 if __name__ == "__main__":
     post_due_reels()

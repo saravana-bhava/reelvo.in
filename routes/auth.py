@@ -39,8 +39,8 @@ def save_users(users):
 
 def generate_reset_token(email, secret_key, expires_in=3600):
     expires = int(time.time()) + expires_in
-    data = f"{email}|{expires}"
     token = secrets.token_urlsafe(16)
+    data = f"{email}|{expires}"
     sig = hmac.new(secret_key.encode(), f"{data}|{token}".encode(), hashlib.sha256).hexdigest()
     return f"{email}|{expires}|{token}|{sig}"
 
@@ -163,10 +163,8 @@ If you didn't request this, please ignore it.
 
 — Reelvo Team
 """
-            subject = "Password Reset - Reelvo"
-            send_email(email, subject, body)
+            send_email(email, "Password Reset - Reelvo", body)
 
-        # Prevent user enumeration
         flash("If this email is registered, a reset link has been sent.", "info")
         return redirect(url_for("auth.forgot_password"))
 

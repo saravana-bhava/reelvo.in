@@ -10,6 +10,9 @@ from flask import (
 schedule_bp = Blueprint("schedule", __name__)
 SCHEDULE_PATH = "db/scheduled_posts.json"
 
+# ------------------------
+# Utility Functions
+# ------------------------
 
 def load_all_schedules() -> dict:
     """Load all user schedules from the shared JSON file."""
@@ -22,7 +25,6 @@ def load_all_schedules() -> dict:
             return {}
     return {}
 
-
 def save_all_schedules(data: dict) -> None:
     """Save all user schedules to the shared JSON file."""
     os.makedirs(os.path.dirname(SCHEDULE_PATH), exist_ok=True)
@@ -34,6 +36,9 @@ def save_all_schedules(data: dict) -> None:
         current_app.logger.error(f"[Schedule] Failed to save schedules: {e}")
         flash("❌ Could not update schedules. Please try again later.", "error")
 
+# ------------------------
+# GET: /scheduled
+# ------------------------
 
 @schedule_bp.route("/scheduled", methods=["GET"])
 def list_scheduled_jobs_view():
@@ -48,6 +53,9 @@ def list_scheduled_jobs_view():
     current_app.logger.debug(f"[Schedule] {user_email} loaded {len(scheduled)} scheduled items.")
     return render_template("scheduled.html", user=user_email, scheduled=scheduled)
 
+# ------------------------
+# POST: /scheduled
+# ------------------------
 
 @schedule_bp.route("/scheduled", methods=["POST"])
 def update_schedule():
@@ -65,10 +73,9 @@ def update_schedule():
             current_app.logger.warning(f"[Schedule] Skipping malformed item at index {i}")
             continue
 
-        # Keep posted items unchanged
         if item.get("posted"):
             updated_schedule.append(item)
-            continue
+            continue  # Skip posted items
 
         video_key = f"video_{i}"
         date_key = f"reschedule_{i}"
@@ -76,9 +83,8 @@ def update_schedule():
 
         if delete_key in request.form:
             current_app.logger.info(f"[Schedule] {user_email} deleted item: {item}")
-            continue  # Skip entry marked for deletion
+            continue  # Deleted item
 
-        # Update scheduled time if values match and are provided
         if video_key in request.form and date_key in request.form:
             new_date = request.form.get(date_key)
             video_name = request.form.get(video_key)

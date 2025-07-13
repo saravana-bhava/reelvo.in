@@ -111,8 +111,8 @@ def instagram_callback():
         pages_data = safe_get(f"{GRAPH_API_BASE}/me/accounts", params={"access_token": long_token})
         pages = pages_data.get("data", []) if pages_data else []
 
-        # Fallback if pages empty
         if not pages:
+            # Fallback: try business owned_pages
             biz_data = safe_get(f"{GRAPH_API_BASE}/me/businesses", params={"access_token": long_token})
             for biz in (biz_data.get("data", []) if biz_data else []):
                 biz_id = biz.get("id")
@@ -153,15 +153,13 @@ def instagram_callback():
 
         user_email = session.get("user")
         if user_email:
-            # Save profile image as watermark
             if profile_picture_url:
                 local_path = f"output/{user_email}/watermark/logo.png"
                 if download_and_save_image(profile_picture_url, local_path):
-                    session["instagram_profile_picture"] = f"{local_path}"
+                    session["instagram_profile_picture"] = local_path
                 else:
                     session["instagram_profile_picture"] = None
 
-            # Save token and session state
             save_user_tokens(user_email, long_token, "", expires_in)
             session["connected"] = True
             flash("✅ Instagram connected successfully!", "success")
@@ -204,11 +202,10 @@ def api_post_reel():
     video_path = data.get("video_path")
     caption = data.get("caption", "")
     video_url = data.get("video_url")
-
     user_email = session.get("user")
+
     if not user_email:
         return jsonify({"error": "User not logged in"}), 401
-
     if not video_path or not video_url:
         return jsonify({"error": "Missing required fields: video_path or video_url"}), 400
 
@@ -224,7 +221,10 @@ def api_post_reel():
         current_app.logger.exception("[Instagram] Reel post failed")
         return jsonify({"error": "Failed to post to Instagram"}), 500
 
+# --------------------------
+# Serve watermark image
+# --------------------------
+
 @instagram_bp.route("/watermark/<user_email>/logo.png")
-def serve_video(user_email):
-    """Serve a generated watermark file."""
+def serve_watermark(user_email):
     return send_from_directory(os.path.join("output", user_email, "watermark"), "logo.png")

@@ -26,10 +26,12 @@ reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
 logging.basicConfig(level=logging.INFO)
 
+# ------------------------
+# GET: /create
+# ------------------------
 
 @reels_bp.route("/create", methods=["GET"])
 def create_reel():
-    """Display the reel creation page."""
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
@@ -66,10 +68,12 @@ def create_reel():
         watermark_checked="watermark" in request.args
     )
 
+# ------------------------
+# POST: /create
+# ------------------------
 
 @reels_bp.route("/create", methods=["POST"])
 def create_reel_action():
-    """Handle the reel creation form submission."""
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
@@ -121,6 +125,7 @@ def create_reel_action():
     os.makedirs(images_dir, exist_ok=True)
     os.makedirs(tts_dir, exist_ok=True)
 
+    # Save script
     script_filename = f"{theme_name}_{language}_text.txt"
     script_path = os.path.join(scripts_dir, secure_filename(script_filename))
     with open(script_path, "w", encoding="utf-8") as f:
@@ -167,7 +172,6 @@ def create_reel_action():
         srt_path = os.path.join(srt_dir, secure_filename(srt_filename))
         generate_srt_from_audio(srt_path, language, audio_path, 6)
 
-    # Translate and prepare
     english_script_text = translate_to_english(script_text)
     temp_dir = os.path.join(output_dir, "temp")
     os.makedirs(temp_dir, exist_ok=True)
@@ -184,25 +188,21 @@ def create_reel_action():
         ], check=True)
         audio_to_use = mixed_audio_path
 
-    # Fetch and join clips
+    # Fetch clips
     clips = fetch_multiple_clips(temp_dir, theme_name, language, english_script_text, audio_duration)
-
     if not clips:
-        logger.warning("No video clips found from external source. Using fallback clips.")
         fallback_clips_dir = os.path.join("assets", "clips")
-        fallback_clips = [
+        clips = sorted([
             os.path.join(fallback_clips_dir, f)
             for f in os.listdir(fallback_clips_dir)
             if f.lower().endswith((".mp4", ".mov", ".webm"))
-        ]
-        fallback_clips.sort()  # Optional: make order consistent
-        clips = fallback_clips[:5]  # Use first 5 fallback clips
+        ])[:5]
 
     combined_video_path = concatenate_clips(temp_dir, theme_name, language, clips)
     if not combined_video_path:
         return redirect_with_form_data("❌ Video clips could not be combined.")
 
-    # Video composition
+    # Compose video
     inputs = ["-i", combined_video_path, "-i", audio_to_use]
     input_index = 2
     logo_index = None
@@ -252,10 +252,12 @@ def create_reel_action():
     flash(f"✅ Reel created and uploaded! Download: {upload_url}", "success")
     return redirect(url_for("reels.create_reel"))
 
+# ------------------------
+# AJAX: /generate-script
+# ------------------------
 
 @reels_bp.route("/generate-script", methods=["POST"])
 def generate_script_ajax():
-    """AJAX endpoint to generate a script from a theme or topic."""
     try:
         data = request.get_json()
         user_email = session["user"]
@@ -275,21 +277,24 @@ def generate_script_ajax():
         )
         with open(script_path, encoding="utf-8") as f:
             return jsonify({"script_text": f.read().strip()})
-
     except Exception as e:
         logger.exception("Script generation failed")
         return jsonify({"error": str(e)}), 500
 
+# ------------------------
+# GET: /videos/<user>/<file>
+# ------------------------
 
 @reels_bp.route("/videos/<user_email>/<filename>")
 def serve_video(user_email, filename):
-    """Serve a generated video file."""
     return send_from_directory(os.path.join("output", user_email, "videos"), filename)
 
+# ------------------------
+# GET: /reels
+# ------------------------
 
 @reels_bp.route("/reels", methods=["GET"])
 def list_reels():
-    """Show all generated reels for the current user."""
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
@@ -299,7 +304,6 @@ def list_reels():
 
     videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
 
-    # Load associated scripts
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}
     if os.path.exists(scripts_path):
@@ -310,9 +314,12 @@ def list_reels():
 
     return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
 
+# ------------------------
+# POST: /reels/delete/<filename>
+# ------------------------
+
 @reels_bp.route("/reels/delete/<filename>", methods=["POST"])
 def delete_reel(filename):
-    """Delete a specific reel and associated files."""
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
@@ -322,26 +329,17 @@ def delete_reel(filename):
 
     deleted_any = False
     try:
-        # Delete video
-        video_path = os.path.join(base_path, "videos", filename)
-        if os.path.exists(video_path):
-            os.remove(video_path)
-            deleted_any = True
+        targets = {
+            "video": os.path.join(base_path, "videos", filename),
+            "script": os.path.join(base_path, "scripts", base_video.replace("_video", "_text") + ".txt"),
+            "srt": os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".srt"),
+            "tts": os.path.join(base_path, "tts", base_video.replace("_video", "_voice") + ".mp3")
+        }
 
-        # Delete associated script
-        script_path = os.path.join(base_path, "scripts", base_video.replace("_video", "_text") + ".txt")
-        if os.path.exists(script_path):
-            os.remove(script_path)
-
-        # Delete subtitle
-        srt_path = os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".srt")
-        if os.path.exists(srt_path):
-            os.remove(srt_path)
-
-        # Delete tts
-        tts_path = os.path.join(base_path, "tts", base_video.replace("_video", "_voice") + ".mp3")
-        if os.path.exists(tts_path):
-            os.remove(tts_path)
+        for path in targets.values():
+            if os.path.exists(path):
+                os.remove(path)
+                deleted_any = True
 
         flash(f"🗑️ Deleted reel: {filename}", "info" if deleted_any else "warning")
     except Exception as e:
