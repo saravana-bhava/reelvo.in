@@ -1,117 +1,151 @@
 {% extends "base.html" %}
 {% block title %}Create Reel{% endblock %}
+{% block heading %}🎬 Create Your AI Reel{% endblock %}
 
 {% block content %}
-<h2>🎬 Create Your AI Reel <small style="font-size: 0.6em;">({{ user }})</small></h2>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-
-<form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data" onsubmit="disableForm()" class="reel-form">
-  <fieldset>
-    <legend>🎯 Theme & Topic</legend>
-
-    <label for="theme"><strong>Select Theme:</strong></label>
-    <select id="theme" name="theme" onchange="checkPromptFilled()">
-      <option value="">-- Choose theme --</option>
-      {% for t in themes %}
-        <option value="{{ t }}" {% if t == selected_theme %}selected{% endif %}>{{ t|capitalize }}</option>
-      {% endfor %}
-    </select>
-
-    <label for="custom_topic"><strong>Or Custom Topic/Product:</strong></label>
-    <input type="text" id="custom_topic" name="custom_topic" value="{{ custom_topic }}" placeholder="e.g. Protein Powder" oninput="checkPromptFilled()" />
-  </fieldset>
-
-  <fieldset>
-    <legend>🗣️ Voice Settings</legend>
-
-    <label for="language"><strong>Language:</strong></label>
-    <select id="language" name="language" required>
-      <option value="en" {% if language == 'en' %}selected{% endif %}>🇺🇸 English</option>
-      <option value="hi" {% if language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
-    </select>
-
-    <label for="voice_option"><strong>Voiceover Option:</strong></label>
-    <select id="voice_option" name="voice_option" onchange="toggleVoiceInputs()" required>
-      <option value="tts" {% if voice_option == 'tts' %}selected{% endif %}>Use AI Voice (TTS)</option>
-      <option value="upload" {% if voice_option == 'upload' %}selected{% endif %}>Upload My Voice</option>
-    </select>
-
-    <label for="voice_artist" id="voice_artist_label"><strong>TTS Voice:</strong></label>
-    <select id="voice_artist" name="voice_artist">
-      <optgroup label="English">
-        <option value="en-US-Wavenet-A" {% if voice_artist == 'en-US-Wavenet-A' %}selected{% endif %}>English Male (Calm)</option>
-        <option value="en-US-Wavenet-B" {% if voice_artist == 'en-US-Wavenet-B' %}selected{% endif %}>English Male (Deep)</option>
-        <option value="en-US-Wavenet-C" {% if voice_artist == 'en-US-Wavenet-C' %}selected{% endif %}>English Female (Warm)</option>
-        <option value="en-US-Wavenet-D" {% if voice_artist == 'en-US-Wavenet-D' %}selected{% endif %}>English Male (Energetic)</option>
-        <option value="en-US-Wavenet-E" {% if voice_artist == 'en-US-Wavenet-E' %}selected{% endif %}>English Female (Upbeat)</option>
-        <option value="en-US-Wavenet-F" {% if voice_artist == 'en-US-Wavenet-F' %}selected{% endif %}>English Female (Neutral)</option>
-      </optgroup>
-      <optgroup label="Hindi">
-        <option value="hi-IN-Wavenet-A" {% if voice_artist == 'hi-IN-Wavenet-A' %}selected{% endif %}>Hindi Male (Deep)</option>
-        <option value="hi-IN-Wavenet-B" {% if voice_artist == 'hi-IN-Wavenet-B' %}selected{% endif %}>Hindi Male (Warm)</option>
-        <option value="hi-IN-Wavenet-C" {% if voice_artist == 'hi-IN-Wavenet-C' %}selected{% endif %}>Hindi Female (Friendly)</option>
-        <option value="hi-IN-Wavenet-D" {% if voice_artist == 'hi-IN-Wavenet-D' %}selected{% endif %}>Hindi Female (Polite)</option>
-      </optgroup>
-    </select>
-
-    <label for="custom_voice" id="custom_voice_label" style="display: none;"><strong>Upload Voiceover:</strong></label>
-    <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" style="display: none;" />
-  </fieldset>
-
-  <section role="region" aria-label="Script Generator" class="script-section">
-    <button type="button" id="generateBtn" onclick="generateScript()" disabled aria-label="Generate AI script">📝 Generate Script</button>
-    <div id="script-status" role="status" class="script-status"></div>
-
-    <label for="script"><strong>Edit Script:</strong></label>
-    <textarea id="script" name="script" rows="6" required>{{ script_text }}</textarea>
-  </section>
-
-  <div class="options">
-    <label><input type="checkbox" name="subtitles" {% if subtitles_checked %}checked{% endif %}/> Include Subtitles</label>
-    <label><input type="checkbox" name="watermark" {% if watermark_checked %}checked{% endif %}/> Include Watermark</label>
+<section class="space-y-8" role="region" aria-label="Create Reel Section">
+  <div class="text-gray-600 dark:text-gray-300 text-sm">
+    Logged in as: <strong>{{ user }}</strong>
   </div>
 
-  <button type="submit" class="submit-btn">📦 Create Reel</button>
-</form>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="space-y-2">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
-<hr />
+  <form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}"
+        enctype="multipart/form-data"
+        onsubmit="disableForm()"
+        class="space-y-6">
 
-<h3>🎞️ Your Previous Reels</h3>
-<ul class="video-list">
-  {% for v in videos %}
-    <li><a href="{{ url_for('reels.serve_video', user_email=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
-  {% else %}
-    <li>No reels found.</li>
-  {% endfor %}
-</ul>
+    <!-- Theme & Topic -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-4">🎯 Theme & Topic</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="theme" class="form-label">Select Theme:</label>
+          <select id="theme" name="theme" class="form-input" onchange="checkPromptFilled()">
+            <option value="">-- Choose theme --</option>
+            {% for t in themes %}
+              <option value="{{ t }}" {% if t == selected_theme %}selected{% endif %}>{{ t|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="custom_topic" class="form-label">Or Custom Topic/Product:</label>
+          <input type="text" id="custom_topic" name="custom_topic" class="form-input"
+                 placeholder="e.g. Protein Powder" value="{{ custom_topic }}" oninput="checkPromptFilled()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Settings -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-4">🗣️ Voice Settings</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="language" class="form-label">Language:</label>
+          <select id="language" name="language" class="form-input" required>
+            <option value="en" {% if language == 'en' %}selected{% endif %}>🇺🇸 English</option>
+            <option value="hi" {% if language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
+          </select>
+        </div>
+        <div>
+          <label for="voice_option" class="form-label">Voiceover Option:</label>
+          <select id="voice_option" name="voice_option" class="form-input" onchange="toggleVoiceInputs()" required>
+            <option value="tts" {% if voice_option == 'tts' %}selected{% endif %}>Use AI Voice (TTS)</option>
+            <option value="upload" {% if voice_option == 'upload' %}selected{% endif %}>Upload My Voice</option>
+          </select>
+        </div>
+
+        <div id="voice_artist_wrapper" class="col-span-full">
+          <label for="voice_artist" id="voice_artist_label" class="form-label">TTS Voice:</label>
+          <select id="voice_artist" name="voice_artist" class="form-input">
+            <optgroup label="English">
+              <option value="en-US-Wavenet-A" {% if voice_artist == 'en-US-Wavenet-A' %}selected{% endif %}>English Male (Calm)</option>
+              <option value="en-US-Wavenet-B" {% if voice_artist == 'en-US-Wavenet-B' %}selected{% endif %}>English Male (Deep)</option>
+              <option value="en-US-Wavenet-C" {% if voice_artist == 'en-US-Wavenet-C' %}selected{% endif %}>English Female (Warm)</option>
+              <option value="en-US-Wavenet-D" {% if voice_artist == 'en-US-Wavenet-D' %}selected{% endif %}>English Male (Energetic)</option>
+              <option value="en-US-Wavenet-E" {% if voice_artist == 'en-US-Wavenet-E' %}selected{% endif %}>English Female (Upbeat)</option>
+              <option value="en-US-Wavenet-F" {% if voice_artist == 'en-US-Wavenet-F' %}selected{% endif %}>English Female (Neutral)</option>
+            </optgroup>
+            <optgroup label="Hindi">
+              <option value="hi-IN-Wavenet-A" {% if voice_artist == 'hi-IN-Wavenet-A' %}selected{% endif %}>Hindi Male (Deep)</option>
+              <option value="hi-IN-Wavenet-B" {% if voice_artist == 'hi-IN-Wavenet-B' %}selected{% endif %}>Hindi Male (Warm)</option>
+              <option value="hi-IN-Wavenet-C" {% if voice_artist == 'hi-IN-Wavenet-C' %}selected{% endif %}>Hindi Female (Friendly)</option>
+              <option value="hi-IN-Wavenet-D" {% if voice_artist == 'hi-IN-Wavenet-D' %}selected{% endif %}>Hindi Female (Polite)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="col-span-full hidden" id="custom_voice_wrapper">
+          <label for="custom_voice" id="custom_voice_label" class="form-label">Upload Voiceover:</label>
+          <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" class="form-input" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Script Section -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-4">✍️ Script Generator</h3>
+      <div class="flex gap-2 items-start mb-3">
+        <button type="button" id="generateBtn"
+                onclick="generateScript()"
+                class="button button-info"
+                disabled>📝 Generate Script</button>
+        <div id="script-status" role="status" class="text-sm text-gray-600 dark:text-gray-400"></div>
+      </div>
+      <label for="script" class="form-label">Edit Script:</label>
+      <textarea id="script" name="script" rows="6" class="form-input resize-y" required>{{ script_text }}</textarea>
+    </div>
+
+    <!-- Options -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-3">⚙️ Options</h3>
+      <div class="flex flex-col gap-2">
+        <label><input type="checkbox" name="subtitles" {% if subtitles_checked %}checked{% endif %}/> Include Subtitles</label>
+        <label><input type="checkbox" name="watermark" {% if watermark_checked %}checked{% endif %}/> Include Watermark</label>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex justify-end">
+      <button type="submit" class="button button-success">📦 Create Reel</button>
+    </div>
+  </form>
+
+  <!-- Previous Reels -->
+  <div class="pt-10">
+    <h3 class="text-lg font-semibold mb-4">🎞️ Your Previous Reels</h3>
+    <ul class="list-disc pl-6 space-y-1 text-sm text-blue-600 dark:text-blue-400">
+      {% for v in videos %}
+        <li><a href="{{ url_for('reels.serve_video', user_email=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
+      {% else %}
+        <li class="text-gray-500">No reels found.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
 
 <script>
-const generateBtn = document.getElementById('generateBtn');
-const themeInput = document.getElementById('theme');
-const topicInput = document.getElementById('custom_topic');
-const scriptTextarea = document.getElementById('script');
-const statusDiv = document.getElementById('script-status');
-
 function checkPromptFilled() {
-  const theme = themeInput.value.trim();
-  const topic = topicInput.value.trim();
-  generateBtn.disabled = !(theme || topic);
+  const theme = document.getElementById('theme').value.trim();
+  const topic = document.getElementById('custom_topic').value.trim();
+  document.getElementById('generateBtn').disabled = !(theme || topic);
 }
 
-themeInput.addEventListener('change', checkPromptFilled);
-topicInput.addEventListener('input', checkPromptFilled);
-
 async function generateScript() {
-  const theme = themeInput.value.trim();
-  const topic = topicInput.value.trim();
+  const theme = document.getElementById('theme').value.trim();
+  const topic = document.getElementById('custom_topic').value.trim();
   const lang = document.getElementById('language').value;
+  const statusDiv = document.getElementById('script-status');
+  const scriptTextarea = document.getElementById('script');
+  const generateBtn = document.getElementById('generateBtn');
 
   if (!theme && !topic) {
     statusDiv.textContent = '❌ Please enter a theme or topic.';
@@ -128,18 +162,17 @@ async function generateScript() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme, custom_topic: topic, language: lang })
     });
-
     const data = await res.json();
 
     if (data.script_text) {
       scriptTextarea.value = data.script_text;
       statusDiv.textContent = '✅ Script generated.';
-      scriptTextarea.scrollIntoView({ behavior: "smooth", block: "center" });
+      scriptTextarea.scrollIntoView({ behavior: "smooth" });
     } else {
       statusDiv.textContent = data.error || '❌ Generation failed.';
     }
   } catch (err) {
-    statusDiv.textContent = '❌ Request failed. Try again.';
+    statusDiv.textContent = '❌ Request failed.';
   } finally {
     generateBtn.disabled = false;
     generateBtn.textContent = '📝 Generate Script';
@@ -148,16 +181,11 @@ async function generateScript() {
 
 function toggleVoiceInputs() {
   const option = document.getElementById("voice_option").value;
-  const ttsVoice = document.getElementById("voice_artist");
-  const ttsLabel = document.getElementById("voice_artist_label");
-  const customVoice = document.getElementById("custom_voice");
-  const customLabel = document.getElementById("custom_voice_label");
+  const ttsWrapper = document.getElementById("voice_artist_wrapper");
+  const customWrapper = document.getElementById("custom_voice_wrapper");
 
-  const showTTS = option === "tts";
-  ttsVoice.style.display = showTTS ? "block" : "none";
-  ttsLabel.style.display = showTTS ? "block" : "none";
-  customVoice.style.display = showTTS ? "none" : "block";
-  customLabel.style.display = showTTS ? "none" : "block";
+  ttsWrapper.classList.toggle("hidden", option !== "tts");
+  customWrapper.classList.toggle("hidden", option !== "upload");
 }
 
 function disableForm() {

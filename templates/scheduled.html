@@ -1,98 +1,99 @@
 {% extends "base.html" %}
 {% block title %}Scheduled Posts | Reelvo{% endblock %}
+{% block heading %}🗓️ Scheduled Reels{% endblock %}
 
 {% block content %}
-<h2 class="page-heading">🗓️ Scheduled Reels for <span style="color: #007BFF;">{{ user }}</span></h2>
+<section class="space-y-6" role="region" aria-label="Scheduled Reels Section">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+      🗓️ Scheduled Reels for <span class="text-blue-600">{{ user }}</span>
+    </h2>
+  </div>
 
-{% if scheduled and scheduled|length > 0 %}
-<form method="post"
-      action="{{ url_for('schedule.update_schedule') }}"
-      aria-label="Scheduled reels management form">
+  {% if scheduled and scheduled|length > 0 %}
+  <form method="post"
+        action="{{ url_for('schedule.update_schedule') }}"
+        aria-label="Scheduled Reels Management">
 
-  <div style="overflow-x: auto;">
-    <table class="form-table" role="table" aria-describedby="scheduledReelsDesc">
-      <caption id="scheduledReelsDesc" class="table-caption">
-        Manage your scheduled reels: reschedule or delete pending posts.
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">🎞️ Video</th>
-          <th scope="col">📅 Scheduled Date</th>
-          <th scope="col" style="text-align: center;">📌 Status</th>
-          <th scope="col" style="text-align: center;">✏️ Reschedule</th>
-          <th scope="col" style="text-align: center;">🗑️ Delete</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in scheduled %}
-        <tr>
-          <td>{{ item.video }}</td>
-          <td>{{ item.scheduled_for }}</td>
-          <td style="text-align: center;">
-            {% if item.posted %}
-              ✅ Posted
-            {% else %}
-              ⏳ Pending
-            {% endif %}
-          </td>
-          <td style="text-align: center;">
-            {% if not item.posted %}
+    <div class="overflow-x-auto border rounded-lg shadow-sm">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm" aria-describedby="scheduledReelsDesc">
+        <caption id="scheduledReelsDesc" class="sr-only">Manage your scheduled reels</caption>
+        <thead class="bg-gray-100 dark:bg-gray-800 text-left text-gray-700 dark:text-gray-300">
+          <tr>
+            <th class="px-4 py-2 font-medium">🎞️ Video</th>
+            <th class="px-4 py-2 font-medium">📅 Scheduled Date</th>
+            <th class="px-4 py-2 text-center font-medium">📌 Status</th>
+            <th class="px-4 py-2 text-center font-medium">✏️ Reschedule</th>
+            <th class="px-4 py-2 text-center font-medium">🗑️ Delete</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+          {% for item in scheduled %}
+          <tr>
+            <td class="px-4 py-2">{{ item.video }}</td>
+            <td class="px-4 py-2">{{ item.scheduled_for }}</td>
+            <td class="px-4 py-2 text-center">
+              {% if item.posted %}
+                <span class="text-green-600 dark:text-green-400">✅ Posted</span>
+              {% else %}
+                <span class="text-yellow-600 dark:text-yellow-400">⏳ Pending</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-center">
+              {% if not item.posted %}
               <label for="reschedule_{{ loop.index0 }}" class="sr-only">Reschedule {{ item.video }}</label>
               <input type="date"
                      id="reschedule_{{ loop.index0 }}"
                      name="reschedule_{{ loop.index0 }}"
                      value="{{ item.scheduled_for }}"
-                     class="form-input"
+                     class="form-input px-2 py-1 rounded border border-gray-300 dark:border-gray-700"
                      aria-describedby="rescheduleHelp_{{ loop.index0 }}" />
-              <small id="rescheduleHelp_{{ loop.index0 }}" class="sr-only">
-                Select a new date for {{ item.video }}
-              </small>
               <input type="hidden" name="video_{{ loop.index0 }}" value="{{ item.video }}">
-            {% else %}
-              <span class="text-muted">—</span>
-            {% endif %}
-          </td>
-          <td style="text-align: center;">
-            {% if not item.posted %}
+              {% else %}
+              <span class="text-gray-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-center">
+              {% if not item.posted %}
               <input type="checkbox"
                      id="delete_{{ loop.index0 }}"
                      name="delete_{{ loop.index0 }}"
+                     class="accent-red-500"
                      aria-label="Delete {{ item.video }}">
-            {% else %}
-              <span class="text-muted">—</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+              {% else %}
+              <span class="text-gray-400">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-  <div style="margin-top: 24px;">
-    <button type="submit"
-            class="button button-success"
-            aria-label="Save changes to scheduled reels">
-      💾 Save Changes
-    </button>
-  </div>
-</form>
-{% else %}
-  <p class="text-muted">⚠️ No scheduled reels found.</p>
-{% endif %}
+    <div class="mt-6 flex justify-end">
+      <button type="submit"
+              class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition"
+              aria-label="Save changes to scheduled reels">
+        💾 Save Changes
+      </button>
+    </div>
+  </form>
+  {% else %}
+    <p class="text-gray-500 dark:text-gray-400">⚠️ No scheduled reels found.</p>
+  {% endif %}
 
-<div style="margin-top: 30px;">
-  <a class="button"
-     href="{{ url_for('dashboard.dashboard') }}"
-     role="button"
-     aria-label="Back to Dashboard">
-    ⬅️ Back to Dashboard
-  </a>
-</div>
+  <div class="pt-6">
+    <a class="inline-flex items-center gap-2 px-4 py-2 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+       href="{{ url_for('dashboard.dashboard') }}"
+       aria-label="Back to Dashboard">
+      ⬅️ Back to Dashboard
+    </a>
+  </div>
+</section>
 
 <script>
   document.querySelectorAll("input[type='date']").forEach(input => {
     input.min = new Date().toISOString().split("T")[0];
   });
 </script>
-
 {% endblock %}

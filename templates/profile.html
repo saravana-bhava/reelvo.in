@@ -1,90 +1,92 @@
 {% extends "base.html" %}
 {% block title %}Profile | Reelvo{% endblock %}
+{% block heading %}👤 Your Profile{% endblock %}
 
 {% block content %}
-<h2 class="page-heading">👤 Your Profile</h2>
+<div class="grid gap-6 max-w-2xl mx-auto animate__animated animate__fadeInUp">
 
-<!-- Profile Card -->
-<section class="card card-center" role="region" aria-label="Profile Info">
-  {% set logo_path = 'watermark/' + user + '/logo.png' %}
-  {% if session.get("connected") and session.get("instagram_profile_picture") %}
-    <img src="/{{ logo_path }}"
-         alt="Instagram Profile Picture"
-         class="avatar" />
-  {% endif %}
-  <h3>📧 Email</h3>
-  <p><strong>{{ user }}</strong></p>
-</section>
+  <!-- Profile Info -->
+  <section role="region" aria-label="Profile Info" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
+    {% set logo_path = 'watermark/' + user + '/logo.png' %}
+    {% if session.get("connected") and session.get("instagram_profile_picture") %}
+      <img src="/{{ logo_path }}"
+           alt="Instagram Profile Picture"
+           class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border-2 border-blue-500 shadow" />
+    {% endif %}
+    <h3 class="text-gray-800 dark:text-gray-200 text-sm font-medium">📧 Email</h3>
+    <p class="text-blue-600 dark:text-blue-400 font-semibold break-words">{{ user }}</p>
+  </section>
 
-<!-- Instagram Connection -->
-<section class="card" role="region" aria-label="Instagram Connection">
-  <h3>🔗 Instagram</h3>
-  {% if session.get("connected") %}
-    <p>✅ Instagram is connected.</p>
-    <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
-      <button type="submit" class="button button-danger" aria-label="Disconnect Instagram">
-        ❌ Disconnect Instagram
+  <!-- Instagram Connection -->
+  <section role="region" aria-label="Instagram Connection" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">🔗 Instagram</h3>
+    {% if session.get("connected") %}
+      <p class="text-green-600 font-medium mb-3">✅ Instagram is connected.</p>
+      <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition">
+          ❌ Disconnect Instagram
+        </button>
+      </form>
+    {% else %}
+      <p class="text-red-500 font-medium mb-3">❌ Not connected.</p>
+      <a href="{{ url_for('instagram.connect_instagram') }}"
+         class="w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition text-center">
+        🔗 Connect Instagram
+      </a>
+    {% endif %}
+  </section>
+
+  <!-- Theme Toggle -->
+  <section role="region" aria-label="Theme Switcher" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">🎨 Appearance</h3>
+    <form method="post" action="{{ url_for('auth.toggle_theme') }}">
+      <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded transition">
+        {% if session.get('theme') == 'dark' %}
+          🌞 Switch to Light Mode
+        {% else %}
+          🌙 Switch to Dark Mode
+        {% endif %}
       </button>
     </form>
-  {% else %}
-    <p>❌ Not connected.</p>
-    <a href="{{ url_for('instagram.connect_instagram') }}"
-       class="button button-primary"
-       aria-label="Connect Instagram">
-      🔗 Connect Instagram
+  </section>
+
+  <!-- Upgrade Plan -->
+  <section role="region" aria-label="Upgrade Plan" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">🚀 Upgrade Plan</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">You're on the free plan.</p>
+    <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}"
+       class="w-full inline-block bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition text-center">
+      💳 Upgrade Now
     </a>
-  {% endif %}
-</section>
+  </section>
 
-<!-- Theme Toggle -->
-<section class="card" role="region" aria-label="Theme Switcher">
-  <h3>🎨 Appearance</h3>
-  <form method="post" action="{{ url_for('auth.toggle_theme') }}">
-    <button type="submit" class="button button-info" aria-label="Toggle Theme">
-      {% if session.get('theme') == 'dark' %}
-        🌞 Switch to Light Mode
-      {% else %}
-        🌙 Switch to Dark Mode
-      {% endif %}
+  <!-- Referral Program -->
+  <section role="region" aria-label="Referral Program" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">🤝 Refer & Earn</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-400">Share your referral link:</p>
+    <div class="mt-2 bg-gray-100 dark:bg-gray-900 text-sm text-blue-700 dark:text-blue-300 px-3 py-2 rounded select-all overflow-auto break-all border border-gray-300 dark:border-gray-700" id="referralLink">
+      {{ referral_link }}
+    </div>
+    <button onclick="copyReferralLink()"
+            class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded transition">
+      📋 Copy Link
     </button>
-  </form>
-</section>
+  </section>
 
-<!-- Upgrade Plan -->
-<section class="card" role="region" aria-label="Upgrade Plan">
-  <h3>🚀 Upgrade Plan</h3>
-  <p>You're on the free plan.</p>
-  <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}"
-     class="button button-success"
-     aria-label="Upgrade Plan">
-    💳 Upgrade Now
-  </a>
-</section>
-
-<!-- Referral -->
-<section class="card" role="region" aria-label="Referral Program">
-  <h3>🤝 Refer & Earn</h3>
-  <p>Share your link:</p>
-  <code id="referralLink">{{ referral_link }}</code><br /><br />
-  <button onclick="copyReferralLink()" class="button button-info" aria-label="Copy Referral Link">
-    📋 Copy Link
-  </button>
-</section>
-
-<!-- Logout -->
-<section class="card" role="region" aria-label="Logout">
-  <a href="{{ url_for('auth.logout') }}"
-     class="button button-muted"
-     role="button"
-     aria-label="Logout from Reelvo">
-    🚪 Logout
-  </a>
-</section>
+  <!-- Logout -->
+  <section role="region" aria-label="Logout" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <a href="{{ url_for('auth.logout') }}"
+       class="w-full inline-block bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded transition text-center"
+       role="button">
+      🚪 Logout
+    </a>
+  </section>
+</div>
 
 <script>
 function copyReferralLink() {
   const link = document.getElementById("referralLink").textContent;
-  navigator.clipboard.writeText(link).then(() => {
+  navigator.clipboard.writeText(link.trim()).then(() => {
     alert("Referral link copied to clipboard!");
   }).catch(() => {
     alert("Failed to copy referral link.");

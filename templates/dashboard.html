@@ -1,68 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | Reelvo{% endblock %}
+{% block heading %}📊 Dashboard{% endblock %}
 
 {% block content %}
-<div class="dashboard-layout">
-
-  <!-- Sidebar -->
-  <aside class="sidebar" role="complementary" aria-label="User menu">
-    {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
-    {% if session.get("instagram_profile_picture") and logo_path %}
-      <img src="/{{ logo_path }}" alt="Instagram Logo" class="profile-pic" />
-    {% else %}
-      <img src="{{ url_for('static', filename='images/avatar.png') }}" alt="Default Avatar" class="profile-pic" />
-    {% endif %}
-
-    <div class="username">{{ user_email }}</div>
-
-    {% if not session.get("connected") %}
-    <a href="{{ url_for('instagram.connect_instagram') }}" class="button button-primary">
-      🔗 Connect Instagram
-    </a>
-    {% endif %}
-
-    <nav class="action-buttons" aria-label="Dashboard actions">
-      <a href="{{ url_for('reels.create_reel') }}" class="button button-success">🎬 Create Reel</a>
-      <a href="{{ url_for('reels.list_reels') }}" class="button button-info">📂 Reel History</a>
-      <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}" class="button button-warning">🗓️ Scheduled Reels</a>
-      <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}" class="button button-secondary">📊 Analytics</a>
-      <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}" class="button button-secondary">🤝 Refer & Earn</a>
-      <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-secondary">💳 Upgrade Plan</a>
-      <a href="mailto:support@reelvo.in" class="button button-muted" target="_blank" rel="noopener noreferrer">🆘 Help Center</a>
-      <a href="{{ url_for('auth.logout') }}" class="button button-muted">🚪 Logout</a>
-    </nav>
-  </aside>
+<div class="grid lg:grid-cols-5 gap-6 items-start mt-4">
 
   <!-- Main Content -->
-  <section class="main-content" role="main">
-    <!-- Hero Section -->
-    <div class="hero-section">
-      <h1>Let AI Create & Post Reels While You Sleep</h1>
-      <p>Save time and grow your Instagram with automated video generation and publishing.</p>
+  <section class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow p-6 space-y-6" role="main">
+    <!-- Hero Message -->
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+        Let AI Create & Post Reels While You Sleep
+      </h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Save time and grow your Instagram with automated video generation and publishing.
+      </p>
     </div>
 
     <!-- Recent Reels -->
-    <div class="reel-thumbs" aria-label="Recent Reels">
-      {% for vid in videos[:3] %}
-        <div class="reel">
-          <img src="{{ url_for('reels.thumbnail', filename=vid) }}"
-               alt="Thumbnail for {{ vid | e }}" />
-          <div class="reel-date">
-            {{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}
+    <div>
+      <h3 class="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">📽️ Recent Reels</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {% for vid in videos[:3] %}
+          <div class="relative rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700">
+            <img src="{{ url_for('reels.thumbnail', filename=vid) }}"
+                 alt="Thumbnail for {{ vid }}"
+                 class="w-full h-40 object-cover" />
+            <div class="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs text-center py-1">
+              {{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}
+            </div>
           </div>
-        </div>
-      {% else %}
-        <div>No reels found.</div>
-      {% endfor %}
+        {% else %}
+          <p class="text-gray-500 dark:text-gray-400">❌ No reels found.</p>
+        {% endfor %}
+      </div>
     </div>
   </section>
 
-  <!-- Video Process Column -->
-  <aside class="process-box" aria-label="How it works">
-    <h3>🎥 Video Create Process</h3>
-    <div class="process-step"><span>📝</span> Enter Script</div>
-    <div class="process-step"><span>🎬</span> Generate Video</div>
-    <div class="process-step"><span>📲</span> Post Reel</div>
+  <!-- Steps -->
+  <aside class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl shadow p-4" aria-label="How it works">
+    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">🎥 Creation Steps</h3>
+    <ul class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+      <li class="flex items-center gap-2"><span>📝</span> Enter Script</li>
+      <li class="flex items-center gap-2"><span>🎬</span> Generate Video</li>
+      <li class="flex items-center gap-2"><span>📲</span> Post Reel</li>
+    </ul>
   </aside>
 
 </div>
