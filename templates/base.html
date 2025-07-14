@@ -40,6 +40,17 @@
             <a href="{{ url_for('auth.login') }}" class="hover:underline">🔐 Login</a>
             <a href="{{ url_for('auth.register') }}" class="hover:underline">📝 Register</a>
           {% endif %}
+          <!-- 🌙 Theme Toggle Button -->
+          <form method="POST" action="{{ url_for('auth.toggle_theme') }}">
+            <button type="submit" title="Toggle Theme"
+              class="ml-2 text-lg hover:scale-110 transition-transform duration-150">
+              {% if session.get('theme', 'light') == 'light' %}
+                🌙
+              {% else %}
+                🌞
+              {% endif %}
+            </button>
+          </form>
         </nav>
       </div>
     </header>
