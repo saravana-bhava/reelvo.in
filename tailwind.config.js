@@ -2,9 +2,8 @@
 module.exports = {
   content: [
     './templates/**/*.html',
-    './**/*.py',
-    './assets/css/**/*.css',
-    './static/css/safelist.css'
+    './routes/**/*.py',
+    './assets/css/**/*.css'
   ],
   safelist: [
     'bg-white',
