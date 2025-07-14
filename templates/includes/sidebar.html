@@ -1,0 +1,62 @@
+<!-- File: templates/includes/sidebar.html -->
+{% set user_email = session.get('user') %}
+{% set logo_path = 'watermark/' + user_email + '/logo.png' %}
+<aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6">
+  <div class="flex flex-col items-center text-center space-y-4">
+    {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
+    <img src="/{{ logo_path if session.get('instagram_profile_picture') and logo_path else url_for('static', filename='images/avatar.png') }}"
+         alt="User Avatar"
+         class="w-20 h-20 rounded-full shadow-md object-cover" />
+    <div class="text-sm font-medium text-gray-700 dark:text-gray-300 gap-2">{{ user_email }}</div>
+  </div>
+  <nav class="space-y-2 text-sm">
+    {% if not session.get("connected") %}
+      <a href="{{ url_for('instagram.connect_instagram') }}"
+         class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition">
+        🔗 Connect Instagram
+      </a>
+    {% endif %}
+    <a href="{{ url_for('dashboard.dashboard') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded bg-blue-100 dark:bg-gray-700 text-white {% if request.endpoint == 'dashboard.dashboard' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      🏠 Dashboard
+    </a>
+    <a href="{{ url_for('reels.create_reel') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.endpoint == 'reels.create_reel' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      🎬 Create Reel
+    </a>
+    <a href="{{ url_for('reels.list_reels') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.endpoint == 'reels.list_reels' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      📂 Reel History
+    </a>
+    <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.endpoint == 'schedule.list_scheduled_jobs_view' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      🗓️ Scheduled Reels
+    </a>
+    <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.endpoint == 'coming_soon.show_coming' and request.view_args.feature == 'analytics' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      📊 Analytics
+    </a>
+    <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.endpoint == 'coming_soon.show_coming' and request.view_args.feature == 'refer' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      🤝 Refer & Earn
+    </a>
+    <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.endpoint == 'coming_soon.show_coming' and request.view_args.feature == 'upgrade' %}bg-blue-100 dark:bg-gray-700{% endif %}">
+      💳 Upgrade Plan
+    </a>
+    <a href="mailto:support@reelvo.in"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700">
+      🆘 Help Center
+    </a>
+    <a href="{{ url_for('auth.logout') }}"
+       class="flex items-center gap-2 px-3 py-2 rounded text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900">
+      🚪 Logout
+    </a>
+  </nav>
+
+  <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-6">
+    <button class="w-full py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm">
+      {% if session.get('theme') == 'dark' %}☀️ Light Mode{% else %}🌙 Dark Mode{% endif %}
+    </button>
+  </form>
+</aside>
