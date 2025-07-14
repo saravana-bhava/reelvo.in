@@ -15,8 +15,3 @@ def user_profile():
     referral_link = f"https://{host}/register?ref={user_email}"
 
     return render_template("profile.html", user=user_email, referral_link=referral_link)
-
-@profile_bp.route("/toggle-theme", methods=["POST"])
-def toggle_theme():
-    session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
-    return redirect(request.referrer or url_for("profile.user_profile"))

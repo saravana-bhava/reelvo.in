@@ -195,3 +195,8 @@ def reset_password(token):
         return redirect(url_for("auth.login"))
 
     return render_template("reset_password.html", email=email)
+
+@auth_bp.route("/toggle-theme", methods=["POST"])
+def toggle_theme():
+    session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
+    return redirect(request.referrer or url_for("profile.user_profile"))

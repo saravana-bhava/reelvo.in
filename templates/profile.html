@@ -40,7 +40,7 @@
 <!-- Theme Toggle -->
 <section class="card">
   <h3>🎨 Appearance</h3>
-  <form method="post" action="{{ url_for('profile.toggle_theme') }}">
+  <form method="post" action="{{ url_for('auth.toggle_theme') }}">
     <button type="submit" class="button button-info" aria-label="Toggle Theme">
       {% if session.get('theme') == 'dark' %}
         🌞 Switch to Light Mode

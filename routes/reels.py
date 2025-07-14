@@ -27,10 +27,10 @@ logger = logging.getLogger("create_reel")
 logging.basicConfig(level=logging.INFO)
 
 # ------------------------
-# GET: /create
+# GET: /create-reel
 # ------------------------
 
-@reels_bp.route("/create", methods=["GET"])
+@reels_bp.route("/create-reel", methods=["GET"])
 def create_reel():
     if "user" not in session:
         return redirect(url_for("auth.index"))
@@ -290,10 +290,10 @@ def serve_video(user_email, filename):
     return send_from_directory(os.path.join("output", user_email, "videos"), filename)
 
 # ------------------------
-# GET: /reels
+# GET: /reel-history
 # ------------------------
 
-@reels_bp.route("/reels", methods=["GET"])
+@reels_bp.route("/reel-history", methods=["GET"])
 def list_reels():
     if "user" not in session:
         return redirect(url_for("auth.index"))

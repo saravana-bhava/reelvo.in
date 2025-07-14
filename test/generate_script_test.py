@@ -31,8 +31,8 @@ def test_generate_script_with_theme(client):
     )
     assert response.status_code == 200
     result = response.get_json()
-    assert "script" in result
-    assert len(result["script"].strip()) > 0
+    assert "script_text" in result
+    assert len(result["script_text"].strip()) > 0
     print("✅ Theme-based script generated successfully.")
 
 def test_generate_script_with_custom_topic(client):
@@ -48,8 +48,8 @@ def test_generate_script_with_custom_topic(client):
     )
     assert response.status_code == 200
     result = response.get_json()
-    assert "script" in result
-    assert "moringa" in result["script"].lower()
+    assert "script_text" in result
+    assert "moringa" in result["script_text"].lower()
     print("✅ Custom-topic script generated successfully.")
 
 def test_generate_script_hindi(client):
@@ -65,8 +65,8 @@ def test_generate_script_hindi(client):
     )
     assert response.status_code == 200
     result = response.get_json()
-    assert "script" in result
-    assert any('\u0900' <= c <= '\u097F' for c in result["script"]), "Script should contain Hindi characters"
+    assert "script_text" in result
+    assert any('\u0900' <= c <= '\u097F' for c in result["script_text"]), "Script should contain Hindi characters"
     print("✅ Hindi script generated successfully.")
 
 def test_generate_script_missing_prompt(client):
