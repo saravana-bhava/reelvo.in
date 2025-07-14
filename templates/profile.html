@@ -12,6 +12,10 @@
       <img src="/{{ logo_path }}"
            alt="Instagram Profile Picture"
            class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border-2 border-blue-500 shadow" />
+    {% else %}
+      <img src="{{ url_for('static', filename='images/avatar.png') }}"
+           alt="Default Avatar"
+           class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border dark:border-gray-600 shadow" />
     {% endif %}
     <h3 class="text-gray-800 dark:text-gray-200 text-sm font-medium">📧 Email</h3>
     <p class="text-blue-600 dark:text-blue-400 font-semibold break-words">{{ user }}</p>
@@ -23,7 +27,8 @@
     {% if session.get("connected") %}
       <p class="text-green-600 font-medium mb-3">✅ Instagram is connected.</p>
       <form method="post" action="{{ url_for('instagram.disconnect_instagram') }}">
-        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition">
+        <button type="submit"
+                class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition">
           ❌ Disconnect Instagram
         </button>
       </form>
@@ -40,7 +45,8 @@
   <section role="region" aria-label="Theme Switcher" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
     <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">🎨 Appearance</h3>
     <form method="post" action="{{ url_for('auth.toggle_theme') }}">
-      <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded transition">
+      <button type="submit"
+              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded transition">
         {% if session.get('theme') == 'dark' %}
           🌞 Switch to Light Mode
         {% else %}
@@ -64,10 +70,12 @@
   <section role="region" aria-label="Referral Program" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
     <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">🤝 Refer & Earn</h3>
     <p class="text-sm text-gray-600 dark:text-gray-400">Share your referral link:</p>
-    <div class="mt-2 bg-gray-100 dark:bg-gray-900 text-sm text-blue-700 dark:text-blue-300 px-3 py-2 rounded select-all overflow-auto break-all border border-gray-300 dark:border-gray-700" id="referralLink">
+    <div id="referralLink"
+         class="mt-2 bg-gray-100 dark:bg-gray-900 text-sm text-blue-700 dark:text-blue-300 px-3 py-2 rounded select-all overflow-auto break-all border border-gray-300 dark:border-gray-700">
       {{ referral_link }}
     </div>
     <button onclick="copyReferralLink()"
+            type="button"
             class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded transition">
       📋 Copy Link
     </button>
@@ -85,8 +93,10 @@
 
 <script>
 function copyReferralLink() {
-  const link = document.getElementById("referralLink").textContent;
-  navigator.clipboard.writeText(link.trim()).then(() => {
+  const linkEl = document.getElementById("referralLink");
+  const text = linkEl?.textContent?.trim();
+  if (!text) return alert("Referral link not available.");
+  navigator.clipboard.writeText(text).then(() => {
     alert("Referral link copied to clipboard!");
   }).catch(() => {
     alert("Failed to copy referral link.");

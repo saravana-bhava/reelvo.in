@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Home - Reelvo{% endblock %}
-{% block heading %}Home - Reelvo{% endblock %}
+{% block heading %}🎉 Welcome to Reelvo{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="bg-white dark:bg-gray-800 rounded-lg shadow px-6 py-12 text-center mb-12 animate__animated animate__fadeIn">
+<section class="bg-white dark:bg-gray-800 rounded-lg shadow px-6 py-12 text-center mb-12 animate__animated animate__fadeIn" role="region" aria-label="Hero">
   <h1 class="text-3xl md:text-5xl font-bold mb-4 text-blue-600 dark:text-blue-400">
     Let AI Create & Post Reels While You Sleep
   </h1>
@@ -12,52 +12,46 @@
     Save hours each week. Grow your Instagram on autopilot with AI-generated videos and one-click scheduling.
   </p>
   <a href="{{ url_for('auth.register') }}"
-     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow text-lg transition">
+     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow text-lg transition duration-150">
     🚀 Get Early Access
   </a>
 </section>
 
 <!-- Features Section -->
-<section class="mb-16">
+<section class="mb-16" role="region" aria-label="Why Use Reelvo">
   <h2 class="text-2xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">Why Use Reelvo?</h2>
   <div class="grid gap-6 grid-cols-1 md:grid-cols-3">
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-      <div class="text-4xl mb-4">🧠</div>
-      <h3 class="text-xl font-semibold mb-2">AI Powered</h3>
-      <p class="text-gray-600 dark:text-gray-300">Scripted videos generated using advanced AI tech — voice + visuals included.</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-      <div class="text-4xl mb-4">✅</div>
-      <h3 class="text-xl font-semibold mb-2">Auto-Posting</h3>
-      <p class="text-gray-600 dark:text-gray-300">Reels published to your Instagram — even while you sleep.</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-      <div class="text-4xl mb-4">📊</div>
-      <h3 class="text-xl font-semibold mb-2">Analytics</h3>
-      <p class="text-gray-600 dark:text-gray-300">Monitor reel performance with actionable insights and trends.</p>
-    </div>
+    {% set features = [
+      ('🧠', 'AI Powered', 'Scripted videos generated using advanced AI tech — voice + visuals included.'),
+      ('✅', 'Auto-Posting', 'Reels published to your Instagram — even while you sleep.'),
+      ('📊', 'Analytics', 'Monitor reel performance with actionable insights and trends.')
+    ] %}
+    {% for icon, title, desc in features %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition duration-150">
+        <div class="text-4xl mb-4">{{ icon }}</div>
+        <h3 class="text-xl font-semibold mb-2">{{ title }}</h3>
+        <p class="text-gray-600 dark:text-gray-300">{{ desc }}</p>
+      </div>
+    {% endfor %}
   </div>
 </section>
 
 <!-- How It Works Section -->
-<section class="mb-20">
+<section class="mb-20" role="region" aria-label="How It Works">
   <h2 class="text-2xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">How It Works</h2>
   <div class="grid gap-6 grid-cols-1 md:grid-cols-3">
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-      <div class="text-4xl mb-4">✍️</div>
-      <h3 class="text-xl font-semibold mb-2">Script</h3>
-      <p class="text-gray-600 dark:text-gray-300">AI writes short, punchy scripts based on your niche or prompts.</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-      <div class="text-4xl mb-4">🎬</div>
-      <h3 class="text-xl font-semibold mb-2">Create</h3>
-      <p class="text-gray-600 dark:text-gray-300">Video generation adds visuals, background music, and voiceover.</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-      <div class="text-4xl mb-4">📱</div>
-      <h3 class="text-xl font-semibold mb-2">Post</h3>
-      <p class="text-gray-600 dark:text-gray-300">Reels are auto-published to your Instagram account on schedule.</p>
-    </div>
+    {% set steps = [
+      ('✍️', 'Script', 'AI writes short, punchy scripts based on your niche or prompts.'),
+      ('🎬', 'Create', 'Video generation adds visuals, background music, and voiceover.'),
+      ('📱', 'Post', 'Reels are auto-published to your Instagram account on schedule.')
+    ] %}
+    {% for icon, title, desc in steps %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition duration-150">
+        <div class="text-4xl mb-4">{{ icon }}</div>
+        <h3 class="text-xl font-semibold mb-2">{{ title }}</h3>
+        <p class="text-gray-600 dark:text-gray-300">{{ desc }}</p>
+      </div>
+    {% endfor %}
   </div>
 </section>
 {% endblock %}

@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | Reelvo{% endblock %}
-{% block heading %}📊 Dashboard{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl">
+  📊 Dashboard
+</span>
+{% endblock %}
 
 {% block content %}
 <div class="grid lg:grid-cols-5 gap-6 items-start mt-4">
 
   <!-- Main Content -->
   <section class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow p-6 space-y-6" role="main">
+
     <!-- Hero Message -->
     <div class="text-center">
       <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
@@ -31,19 +37,24 @@
             </div>
           </div>
         {% else %}
-          <p class="text-gray-500 dark:text-gray-400">❌ No reels found.</p>
+          <p class="text-gray-500 dark:text-gray-400 col-span-full">❌ No reels found.</p>
         {% endfor %}
       </div>
     </div>
   </section>
 
   <!-- Steps -->
-  <aside class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl shadow p-4" aria-label="How it works">
+  <aside class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow p-4" aria-label="How it works">
     <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">🎥 Creation Steps</h3>
-    <ul class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-      <li class="flex items-center gap-2"><span>📝</span> Enter Script</li>
-      <li class="flex items-center gap-2"><span>🎬</span> Generate Video</li>
-      <li class="flex items-center gap-2"><span>📲</span> Post Reel</li>
+    <ul class="list-disc pl-6 space-y-2 text-sm text-gray-700 dark:text-gray-300">
+      <li>🔗 Connect your Instagram account</li>
+      <li>🧠 Choose a niche or enter your own topic</li>
+      <li>📝 Generate or write a short script</li>
+      <li>🎤 Select a voice and background music</li>
+      <li>🎬 Let AI generate your video</li>
+      <li>🗓️ Schedule the reel for posting</li>
+      <li>📲 Reels get auto-posted to Instagram</li>
+      <li>📊 Track performance with built-in analytics</li>
     </ul>
   </aside>
 

@@ -30,13 +30,13 @@
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
           {% for item in scheduled %}
           <tr>
-            <td class="px-4 py-2">{{ item.video }}</td>
+            <td class="px-4 py-2 truncate max-w-xs" title="{{ item.video }}">{{ item.video }}</td>
             <td class="px-4 py-2">{{ item.scheduled_for }}</td>
             <td class="px-4 py-2 text-center">
               {% if item.posted %}
-                <span class="text-green-600 dark:text-green-400">✅ Posted</span>
+                <span class="text-green-600 dark:text-green-400" title="This reel has been posted">✅ Posted</span>
               {% else %}
-                <span class="text-yellow-600 dark:text-yellow-400">⏳ Pending</span>
+                <span class="text-yellow-600 dark:text-yellow-400" title="This reel is scheduled but not yet posted">⏳ Pending</span>
               {% endif %}
             </td>
             <td class="px-4 py-2 text-center">

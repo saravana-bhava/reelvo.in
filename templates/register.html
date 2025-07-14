@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Register - Reelvo{% endblock %}
-{% block heading %}📝 Register on Reelvo{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl">
+  📝 Register on Reelvo
+</span>
+{% endblock %}
 
 {% block content %}
 <section role="region" aria-labelledby="register-heading" class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 animate__animated animate__fadeInUp">
@@ -50,7 +55,7 @@
 
     <!-- Submit Button -->
     <button type="submit"
-            class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded shadow transition"
+            class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded shadow transition duration-150"
             aria-label="Register your account">
       ✅ Register
     </button>

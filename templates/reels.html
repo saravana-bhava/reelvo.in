@@ -17,14 +17,20 @@
 
         <!-- Metadata -->
         <div class="p-4 space-y-4 flex flex-col flex-1">
-          <strong class="block text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-            🎞️ {{ vid }}
-          </strong>
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            <strong class="block font-medium truncate">🎞️ {{ vid }}</strong>
+            {% if vid_date_map and vid in vid_date_map %}
+              <span class="text-xs text-gray-500 dark:text-gray-400">🗓️ {{ vid_date_map[vid] }}</span>
+            {% endif %}
+          </div>
 
+          <!-- Script -->
           {% if scripts and scripts.get(vid) %}
             <pre class="bg-gray-100 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 p-3 rounded overflow-x-auto max-h-48 whitespace-pre-wrap border border-gray-200 dark:border-gray-700">
 {{ scripts[vid] }}
             </pre>
+          {% else %}
+            <div class="text-xs text-gray-400 italic">No script available for this reel.</div>
           {% endif %}
 
           <!-- Delete Button -->
