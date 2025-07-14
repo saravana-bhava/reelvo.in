@@ -1,64 +1,53 @@
 <!-- File: templates/includes/sidebar.html -->
 {% set user_email = session.get('user') %}
 {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
-<aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6">
 
+<aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6">
   <!-- Profile Section -->
-  <div class="flex flex-col items-center text-center space-y-4 mb-6">
+  <div class="flex flex-col items-center text-center space-y-3 mb-6">
     <img src="/{{ logo_path if session.get('instagram_profile_picture') else 'static/images/avatar.png' }}"
          alt="User Avatar"
-         class="w-20 h-20 rounded-full shadow-md object-cover" />
-    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+         class="w-20 h-20 rounded-full shadow object-cover ring-2 ring-blue-400 dark:ring-blue-300 transition"
+         title="{% if not session.get('instagram_profile_picture') %}Using default avatar{% endif %}" />
+    <div class="text-sm font-medium text-gray-700 dark:text-gray-300 break-words text-center max-w-full">
       {{ user_email }}
     </div>
   </div>
 
   <!-- Navigation -->
-  <nav class="space-y-2 text-sm">
+  <nav class="space-y-1 text-sm" role="navigation" aria-label="Sidebar Navigation">
     {% if not session.get("connected") %}
       <a href="{{ url_for('instagram.connect_instagram') }}"
-         class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition">
+         class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition text-blue-600 dark:text-blue-400 font-medium">
         🔗 Connect Instagram
       </a>
     {% endif %}
 
-    <a href="{{ url_for('dashboard.dashboard') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'dashboard.dashboard' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      🏠 Dashboard
-    </a>
+    {% set nav_links = [
+      ('🏠', 'Dashboard', 'dashboard.dashboard', None),
+      ('🎬', 'Create Reel', 'reels.create_reel', None),
+      ('📂', 'Reel History', 'reels.list_reels', None),
+      ('🗓️', 'Scheduled Reels', 'schedule.list_scheduled_jobs_view', None),
+      ('📊', 'Analytics', 'coming_soon.show_coming', 'analytics'),
+      ('🤝', 'Refer & Earn', 'coming_soon.show_coming', 'refer'),
+      ('💳', 'Upgrade Plan', 'coming_soon.show_coming', 'upgrade')
+    ] %}
 
-    <a href="{{ url_for('reels.create_reel') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'reels.create_reel' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      🎬 Create Reel
-    </a>
-
-    <a href="{{ url_for('reels.list_reels') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'reels.list_reels' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      📂 Reel History
-    </a>
-
-    <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'schedule.list_scheduled_jobs_view' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      🗓️ Scheduled Reels
-    </a>
-
-    <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'coming_soon.show_coming' and request.view_args.feature == 'analytics' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      📊 Analytics
-    </a>
-
-    <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'coming_soon.show_coming' and request.view_args.feature == 'refer' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      🤝 Refer & Earn
-    </a>
-
-    <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded transition {% if request.endpoint == 'coming_soon.show_coming' and request.view_args.feature == 'upgrade' %}bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white{% else %}hover:bg-blue-100 dark:hover:bg-gray-700{% endif %}">
-      💳 Upgrade Plan
-    </a>
+    {% for icon, label, endpoint_name, feature in nav_links %}
+      {% if feature is not defined %}
+        {% set is_active = request.endpoint == endpoint_name %}
+      {% else %}
+        {% set is_active = request.endpoint == endpoint_name and request.view_args.feature == feature %}
+      {% endif %}
+      <a href="{{ url_for(endpoint_name, feature=feature) if feature is defined else url_for(endpoint_name) }}"
+         class="flex items-center gap-2 px-3 py-2 rounded transition
+           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if is_active else 'hover:bg-blue-100 dark:hover:bg-gray-700' }}">
+        {{ icon }} {{ label }}
+      </a>
+    {% endfor %}
 
     <a href="mailto:support@reelvo.in"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition">
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
       🆘 Help Center
     </a>
 
@@ -70,8 +59,12 @@
 
   <!-- Theme Toggle -->
   <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-6">
-    <button class="w-full py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm">
-      {% if session.get('theme') == 'dark' %}☀️ Light Mode{% else %}🌙 Dark Mode{% endif %}
+    <button class="w-full py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium">
+      {% if session.get('theme') == 'dark' %}
+        ☀️ Light Mode
+      {% else %}
+        🌙 Dark Mode
+      {% endif %}
     </button>
   </form>
 </aside>
