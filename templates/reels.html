@@ -5,11 +5,11 @@
 <h2 class="page-heading">📂 Reel History for <span class="user-highlight">{{ user }}</span></h2>
 
 {% if videos %}
-  <div class="video-grid">
+  <div class="video-grid" role="region" aria-label="List of generated reels">
     {% for vid in videos %}
       <div class="video-card">
         <!-- Video Player -->
-        <video width="100%" height="auto" controls
+        <video controls
                class="video-player"
                aria-label="Reel video for {{ vid }}">
           <source src="{{ url_for('reels.serve_video', user_email=user, filename=vid) }}" type="video/mp4">
@@ -49,53 +49,4 @@
     ⬅️ Back to Dashboard
   </a>
 </div>
-
-<style>
-  .video-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-  }
-
-  .video-card {
-    background: #f9f9f9;
-    border-radius: 10px;
-    padding: 1rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  }
-
-  .video-meta {
-    margin-top: 1rem;
-    word-wrap: break-word;
-  }
-
-  .script-preview {
-    background: #f1f1f1;
-    padding: 0.75rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    white-space: pre-wrap;
-    margin-top: 0.5rem;
-  }
-
-  .delete-form {
-    margin-top: 0.75rem;
-  }
-
-  .no-reels {
-    margin-top: 2rem;
-    font-style: italic;
-    color: #777;
-  }
-
-  .back-to-dashboard {
-    margin-top: 3rem;
-    text-align: center;
-  }
-
-  .user-highlight {
-    color: #1e88e5;
-  }
-</style>
 {% endblock %}

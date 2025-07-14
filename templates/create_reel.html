@@ -7,67 +7,90 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="flash flash-{{ category }}">{{ message }}</div>
+      <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
     {% endfor %}
   {% endif %}
 {% endwith %}
 
-<form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data" onsubmit="disableForm()">
-  <label for="theme"><strong>🎯 Select Theme:</strong></label>
-  <select id="theme" name="theme" onchange="checkPromptFilled()">
-    <option value="">-- Choose theme --</option>
-    {% for t in themes %}
-      <option value="{{ t }}" {% if t == selected_theme %}selected{% endif %}>{{ t|capitalize }}</option>
-    {% endfor %}
-  </select>
+<form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}" enctype="multipart/form-data" onsubmit="disableForm()" class="reel-form">
+  <fieldset>
+    <legend>🎯 Theme & Topic</legend>
 
-  <label for="custom_topic"><strong>💡 Or Custom Topic/Product:</strong></label>
-  <input type="text" id="custom_topic" name="custom_topic" value="{{ custom_topic }}" placeholder="e.g. Protein Powder" oninput="checkPromptFilled()" />
+    <label for="theme"><strong>Select Theme:</strong></label>
+    <select id="theme" name="theme" onchange="checkPromptFilled()">
+      <option value="">-- Choose theme --</option>
+      {% for t in themes %}
+        <option value="{{ t }}" {% if t == selected_theme %}selected{% endif %}>{{ t|capitalize }}</option>
+      {% endfor %}
+    </select>
 
-  <label for="language"><strong>🌐 Language:</strong></label>
-  <select id="language" name="language" required>
-    <option value="en" {% if language == 'en' %}selected{% endif %}>🇺🇸 English</option>
-    <option value="hi" {% if language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
-  </select>
+    <label for="custom_topic"><strong>Or Custom Topic/Product:</strong></label>
+    <input type="text" id="custom_topic" name="custom_topic" value="{{ custom_topic }}" placeholder="e.g. Protein Powder" oninput="checkPromptFilled()" />
+  </fieldset>
 
-  <label for="voice_option"><strong>🎙️ Voiceover Option:</strong></label>
-  <select id="voice_option" name="voice_option" onchange="toggleVoiceInputs()" required>
-    <option value="tts" {% if voice_option == 'tts' %}selected{% endif %}>Use AI Voice (TTS)</option>
-    <option value="upload" {% if voice_option == 'upload' %}selected{% endif %}>Upload My Voice</option>
-  </select>
+  <fieldset>
+    <legend>🗣️ Voice Settings</legend>
 
-  <label for="voice_artist" id="voice_artist_label"><strong>🔊 TTS Voice:</strong></label>
-  <select id="voice_artist" name="voice_artist">
-    <optgroup label="English">
-      <option value="en-US-Wavenet-A" {% if voice_artist == 'en-US-Wavenet-A' %}selected{% endif %}>English Male (Calm)</option>
-      <option value="en-US-Wavenet-B" {% if voice_artist == 'en-US-Wavenet-B' %}selected{% endif %}>English Male (Deep)</option>
-      <option value="en-US-Wavenet-C" {% if voice_artist == 'en-US-Wavenet-C' %}selected{% endif %}>English Female (Warm)</option>
-      <option value="en-US-Wavenet-D" {% if voice_artist == 'en-US-Wavenet-D' %}selected{% endif %}>English Male (Energetic)</option>
-      <option value="en-US-Wavenet-E" {% if voice_artist == 'en-US-Wavenet-E' %}selected{% endif %}>English Female (Upbeat)</option>
-      <option value="en-US-Wavenet-F" {% if voice_artist == 'en-US-Wavenet-F' %}selected{% endif %}>English Female (Neutral)</option>
-    </optgroup>
-    <optgroup label="Hindi">
-      <option value="hi-IN-Wavenet-A" {% if voice_artist == 'hi-IN-Wavenet-A' %}selected{% endif %}>Hindi Male (Deep)</option>
-      <option value="hi-IN-Wavenet-B" {% if voice_artist == 'hi-IN-Wavenet-B' %}selected{% endif %}>Hindi Male (Warm)</option>
-      <option value="hi-IN-Wavenet-C" {% if voice_artist == 'hi-IN-Wavenet-C' %}selected{% endif %}>Hindi Female (Friendly)</option>
-      <option value="hi-IN-Wavenet-D" {% if voice_artist == 'hi-IN-Wavenet-D' %}selected{% endif %}>Hindi Female (Polite)</option>
-    </optgroup>
-  </select>
+    <label for="language"><strong>Language:</strong></label>
+    <select id="language" name="language" required>
+      <option value="en" {% if language == 'en' %}selected{% endif %}>🇺🇸 English</option>
+      <option value="hi" {% if language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
+    </select>
 
-  <label for="custom_voice" id="custom_voice_label" style="display: none;"><strong>📁 Upload Voiceover:</strong></label>
-  <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" style="display: none;" />
+    <label for="voice_option"><strong>Voiceover Option:</strong></label>
+    <select id="voice_option" name="voice_option" onchange="toggleVoiceInputs()" required>
+      <option value="tts" {% if voice_option == 'tts' %}selected{% endif %}>Use AI Voice (TTS)</option>
+      <option value="upload" {% if voice_option == 'upload' %}selected{% endif %}>Upload My Voice</option>
+    </select>
 
-  <button type="button" id="generateBtn" onclick="generateScript()" disabled aria-label="Generate AI script">📝 Generate Script</button>
-  <div id="script-status" role="status" style="margin-top: 8px; color: #555;"></div>
+    <label for="voice_artist" id="voice_artist_label"><strong>TTS Voice:</strong></label>
+    <select id="voice_artist" name="voice_artist">
+      <optgroup label="English">
+        <option value="en-US-Wavenet-A" {% if voice_artist == 'en-US-Wavenet-A' %}selected{% endif %}>English Male (Calm)</option>
+        <option value="en-US-Wavenet-B" {% if voice_artist == 'en-US-Wavenet-B' %}selected{% endif %}>English Male (Deep)</option>
+        <option value="en-US-Wavenet-C" {% if voice_artist == 'en-US-Wavenet-C' %}selected{% endif %}>English Female (Warm)</option>
+        <option value="en-US-Wavenet-D" {% if voice_artist == 'en-US-Wavenet-D' %}selected{% endif %}>English Male (Energetic)</option>
+        <option value="en-US-Wavenet-E" {% if voice_artist == 'en-US-Wavenet-E' %}selected{% endif %}>English Female (Upbeat)</option>
+        <option value="en-US-Wavenet-F" {% if voice_artist == 'en-US-Wavenet-F' %}selected{% endif %}>English Female (Neutral)</option>
+      </optgroup>
+      <optgroup label="Hindi">
+        <option value="hi-IN-Wavenet-A" {% if voice_artist == 'hi-IN-Wavenet-A' %}selected{% endif %}>Hindi Male (Deep)</option>
+        <option value="hi-IN-Wavenet-B" {% if voice_artist == 'hi-IN-Wavenet-B' %}selected{% endif %}>Hindi Male (Warm)</option>
+        <option value="hi-IN-Wavenet-C" {% if voice_artist == 'hi-IN-Wavenet-C' %}selected{% endif %}>Hindi Female (Friendly)</option>
+        <option value="hi-IN-Wavenet-D" {% if voice_artist == 'hi-IN-Wavenet-D' %}selected{% endif %}>Hindi Female (Polite)</option>
+      </optgroup>
+    </select>
 
-  <label for="script"><strong>✏️ Edit Script:</strong></label>
-  <textarea id="script" name="script" rows="6" required>{{ script_text }}</textarea>
+    <label for="custom_voice" id="custom_voice_label" style="display: none;"><strong>Upload Voiceover:</strong></label>
+    <input type="file" id="custom_voice" name="custom_voice" accept=".mp3,.wav" style="display: none;" />
+  </fieldset>
 
-  <label><input type="checkbox" name="subtitles" {% if subtitles_checked %}checked{% endif %}/> Include Subtitles</label><br>
-  <label><input type="checkbox" name="watermark" {% if watermark_checked %}checked{% endif %}/> Include Watermark</label><br><br>
+  <section role="region" aria-label="Script Generator" class="script-section">
+    <button type="button" id="generateBtn" onclick="generateScript()" disabled aria-label="Generate AI script">📝 Generate Script</button>
+    <div id="script-status" role="status" class="script-status"></div>
 
-  <button type="submit">📦 Create Reel</button>
+    <label for="script"><strong>Edit Script:</strong></label>
+    <textarea id="script" name="script" rows="6" required>{{ script_text }}</textarea>
+  </section>
+
+  <div class="options">
+    <label><input type="checkbox" name="subtitles" {% if subtitles_checked %}checked{% endif %}/> Include Subtitles</label>
+    <label><input type="checkbox" name="watermark" {% if watermark_checked %}checked{% endif %}/> Include Watermark</label>
+  </div>
+
+  <button type="submit" class="submit-btn">📦 Create Reel</button>
 </form>
+
+<hr />
+
+<h3>🎞️ Your Previous Reels</h3>
+<ul class="video-list">
+  {% for v in videos %}
+    <li><a href="{{ url_for('reels.serve_video', user_email=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
+  {% else %}
+    <li>No reels found.</li>
+  {% endfor %}
+</ul>
 
 <script>
 const generateBtn = document.getElementById('generateBtn');
@@ -148,15 +171,4 @@ window.addEventListener("DOMContentLoaded", () => {
   toggleVoiceInputs();
 });
 </script>
-
-<hr />
-
-<h3>🎞️ Your Previous Reels</h3>
-<ul>
-  {% for v in videos %}
-    <li><a href="{{ url_for('reels.serve_video', user_email=user, filename=v) }}" target="_blank" rel="noopener">{{ v | e }}</a></li>
-  {% else %}
-    <li>No reels found.</li>
-  {% endfor %}
-</ul>
 {% endblock %}

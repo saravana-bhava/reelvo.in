@@ -10,7 +10,7 @@
       aria-label="Registration Form">
 
   <!-- Email Field -->
-  <label for="email" class="form-label">
+  <label for="email" class="form-label" aria-label="Email Address">
     📧 Email Address
   </label>
   <input type="email"
@@ -20,11 +20,12 @@
          required
          autocomplete="email"
          class="form-input"
-         aria-describedby="emailHelp" />
+         aria-describedby="emailHelp"
+         aria-required="true" />
   <div id="emailHelp" class="form-help">This will be your login email.</div>
 
   <!-- Password Field -->
-  <label for="password" class="form-label">
+  <label for="password" class="form-label" aria-label="Password">
     🔒 Choose Password
   </label>
   <input type="password"
@@ -34,7 +35,8 @@
          required
          autocomplete="new-password"
          class="form-input"
-         aria-describedby="passwordHelp" />
+         aria-describedby="passwordHelp"
+         aria-required="true" />
   <div id="passwordHelp" class="form-help">Must be at least 6 characters.</div>
 
   <!-- Referral (Optional Hidden) -->
@@ -43,7 +45,10 @@
   {% endif %}
 
   <!-- Submit Button -->
-  <button type="submit" class="button button-success" style="width: 100%;">
+  <button type="submit"
+          class="button button-success"
+          style="width: 100%;"
+          aria-label="Register your account">
     ✅ Register
   </button>
 
@@ -55,5 +60,4 @@
     </a>
   </div>
 </form>
-
 {% endblock %}

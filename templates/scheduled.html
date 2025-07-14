@@ -88,4 +88,11 @@
     ⬅️ Back to Dashboard
   </a>
 </div>
+
+<script>
+  document.querySelectorAll("input[type='date']").forEach(input => {
+    input.min = new Date().toISOString().split("T")[0];
+  });
+</script>
+
 {% endblock %}

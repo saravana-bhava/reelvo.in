@@ -14,14 +14,15 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="{{ session.get('theme', 'light') }}">
-<header>
-  <h1 aria-label="Reelvo - Home">
+<header role="banner" class="site-header">
+  <h1 aria-label="Reelvo - Home" class="logo">
     <span aria-hidden="true">🎞️</span> <span>Reelvo</span>
   </h1>
 
-  <!-- Theme toggle -->
   {% if session.get('user') %}
-  <form id="theme-toggle-form" method="POST" action="{{ url_for('auth.toggle_theme') }}" style="position: absolute; top: 20px; right: 20px;">
+  <!-- Theme toggle -->
+  <form id="theme-toggle-form" method="POST" action="{{ url_for('auth.toggle_theme') }}"
+        class="theme-toggle-form">
     <button type="submit" class="button" title="Toggle theme">
       {% if session.get('theme') == 'dark' %}
         ☀️ Light Mode
@@ -33,53 +34,47 @@
   {% endif %}
 </header>
 
-<nav role="navigation" aria-label="Main navigation">
+<nav role="navigation" aria-label="Main navigation" class="main-nav">
   {% set endpoint = request.endpoint %}
+  <ul class="nav-list">
+    {% if session.get('user') %}
+      <li><a href="{{ url_for('dashboard.dashboard') }}"
+             class="{% if endpoint == 'dashboard.dashboard' %}active{% endif %}">
+        🏠 Dashboard</a></li>
 
-  {% if session.get('user') %}
-    <a href="{{ url_for('dashboard.dashboard') }}"
-       class="{% if endpoint == 'dashboard.dashboard' %}active{% endif %}">
-      🏠 Dashboard
-    </a>
+      <li><a href="{{ url_for('reels.create_reel') }}"
+             class="{% if endpoint == 'reels.create_reel' %}active{% endif %}">
+        🎬 Create Reel</a></li>
 
-    <a href="{{ url_for('reels.create_reel') }}"
-       class="{% if endpoint == 'reels.create_reel' %}active{% endif %}">
-      🎬 Create Reel
-    </a>
+      <li><a href="{{ url_for('reels.list_reels') }}"
+             class="{% if endpoint == 'reels.list_reels' %}active{% endif %}">
+        📂 Reel History</a></li>
 
-    <a href="{{ url_for('reels.list_reels') }}"
-       class="{% if endpoint == 'reels.list_reels' %}active{% endif %}">
-      📂 Reel History
-    </a>
+      <li><a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
+             class="{% if endpoint == 'schedule.list_scheduled_jobs_view' %}active{% endif %}">
+        🗓️ Scheduled Reels</a></li>
 
-    <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
-       class="{% if endpoint == 'schedule.list_scheduled_jobs_view' %}active{% endif %}">
-      🗓️ Scheduled Reels
-    </a>
+      <li><a href="{{ url_for('profile.user_profile') }}"
+             class="{% if endpoint == 'profile.user_profile' %}active{% endif %}">
+        👤 Profile</a></li>
 
-    <a href="{{ url_for('profile.user_profile') }}"
-       class="{% if endpoint == 'profile.user_profile' %}active{% endif %}">
-      👤 Profile
-    </a>
+      <li><a href="{{ url_for('auth.logout') }}">🚪 Logout</a></li>
+    {% else %}
+      <li><a href="{{ url_for('home.home') }}"
+             class="{% if endpoint == 'home.home' %}active{% endif %}">
+        🏠 Home</a></li>
 
-    <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
-
-  {% else %}
-    <a href="{{ url_for('home.home') }}"
-       class="{% if endpoint == 'home.home' %}active{% endif %}">
-      🏠 Home
-    </a>
-
-    <a href="{{ url_for('auth.login') }}">🔐 Login</a>
-    <a href="{{ url_for('auth.register') }}">📝 Register</a>
-  {% endif %}
+      <li><a href="{{ url_for('auth.login') }}">🔐 Login</a></li>
+      <li><a href="{{ url_for('auth.register') }}">📝 Register</a></li>
+    {% endif %}
+  </ul>
 </nav>
 
 <main class="container" role="main">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, msg in messages %}
-        <div class="flash flash-{{ category }}">{{ msg }}</div>
+        <div class="flash flash-{{ category }}" role="alert">{{ msg }}</div>
       {% endfor %}
     {% endif %}
   {% endwith %}
@@ -87,7 +82,7 @@
   {% block content %}{% endblock %}
 </main>
 
-<footer class="footer">
+<footer class="footer" role="contentinfo">
   <p>
     &copy; {{ current_year or 2025 }} Reelvo &mdash; All rights reserved. <br>
     <small>Site design by <a href="https://sazm.in" target="_blank" rel="noopener noreferrer">SazM</a></small>

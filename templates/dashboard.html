@@ -2,141 +2,17 @@
 {% block title %}Dashboard | Reelvo{% endblock %}
 
 {% block content %}
-<style>
-  .dashboard-layout {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    margin-top: 2rem;
-  }
-
-  .sidebar {
-    flex: 0 0 210px;
-    border-right: 1px solid #ddd;
-    padding-right: 1rem;
-  }
-
-  .sidebar img.profile-pic {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    display: block;
-    margin: 0 auto 0.5rem;
-  }
-
-  .sidebar .username {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    word-break: break-word;
-  }
-
-  .sidebar ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  .sidebar ul li {
-    padding: 0.5rem 0;
-  }
-
-  .main-content {
-    flex: 1;
-  }
-
-  .hero-section h1 {
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .hero-section p {
-    color: #555;
-    margin-bottom: 1.5rem;
-  }
-
-  .reel-thumbs {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-  }
-
-  .reel-thumbs .reel {
-    text-align: center;
-    flex: 1 1 120px;
-  }
-
-  .reel-thumbs img {
-    width: 120px;
-    height: auto;
-    border-radius: 8px;
-  }
-
-  .process-box {
-    background: #f8f9fa;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    width: 250px;
-  }
-
-  .process-box h3 {
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-  }
-
-  .process-step {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
-  }
-
-  .process-step span {
-    font-size: 1.3rem;
-    margin-right: 0.5rem;
-  }
-
-  .action-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .action-buttons a {
-    flex: 1 1 180px;
-  }
-
-  @media (max-width: 768px) {
-    .dashboard-layout {
-      flex-direction: column;
-    }
-    .sidebar {
-      border-right: none;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 1rem;
-    }
-    .process-box {
-      width: 100%;
-      margin-top: 2rem;
-    }
-  }
-</style>
-
 <div class="dashboard-layout">
 
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" role="complementary" aria-label="User menu">
     {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
     {% if session.get("instagram_profile_picture") and logo_path %}
-      <img src="/{{ logo_path }}"
-           alt="User's Instagram Logo"
-           class="profile-pic" />
+      <img src="/{{ logo_path }}" alt="Instagram Logo" class="profile-pic" />
     {% else %}
-      <img src="{{ url_for('static', filename='images/avatar.png') }}"
-           alt="Default Avatar"
-           class="profile-pic" />
+      <img src="{{ url_for('static', filename='images/avatar.png') }}" alt="Default Avatar" class="profile-pic" />
     {% endif %}
+
     <div class="username">{{ user_email }}</div>
 
     {% if not session.get("connected") %}
@@ -145,7 +21,7 @@
     </a>
     {% endif %}
 
-    <div class="action-buttons">
+    <nav class="action-buttons" aria-label="Dashboard actions">
       <a href="{{ url_for('reels.create_reel') }}" class="button button-success">🎬 Create Reel</a>
       <a href="{{ url_for('reels.list_reels') }}" class="button button-info">📂 Reel History</a>
       <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}" class="button button-warning">🗓️ Scheduled Reels</a>
@@ -154,12 +30,11 @@
       <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}" class="button button-secondary">💳 Upgrade Plan</a>
       <a href="mailto:support@reelvo.in" class="button button-muted" target="_blank" rel="noopener noreferrer">🆘 Help Center</a>
       <a href="{{ url_for('auth.logout') }}" class="button button-muted">🚪 Logout</a>
-    </div>
+    </nav>
   </aside>
 
-  <!-- Main -->
-  <section class="main-content">
-
+  <!-- Main Content -->
+  <section class="main-content" role="main">
     <!-- Hero Section -->
     <div class="hero-section">
       <h1>Let AI Create & Post Reels While You Sleep</h1>
@@ -167,22 +42,23 @@
     </div>
 
     <!-- Recent Reels -->
-    <div class="reel-thumbs">
+    <div class="reel-thumbs" aria-label="Recent Reels">
       {% for vid in videos[:3] %}
         <div class="reel">
           <img src="{{ url_for('reels.thumbnail', filename=vid) }}"
                alt="Thumbnail for {{ vid | e }}" />
-          <div>{{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}</div>
+          <div class="reel-date">
+            {{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else '' }}
+          </div>
         </div>
       {% else %}
         <div>No reels found.</div>
       {% endfor %}
     </div>
-
   </section>
 
   <!-- Video Process Column -->
-  <aside class="process-box">
+  <aside class="process-box" aria-label="How it works">
     <h3>🎥 Video Create Process</h3>
     <div class="process-step"><span>📝</span> Enter Script</div>
     <div class="process-step"><span>🎬</span> Generate Video</div>
