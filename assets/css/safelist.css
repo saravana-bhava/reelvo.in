@@ -1,10 +1,11 @@
-/* Dummy class references for Tailwind to include */
+/* assets/css/safelist.css */
 @layer utilities {
-  .grid-cols-1 {}
-  .md\:grid-cols-3 {}
+  .bg-white {}
   .text-primary {}
   .bg-primary {}
   .hover\:bg-primary-dark {}
+  .grid-cols-1 {}
+  .md\:grid-cols-3 {}
   .dark\:text-blue-400 {}
   .dark\:bg-gray-800 {}
   .dark\:bg-gray-900 {}

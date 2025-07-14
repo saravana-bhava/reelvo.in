@@ -2,19 +2,17 @@
 module.exports = {
   content: [
     './templates/**/*.html',
-    './templates/**/*.html.j2',
     './**/*.py',
     './assets/css/**/*.css',
+    './static/css/safelist.css'
   ],
   safelist: [
-    {
-      pattern: /grid-cols-\d+/,
-      variants: ['md'],
-    },
-    'grid-cols-1',
+    'bg-white',
     'text-primary',
     'bg-primary',
     'hover:bg-primary-dark',
+    'grid-cols-1',
+    'md:grid-cols-3',
     'dark:text-blue-400',
     'dark:bg-gray-800',
     'dark:bg-gray-900',
