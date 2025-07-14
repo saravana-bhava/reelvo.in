@@ -26,6 +26,9 @@ reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
 logging.basicConfig(level=logging.INFO)
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+THEME_JSON_PATH = os.path.join(ROOT_DIR, "theme.json")
+
 # ------------------------
 # GET: /create-reel
 # ------------------------
@@ -50,7 +53,7 @@ def create_reel():
         with open(os.path.join(scripts_dir, scripts[0]), encoding="utf-8") as f:
             latest_script = f.read()
 
-    with open("theme.json", encoding="utf-8") as f:
+    with open(THEME_JSON_PATH, encoding="utf-8") as f:
         themes = sorted(json.load(f).keys())
 
     return render_template(

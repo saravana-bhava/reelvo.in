@@ -90,5 +90,7 @@ def run():
     else:
         serve(flask_app, host=host, port=port)
 
+app = flask_app
+
 if __name__ == "__main__":
     run()
