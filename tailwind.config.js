@@ -1,17 +1,16 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     './templates/**/*.html',
-    './routes/**/*.py',
-    './assets/css/**/*.css'
+    './**/*.py',
+    './assets/css/**/*.css',
+    './static/css/safelist.css'
   ],
   safelist: [
     'bg-white',
+    'md:grid-cols-3',
     'text-primary',
     'bg-primary',
     'hover:bg-primary-dark',
-    'grid-cols-1',
-    'md:grid-cols-3',
     'dark:text-blue-400',
     'dark:bg-gray-800',
     'dark:bg-gray-900',
@@ -32,4 +31,4 @@ module.exports = {
     require('@tailwindcss/line-clamp'),
   ],
   darkMode: 'class',
-}
+};

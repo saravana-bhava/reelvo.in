@@ -37,6 +37,13 @@ logger = logging.getLogger("reelvo")
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
+dev_mode = os.getenv("FLASK_ENV", "production").lower() == "development"
+if dev_mode:
+    # ✅ Ensure templates reload on HTML changes in dev
+    flask_app.config['TEMPLATES_AUTO_RELOAD'] = True
+    flask_app.jinja_env.auto_reload = True
+
+
 # Enable proxy headers (important for HTTPS on reverse proxies like Cloudflare)
 flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
 
@@ -80,7 +87,6 @@ def run():
 
     port = int(os.getenv("PORT", 5000))
     host = "0.0.0.0"
-    dev_mode = os.getenv("FLASK_ENV", "production").lower() == "development"
 
     logger.info(f"🚀 Starting server at http://{host}:{port} ({'Dev' if dev_mode else 'Prod'} Mode)")
 
