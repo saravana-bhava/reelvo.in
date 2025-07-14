@@ -1,0 +1,12 @@
+/* Dummy class references for Tailwind to include */
+@layer utilities {
+  .grid-cols-1 {}
+  .md\:grid-cols-3 {}
+  .text-primary {}
+  .bg-primary {}
+  .hover\:bg-primary-dark {}
+  .dark\:text-blue-400 {}
+  .dark\:bg-gray-800 {}
+  .dark\:bg-gray-900 {}
+  .dark\:border-gray-700 {}
+}
