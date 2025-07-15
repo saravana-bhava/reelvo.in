@@ -1,38 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Home - Reelvo{% endblock %}
+
 {% block heading %}
-<span class="inline-flex items-center gap-2 text-2xl">
-    🎉 Welcome to Reelvo
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+  🎉 Welcome to Reelvo
 </span>
 {% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="bg-white dark:bg-gray-800 rounded-lg shadow px-6 py-12 text-center mb-12" role="region" aria-label="Hero">
-  <h1 class="text-3xl md:text-5xl font-bold mb-4 text-primary dark:text-blue-400">
+<section role="region"
+         aria-label="Hero Section"
+         class="bg-white dark:bg-gray-800 rounded-xl shadow p-8 sm:p-12 text-center mb-12 animate-fade-in">
+  <h1 class="text-3xl sm:text-5xl font-bold mb-4 text-blue-600 dark:text-blue-400">
     Let AI Create & Post Reels While You Sleep
   </h1>
-  <p class="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+  <p class="text-lg sm:text-xl text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
     Save hours each week. Grow your Instagram on autopilot with AI-generated videos and one-click scheduling.
   </p>
   <a href="{{ url_for('auth.register') }}"
-     class="inline-block bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-full shadow text-lg transition">
+     class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow transition text-lg"
+     aria-label="Get Early Access to Reelvo">
     🚀 Get Early Access
   </a>
 </section>
 
 <!-- Features Section -->
-<section class="mb-16" role="region" aria-label="Why Use Reelvo">
-  <h2 class="text-2xl font-bold text-center mb-8 dark:text-gray-100 text-gray-900">Why Use Reelvo?</h2>
-  <div class="grid gap-6 grid-cols-1 md:grid-cols-3">
+<section role="region" aria-label="Why Use Reelvo" class="mb-16">
+  <h2 class="text-2xl font-bold text-center mb-8 text-gray-900 dark:text-gray-600">
+    Why Use Reelvo?
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     {% set features = [
       ('🧠', 'AI Powered', 'Scripted videos generated using advanced AI tech — voice + visuals included.'),
       ('✅', 'Auto-Posting', 'Reels published to your Instagram — even while you sleep.'),
       ('📊', 'Analytics', 'Monitor reel performance with actionable insights and trends.')
     ] %}
     {% for icon, title, desc in features %}
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-        <div class="text-4xl mb-4">{{ icon }}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition duration-200">
+        <div class="text-4xl mb-4" aria-hidden="true">{{ icon }}</div>
         <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">{{ title }}</h3>
         <p class="text-gray-700 dark:text-gray-300">{{ desc }}</p>
       </div>
@@ -41,21 +47,34 @@
 </section>
 
 <!-- How It Works Section -->
-<section class="mb-20" role="region" aria-label="How It Works">
-  <h2 class="text-2xl font-bold text-center mb-8 dark:text-gray-100 text-gray-900">How It Works</h2>
-  <div class="grid gap-6 grid-cols-1 md:grid-cols-3">
+<section role="region" aria-label="How It Works" class="mb-20">
+  <h2 class="text-2xl font-bold text-center mb-8 text-gray-900 dark:text-gray-600">
+    How It Works
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     {% set steps = [
       ('✍️', 'Script', 'AI writes short, punchy scripts based on your niche or prompts.'),
       ('🎬', 'Create', 'Video generation adds visuals, background music, and voiceover.'),
       ('📱', 'Post', 'Reels are auto-published to your Instagram account on schedule.')
     ] %}
     {% for icon, title, desc in steps %}
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition">
-        <div class="text-4xl mb-4">{{ icon }}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow hover:shadow-lg transition duration-200">
+        <div class="text-4xl mb-4" aria-hidden="true">{{ icon }}</div>
         <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">{{ title }}</h3>
         <p class="text-gray-700 dark:text-gray-300">{{ desc }}</p>
       </div>
     {% endfor %}
   </div>
 </section>
+
+<!-- Animations -->
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+</style>
 {% endblock %}

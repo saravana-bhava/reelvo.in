@@ -2,22 +2,24 @@
 {% block title %}Login - Reelvo{% endblock %}
 
 {% block heading %}
-<span class="inline-flex items-center gap-2 text-2xl">
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
   🔐 Login to Reelvo
 </span>
 {% endblock %}
 
 {% block content %}
-<section role="region" aria-labelledby="login-heading" class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 animate__animated animate__fadeInUp">
+<section role="region"
+         aria-labelledby="login-heading"
+         class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-8 animate-fade-in space-y-6">
 
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="mb-4 space-y-2">
+      <div class="space-y-2">
         {% for category, msg in messages %}
-          <div class="rounded p-3 border text-sm font-medium
-            {{ 'bg-green-100 text-green-800 border-green-300' if category == 'success' else 'bg-red-100 text-red-800 border-red-300' }}"
-            role="alert">
+          <div class="p-3 rounded border text-sm font-medium"
+               role="alert"
+               class="{% if category == 'success' %}bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700{% else %}bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700{% endif %}">
             {{ msg }}
           </div>
         {% endfor %}
@@ -26,7 +28,10 @@
   {% endwith %}
 
   <!-- Login Form -->
-  <form method="post" action="{{ url_for('auth.login') }}" aria-label="Login Form" class="space-y-6">
+  <form method="post"
+        action="{{ url_for('auth.login') }}"
+        aria-label="Login Form"
+        class="space-y-6">
 
     <!-- Email -->
     <div>
@@ -39,7 +44,7 @@
              required
              autocomplete="email"
              placeholder="you@example.com"
-             class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+             class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
              aria-required="true" />
     </div>
 
@@ -54,20 +59,22 @@
              required
              autocomplete="current-password"
              placeholder="••••••••"
-             class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+             class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
              aria-required="true" />
     </div>
 
     <!-- Forgot Password -->
     <div class="text-right">
-      <a href="{{ url_for('auth.forgot_password') }}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+      <a href="{{ url_for('auth.forgot_password') }}"
+         class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+         role="button">
         ❓ Forgot Password?
       </a>
     </div>
 
     <!-- Submit Button -->
     <button type="submit"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded shadow transition duration-150"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Login to your account">
       🚀 Login
     </button>
@@ -75,8 +82,21 @@
     <!-- Register Link -->
     <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
       Don’t have an account?
-      <a href="{{ url_for('auth.register') }}" class="text-blue-600 dark:text-blue-400 hover:underline">Register here</a>
+      <a href="{{ url_for('auth.register') }}" class="text-blue-600 dark:text-blue-400 hover:underline">
+        Register here
+      </a>
     </p>
   </form>
 </section>
+
+<!-- Fade Animation -->
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+</style>
 {% endblock %}

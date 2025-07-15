@@ -1,13 +1,14 @@
 <!-- File: templates/includes/sidebar.html -->
 {% set user_email = session.get('user') or '' %}
+{% set has_profile_pic = session.get('connected') and session.get('instagram_profile_picture') %}
 {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
 
 <aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6">
   <!-- Profile Section -->
   <div class="flex flex-col items-center text-center space-y-3 mb-6">
-    <img src="/{{ logo_path if session.get('instagram_profile_picture') else 'static/images/avatar.png' }}"
-         alt="{{ 'Instagram Profile Picture' if session.get('instagram_profile_picture') else 'Default Avatar' }}"
-         title="{{ 'Instagram profile picture' if session.get('instagram_profile_picture') else 'Using default avatar' }}"
+    <img src="/{{ logo_path if has_profile_pic else 'static/images/avatar.png' }}"
+         alt="{{ 'Instagram Profile Picture' if has_profile_pic else 'Default Avatar' }}"
+         title="{{ 'Instagram profile picture' if has_profile_pic else 'Using default avatar' }}"
          class="w-20 h-20 rounded-full shadow object-cover ring-2 ring-blue-400 dark:ring-blue-300 transition" />
     <div class="text-sm font-medium text-gray-700 dark:text-gray-300 break-words max-w-full text-center">
       {{ user_email }}
@@ -18,7 +19,7 @@
   <nav class="space-y-1 text-sm" role="navigation" aria-label="Sidebar Navigation">
     {% if not session.get("connected") %}
       <a href="{{ url_for('instagram.connect_instagram') }}"
-         class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition text-blue-600 dark:text-blue-400 font-medium">
+         class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 transition text-blue-600 font-medium w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition text-center">
         🔗 Connect Instagram
       </a>
     {% endif %}

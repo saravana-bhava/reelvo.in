@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>{% block title %}Reelvo{% endblock %}</title>
 
   <meta name="theme-color" content="#1e88e5" />
@@ -26,6 +27,9 @@
 <body class="{% if session.get('theme') == 'dark' %}dark{% endif %} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
   {% set endpoint = request.endpoint %}
 
+  <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-blue-600 text-white px-4 py-1 rounded z-50">
+    Skip to content
+  </a>
   <div class="min-h-screen flex flex-col">
     <!-- Navbar -->
     <header class="sticky top-0 z-30 bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -71,7 +75,7 @@
           <a href="{{ url_for('auth.register') }}" class="block text-blue-600 dark:text-blue-400 hover:underline">📝 Register</a>
         {% endif %}
         <form method="POST" action="{{ url_for('auth.toggle_theme') }}">
-          <button type="submit" title="Toggle Theme" class="text-lg mt-2">
+          <button type="submit" title="Toggle Theme" class="text-lg mt-2 hover:scale-110 transition-transform duration-150">
             {% if session.get('theme', 'light') == 'light' %}🌙{% else %}🌞{% endif %}
           </button>
         </form>
@@ -84,7 +88,7 @@
         {% include 'includes/sidebar.html' %}
       {% endif %}
 
-      <main class="flex-1 p-6 max-w-7xl mx-auto w-full">
+      <main id="main-content" class="flex-1 p-6 max-w-7xl mx-auto w-full">
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             <div class="mb-4 space-y-2 animate__animated animate__fadeInUp">
@@ -107,7 +111,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-sm py-6 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700" role="contentinfo">
+    <footer class="text-center text-sm py-6 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 dark:text-gray-100" role="contentinfo">
       &copy; {{ current_year or 2025 }} Reelvo — All rights reserved.<br />
       <small>
         Site design by <a href="https://sazm.in" target="_blank" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-500">SazM</a>
