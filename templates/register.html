@@ -12,21 +12,6 @@
          aria-labelledby="register-heading"
          class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-8 animate-fade-in space-y-6">
 
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="space-y-2">
-        {% for category, msg in messages %}
-          <div class="p-3 rounded border text-sm font-medium"
-               role="alert"
-               class="{% if category == 'success' %}bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700{% else %}bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700{% endif %}">
-            {{ msg }}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
   <!-- Register Form -->
   <form method="post"
         action="{{ url_for('auth.register') }}"
