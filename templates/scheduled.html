@@ -13,7 +13,7 @@
   {% if scheduled and scheduled|length > 0 %}
   <form method="post"
         action="{{ url_for('schedule.update_schedule') }}"
-        aria-label="Scheduled Reels Management">
+        aria-label="Scheduled Reels Management Form">
 
     <div class="overflow-x-auto border rounded-lg shadow-sm">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm" aria-describedby="scheduledReelsDesc">
@@ -46,7 +46,7 @@
                      id="reschedule_{{ loop.index0 }}"
                      name="reschedule_{{ loop.index0 }}"
                      value="{{ item.scheduled_for }}"
-                     class="form-input px-2 py-1 rounded border border-gray-300 dark:border-gray-700"
+                     class="px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring focus:ring-blue-500"
                      aria-describedby="rescheduleHelp_{{ loop.index0 }}" />
               <input type="hidden" name="video_{{ loop.index0 }}" value="{{ item.video }}">
               {% else %}
@@ -91,6 +91,7 @@
   </div>
 </section>
 
+<!-- Prevent selecting past dates -->
 <script>
   document.querySelectorAll("input[type='date']").forEach(input => {
     input.min = new Date().toISOString().split("T")[0];

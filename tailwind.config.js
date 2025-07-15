@@ -3,7 +3,8 @@ module.exports = {
     './templates/**/*.html',
     './**/*.py',
     './assets/css/**/*.css',
-    './static/css/safelist.css'
+    './static/css/safelist.css',
+    './static/**/*.js'
   ],
   safelist: [
     'bg-white',

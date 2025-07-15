@@ -1,15 +1,15 @@
 <!-- File: templates/includes/sidebar.html -->
-{% set user_email = session.get('user') %}
+{% set user_email = session.get('user') or '' %}
 {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
 
 <aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6">
   <!-- Profile Section -->
   <div class="flex flex-col items-center text-center space-y-3 mb-6">
     <img src="/{{ logo_path if session.get('instagram_profile_picture') else 'static/images/avatar.png' }}"
-         alt="User Avatar"
-         class="w-20 h-20 rounded-full shadow object-cover ring-2 ring-blue-400 dark:ring-blue-300 transition"
-         title="{% if not session.get('instagram_profile_picture') %}Using default avatar{% endif %}" />
-    <div class="text-sm font-medium text-gray-700 dark:text-gray-300 break-words text-center max-w-full">
+         alt="{{ 'Instagram Profile Picture' if session.get('instagram_profile_picture') else 'Default Avatar' }}"
+         title="{{ 'Instagram profile picture' if session.get('instagram_profile_picture') else 'Using default avatar' }}"
+         class="w-20 h-20 rounded-full shadow object-cover ring-2 ring-blue-400 dark:ring-blue-300 transition" />
+    <div class="text-sm font-medium text-gray-700 dark:text-gray-300 break-words max-w-full text-center">
       {{ user_email }}
     </div>
   </div>
@@ -34,14 +34,10 @@
     ] %}
 
     {% for icon, label, endpoint_name, feature in nav_links %}
-      {% if feature is not defined %}
-        {% set is_active = request.endpoint == endpoint_name %}
-      {% else %}
-        {% set is_active = request.endpoint == endpoint_name and request.view_args.feature == feature %}
-      {% endif %}
-      <a href="{{ url_for(endpoint_name, feature=feature) if feature is defined else url_for(endpoint_name) }}"
+      {% set is_active = request.endpoint == endpoint_name and (feature is none or (request.view_args and request.view_args.get('feature') == feature)) %}
+      <a href="{{ url_for(endpoint_name, feature=feature) if feature else url_for(endpoint_name) }}"
          class="flex items-center gap-2 px-3 py-2 rounded transition
-           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if is_active else 'hover:bg-blue-100 dark:hover:bg-gray-700' }}">
+           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if is_active else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
         {{ icon }} {{ label }}
       </a>
     {% endfor %}
@@ -59,7 +55,8 @@
 
   <!-- Theme Toggle -->
   <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-6">
-    <button class="w-full py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium">
+    <button type="submit"
+            class="w-full py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium text-gray-800 dark:text-gray-100 transition">
       {% if session.get('theme') == 'dark' %}
         ☀️ Light Mode
       {% else %}

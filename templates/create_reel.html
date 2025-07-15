@@ -4,7 +4,7 @@
 
 {% block content %}
 <section class="space-y-8" role="region" aria-label="Create Reel Section">
-  <div class="text-gray-600 dark:text-gray-300 text-sm">
+  <div class="text-gray-700 dark:text-gray-300 text-sm">
     Logged in as: <strong>{{ user }}</strong>
   </div>
 
@@ -18,17 +18,17 @@
     {% endif %}
   {% endwith %}
 
-    <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded p-4 text-sm text-blue-900 dark:text-blue-100">
-      <strong>How it works:</strong>
-      <ol class="list-decimal list-inside mt-2 space-y-1">
-        <li>🔗 Connect your Instagram account (if not done already).</li>
-        <li>🎯 Choose a theme or enter a custom product/topic.</li>
-        <li>📝 Click “Generate Script” or write your own script.</li>
-        <li>🗣️ Choose a voice (AI TTS or upload your own).</li>
-        <li>🎥 Submit to generate your AI-powered video reel.</li>
-        <li>📂 Download or schedule/post the reel to Instagram.</li>
-      </ol>
-    </div>
+  <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded p-4 text-sm text-blue-900 dark:text-blue-100">
+    <strong>How it works:</strong>
+    <ol class="list-decimal list-inside mt-2 space-y-1">
+      <li>🔗 Connect your Instagram account (if not done already).</li>
+      <li>🎯 Choose a theme or enter a custom product/topic.</li>
+      <li>📝 Click “Generate Script” or write your own script.</li>
+      <li>🗣️ Choose a voice (AI TTS or upload your own).</li>
+      <li>🎥 Submit to generate your AI-powered video reel.</li>
+      <li>📂 Download or schedule/post the reel to Instagram.</li>
+    </ol>
+  </div>
 
   <form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}"
         enctype="multipart/form-data"

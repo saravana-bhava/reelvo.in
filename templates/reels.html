@@ -7,6 +7,7 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate__animated animate__fadeIn" role="region" aria-label="List of generated reels">
     {% for vid in videos %}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden flex flex-col">
+
         <!-- Video Player -->
         <video controls
                class="w-full aspect-video"
@@ -18,15 +19,15 @@
         <!-- Metadata -->
         <div class="p-4 space-y-4 flex flex-col flex-1">
           <div class="text-sm text-gray-700 dark:text-gray-300">
-            <strong class="block font-medium truncate">🎞️ {{ vid }}</strong>
+            <strong class="block font-medium truncate" title="{{ vid }}">🎞️ {{ vid }}</strong>
             {% if vid_date_map and vid in vid_date_map %}
               <span class="text-xs text-gray-500 dark:text-gray-400">🗓️ {{ vid_date_map[vid] }}</span>
             {% endif %}
           </div>
 
-          <!-- Script -->
+          <!-- Script Preview -->
           {% if scripts and scripts.get(vid) %}
-            <pre class="bg-gray-100 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 p-3 rounded overflow-x-auto max-h-48 whitespace-pre-wrap border border-gray-200 dark:border-gray-700">
+            <pre class="bg-gray-100 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 p-3 rounded overflow-x-auto max-h-48 whitespace-pre-line border border-gray-200 dark:border-gray-700">
 {{ scripts[vid] }}
             </pre>
           {% else %}
@@ -57,7 +58,6 @@
 <div class="mt-12 text-center">
   <a href="{{ url_for('dashboard.dashboard') }}"
      class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow transition"
-     role="button"
      aria-label="Back to Dashboard">
     ⬅️ Back to Dashboard
   </a>
