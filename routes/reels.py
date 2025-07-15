@@ -214,6 +214,8 @@ def create_reel_action():
         watermark_dir = os.path.join(output_dir, "watermark")
         os.makedirs(watermark_dir, exist_ok=True)
         watermark_path = os.path.join(watermark_dir, "logo.png")
+        if not os.path.exists(watermark_path):
+            watermark_path = os.path.join("assets", "logo", "default.png")
         inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
         logo_index = input_index
         input_index += 1

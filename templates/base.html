@@ -34,7 +34,11 @@
     <!-- Navbar -->
     <header class="sticky top-0 z-30 bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-        <a href="{{ url_for('home.home') }}" class="text-xl font-bold text-blue-600 dark:text-blue-400">🎞️ Reelvo</a>
+        <a href="{{ url_for('home.home') }}" class="flex items-center gap-2">
+          <img src="{{ url_for('static', filename='images/logo.png') }}"
+               alt="Reelvo Logo"
+               class="h-8 w-auto" />
+        </a>
 
         <!-- Desktop Nav -->
         <nav class="hidden md:flex space-x-4 text-sm items-center" role="navigation" aria-label="Main Navigation">
@@ -114,7 +118,7 @@
     <footer class="text-center text-sm py-6 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 dark:text-gray-100" role="contentinfo">
       &copy; {{ current_year or 2025 }} Reelvo — All rights reserved.<br />
       <small>
-        Site design by <a href="https://sazm.in" target="_blank" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-500">SazM</a>
+        Powered by <a href="https://sazm.in" target="_blank" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-500">SazM</a>
       </small>
     </footer>
   </div>
