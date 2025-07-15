@@ -33,14 +33,32 @@
 
   <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded-xl p-5 text-sm text-blue-900 dark:text-blue-100 shadow">
     <strong class="text-base">How it works:</strong>
-    <ol class="list-decimal list-inside mt-2 space-y-1">
-      <li>🔗 Connect your Instagram account (if not done already).</li>
-      <li>🎯 Choose a theme or enter a custom product/topic.</li>
-      <li>📝 Click “Generate Script” or write your own script.</li>
-      <li>🗣️ Choose a voice (AI TTS or upload your own).</li>
-      <li>🎥 Submit to generate your AI-powered video reel.</li>
-      <li>📂 Download or schedule/post the reel to Instagram.</li>
-    </ol>
+      <ol class="space-y-4 text-gray-800 dark:text-gray-200 text-sm list-decimal list-inside">
+        <li>
+          🔗 <strong>Connect your Instagram account</strong><br />
+          (Skip this step if already connected in your profile settings)
+        </li>
+        <li>
+          🎯 <strong>Choose a theme or enter a custom topic</strong><br />
+          Select from preloaded options or describe your product/niche manually.
+        </li>
+        <li>
+          📝 <strong>Generate or edit a script</strong><br />
+          Click “Generate Script” to auto-generate via AI — or write your own script manually.
+        </li>
+        <li>
+          🗣️ <strong>Choose a voiceover</strong><br />
+          Use AI-generated voice (TTS) or upload your own voice/audio file.
+        </li>
+        <li>
+          🎥 <strong>Generate the AI-powered reel</strong><br />
+          Combine the script + voice into a full video reel in seconds.
+        </li>
+        <li>
+          📅 <strong>Schedule or auto-post to Instagram</strong><br />
+          Generated reels can be scheduled to auto-publish to your connected Instagram account.
+        </li>
+      </ol>
   </div>
 
   <form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}"
