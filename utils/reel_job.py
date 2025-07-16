@@ -84,11 +84,15 @@ def generate_reel_background(
             generate_srt_from_audio(srt_path, language, audio_path, 6)
 
         update_progress(task_id, "🎶 Mixing background music...", 40)
+        update_progress(task_id, "🎼 Translating script to English...", 41)
         english_script_text = translate_to_english(script_text)
         temp_dir = os.path.join(output_dir, "temp")
         os.makedirs(temp_dir, exist_ok=True)
 
+        update_progress(task_id, "🎹 Fetching BGM...", 42)
         bgm_path = fetch_bgm(english_script_text, "en", "default") or "assets/music/default.mp3"
+
+        update_progress(task_id, "🎧 Mixing BGM with voice...", 45)
         mixed_audio_path = os.path.join(temp_dir, f"{theme_name}_{language}_mixed.m4a")
         audio_to_use = audio_path
 
@@ -101,7 +105,13 @@ def generate_reel_background(
             audio_to_use = mixed_audio_path
 
         update_progress(task_id, "🎞️ Fetching video clips...", 55)
-        clips = fetch_multiple_clips(temp_dir, theme_name, language, english_script_text, audio_duration)
+        clips = fetch_multiple_clips(
+            temp_dir, theme_name, language,
+            english_script_text, audio_duration,
+            task_id=task_id,
+            start_percent=55,
+            end_percent=65
+        )
         if not clips:
             fallback_clips_dir = os.path.join("assets", "clips")
             clips = sorted([
@@ -118,7 +128,12 @@ def generate_reel_background(
             update_progress(task_id, f"🧩 Queuing clip {idx + 1} of {len(clips)}...", percent)
 
         update_progress(task_id, "🎛️ Merging all clips...", 70)
-        combined_video_path = concatenate_clips(temp_dir, theme_name, language, clips)
+        combined_video_path = concatenate_clips(
+            temp_dir, theme_name, language, clips,
+            task_id=task_id,
+            start_percent=70,
+            end_percent=80
+        )
 
         if not combined_video_path:
             finish_progress(task_id, "❌ Video clips could not be combined.", 0)

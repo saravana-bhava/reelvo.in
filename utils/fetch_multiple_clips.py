@@ -8,6 +8,7 @@ from typing import List
 from dotenv import load_dotenv
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
+from utils.progress_tracker import update_progress
 
 # Load environment variables
 load_dotenv()
@@ -52,7 +53,10 @@ def fetch_multiple_clips(
     theme_name: str,
     language: str,
     script_text: str,
-    target_duration: float
+    target_duration: float,
+    task_id: str = None,
+    start_percent: int = 55,
+    end_percent: int = 65
 ) -> List[str]:
     """
     Download multiple clips from Pixabay or Pexels for the given script.
@@ -98,16 +102,25 @@ def fetch_multiple_clips(
         if not found:
             logger.warning(f"[⚠️] Clip {i+1} could not be downloaded from any source.")
 
+        if task_id:
+            percent = start_percent + int((i + 1) / count * (end_percent - start_percent))
+            update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", percent)
+
     return downloaded_clips
 
+
+from utils.progress_tracker import update_progress  # Add this at the top
 
 def concatenate_clips(
     temp_dir: str,
     theme_name: str,
     language: str,
-    clips: List[str]
+    clips: List[str],
+    task_id: str = None,
+    start_percent: int = 70,
+    end_percent: int = 80
 ) -> str:
-    """Re-encode and concatenate video clips into a single vertical video."""
+    """Re-encode and concatenate video clips into a single vertical video with progress updates."""
     logger.info("[🔁] Re-encoding and concatenating clips...")
 
     reencoded_clips = []
@@ -124,6 +137,11 @@ def concatenate_clips(
                 fixed
             ], check=True)
             reencoded_clips.append(fixed)
+
+            if task_id:
+                percent = start_percent + int((i + 1) / len(clips) * ((end_percent - start_percent) * 0.6))
+                update_progress(task_id, f"🔧 Re-encoded clip {i+1}/{len(clips)}", percent)
+
         except Exception as e:
             logger.error(f"[❌] Failed to re-encode {clip}: {e}")
 
@@ -135,6 +153,9 @@ def concatenate_clips(
         for clip in reencoded_clips:
             f.write(f"file '{os.path.abspath(clip)}'\n")
 
+    if task_id:
+        update_progress(task_id, "📜 Creating concat list...", start_percent + int((end_percent - start_percent) * 0.7))
+
     combined_video_path = os.path.join(temp_dir, f"{theme_name}_{language}_combined.mp4")
     try:
         subprocess.run([
@@ -144,6 +165,10 @@ def concatenate_clips(
             "-movflags", "+faststart",
             combined_video_path
         ], check=True)
+
+        if task_id:
+            update_progress(task_id, "✅ All clips merged.", end_percent)
+
     except Exception as e:
         raise RuntimeError(f"[❌] Failed to concatenate clips: {e}")
 
