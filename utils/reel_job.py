@@ -139,7 +139,7 @@ def generate_reel_background(
             finish_progress(task_id, "❌ Video clips could not be combined.", 0)
             return
 
-        update_progress(task_id, "🎬 Rendering final reel...", 80)
+        update_progress(task_id, "🎬 Preparing final rendering filters...", 80)
         inputs = ["-i", combined_video_path, "-i", audio_to_use]
         input_index = 2
         logo_index = None
@@ -181,18 +181,24 @@ def generate_reel_background(
         os.makedirs(videos_dir, exist_ok=True)
         video_path = os.path.join(videos_dir, f"{theme_name}_{language}_video.mp4")
 
+        update_progress(task_id, "🎬 Generating final video with FFmpeg...", 82)
         video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
         if not video_path:
             finish_progress(task_id, "❌ Video could not be generated.", 0)
             return
 
+        update_progress(task_id, "✅ Rendering complete!", 89)
+
         update_progress(task_id, "☁️ Uploading to Google Drive...", 95)
-        upload_url = upload_to_google_drive(video_path, user_email)
+        upload_url, error = upload_to_google_drive(video_path, user_email)
+        if error:
+            finish_progress(task_id, error, 0)
+            return
+
         add_reel_to_history(user_email, os.path.basename(video_path), script_text)
 
         finish_progress(task_id, "✅ Reel created!", 100)
         progress_status[task_id]["download_url"] = upload_url
-
 
     except Exception as e:
         logger.exception("[Background Reel Task] Error:")
