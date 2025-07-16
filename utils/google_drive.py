@@ -2,15 +2,15 @@
 
 """
 Google Drive integration using OAuth.
-- Uploads videos to authenticated user's Drive.
-- Public sharing via link.
+- Uploads videos to a single Google account.
+- All files go inside: reels/<user_email>/
+- Public sharing via download link.
 """
 
 import os
 import mimetypes
 import logging
 from typing import Optional, Tuple
-
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -24,12 +24,14 @@ load_dotenv()
 logger = logging.getLogger("google_drive")
 logging.basicConfig(level=logging.INFO)
 
-# OAuth config
+# OAuth configuration
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 CREDENTIALS_PATH = os.getenv("GOOGLE_OAUTH_CREDENTIALS", "credentials.json")
 TOKEN_PATH = "token.json"
 
-# Optional: UI progress support
+REELVO_ROOT_FOLDER = "reels"  # Top-level folder in Drive
+
+# Optional: UI progress
 try:
     from utils.progress_tracker import update_progress
 except ImportError:
@@ -54,13 +56,36 @@ def get_drive_service():
     return build("drive", "v3", credentials=creds)
 
 
+def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) -> str:
+    """Return folder ID for given name under parent, or create if missing."""
+    query = f"name = '{name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    if parent_id:
+        query += f" and '{parent_id}' in parents"
+
+    result = service.files().list(q=query, spaces="drive", fields="files(id, name)").execute()
+    folders = result.get("files", [])
+
+    if folders:
+        return folders[0]["id"]
+
+    metadata = {
+        "name": name,
+        "mimeType": "application/vnd.google-apps.folder"
+    }
+    if parent_id:
+        metadata["parents"] = [parent_id]
+
+    folder = service.files().create(body=metadata, fields="id").execute()
+    return folder["id"]
+
+
 def upload_to_google_drive(
     local_path: str,
     user_name: str,
     task_id: Optional[str] = None
 ) -> Tuple[Optional[str], Optional[str]]:
     """
-    Uploads a video to the authenticated user's Drive.
+    Uploads a video to the user's folder under 'reels' in Google Drive.
 
     Returns:
         (public_url, error_message)
@@ -72,6 +97,10 @@ def upload_to_google_drive(
         update_progress(task_id, "📁 Connecting to Google Drive...", 80)
         service = get_drive_service()
 
+        # Create folder hierarchy: reels → user_name
+        root_folder_id = get_or_create_folder(service, REELVO_ROOT_FOLDER)
+        user_folder_id = get_or_create_folder(service, user_name, root_folder_id)
+
         filename = os.path.basename(local_path)
         mime_type = mimetypes.guess_type(local_path)[0] or "video/mp4"
         media = MediaFileUpload(local_path, mimetype=mime_type, resumable=True)
@@ -80,7 +109,7 @@ def upload_to_google_drive(
         logger.info(f"[📤] Uploading file: {filename}")
 
         uploaded = service.files().create(
-            body={"name": filename},
+            body={"name": filename, "parents": [user_folder_id]},
             media_body=media,
             fields="id"
         ).execute()
@@ -111,7 +140,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 3:
-        print("Usage: python utils/google_drive.py <local_path> <user_name>")
+        print("Usage: python utils/google_drive.py <local_path> <user_email>")
         sys.exit(1)
 
     path = sys.argv[1]
