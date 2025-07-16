@@ -28,9 +28,13 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {% for vid in videos[:3] %}
           <div class="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm transition hover:shadow-md">
-            <img src="{{ url_for('reels.thumbnail', filename=vid) }}"
-                 alt="Thumbnail for {{ vid or 'reel' }}"
-                 class="w-full h-40 object-cover" />
+            <!-- Video Player -->
+            <video controls muted
+                   class="w-full aspect-video bg-black"
+                   aria-label="Reel video for {{ vid }}">
+              <source src="{{ url_for('reels.serve_video', user_email=user_email, filename=vid) }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
             <div class="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs text-center py-1 backdrop-blur-sm">
               {{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else 'No date available' }}
             </div>

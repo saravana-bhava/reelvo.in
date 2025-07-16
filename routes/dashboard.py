@@ -15,7 +15,7 @@ def dashboard():
     connected = session.get("connected", False)
 
     # Load videos from user's folder
-    video_folder = os.path.join("output", "videos", user_email)
+    video_folder = os.path.join("output", user_email, "videos")
     videos = []
     vid_date_map = {}
 
@@ -34,7 +34,7 @@ def dashboard():
         videos.sort(key=lambda f: os.path.getmtime(os.path.join(video_folder, f)), reverse=True)
 
     current_app.logger.debug(
-        f"[Dashboard] Access by: {user_email} | IG Connected: {connected} | Videos: {len(videos)}"
+        f"[Dashboard] Access by: {user_email} | IG Connected: {connected} | Videos found: {len(videos)}"
     )
 
     return render_template(

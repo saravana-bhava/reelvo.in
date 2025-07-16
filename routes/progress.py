@@ -19,6 +19,7 @@ def get_progress(task_id):
             "status": status.get("status", "unknown"),
             "message": status.get("message", ""),
             "percent": status.get("percent", 0),
+            "download_url": status.get("download_url", "")
         })
 
     current_app.logger.warning(f"[Progress] No status found for task_id={task_id}")
