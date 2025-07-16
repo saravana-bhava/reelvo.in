@@ -44,9 +44,9 @@ def create_reel():
     videos = os.listdir(videos_dir)
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
     latest_script = ""
-    if scripts:
-        with open(os.path.join(scripts_dir, scripts[0]), encoding="utf-8") as f:
-            latest_script = f.read()
+    #if scripts:
+    #    with open(os.path.join(scripts_dir, scripts[0]), encoding="utf-8") as f:
+    #        latest_script = f.read()
 
     with open(THEME_JSON_PATH, encoding="utf-8") as f:
         themes = sorted(json.load(f).keys())

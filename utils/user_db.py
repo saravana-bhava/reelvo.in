@@ -35,6 +35,10 @@ def save_user_tokens(user_email: str, access_token: str, refresh_token: str, exp
         expires_in (int): Expiration in seconds.
     """
     path = get_user_token_path(user_email)
+
+    # ✅ Ensure the parent directory exists
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
     data = {
         "access_token": access_token,
         "refresh_token": refresh_token,
