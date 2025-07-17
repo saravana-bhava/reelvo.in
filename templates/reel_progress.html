@@ -23,7 +23,7 @@
   </div>
 
   <!-- Progress Message -->
-  <p id="progress-message" class="text-gray-600 dark:text-gray-300 text-sm mt-4">
+  <p id="progress-message" class="text-gray-600 dark:text-gray-500 text-sm mt-4">
     Initializing...
   </p>
 
@@ -54,7 +54,7 @@
       msg.innerHTML = progressMessage;
 
       if (data.elapsed !== undefined) {
-        msg.innerHTML += `<br><small class="text-gray-400">⏱ Elapsed: ${data.elapsed}s</small>`;
+        msg.innerHTML += `<br><small class="text-gray-500">⏱ Elapsed: ${data.elapsed}s</small>`;
       }
 
       if (percent < 100) {

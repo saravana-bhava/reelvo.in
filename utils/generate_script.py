@@ -147,10 +147,6 @@ def generate_script_for_user(
 
     script_path = os.path.join(output_dir, f"{theme_name}_{language}_text.txt")
 
-    if os.path.exists(script_path):
-        logger.info(f"[📝] Script already exists → {script_path}")
-        return script_path
-
     script = generate_script(prompt=prompt, language=language)
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
