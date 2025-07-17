@@ -1,12 +1,12 @@
-# File: render.yaml — Render deployment config for reelvo
+# File: render.yaml — Render deployment config for Reelvo
 
 services:
   - type: web
-    name: reelvo-ai
+    name: reelvo
     env: python
 
     # ───────────────────────────────────────────────
-    # 🔧 Build setup
+    # 🔧 Build Setup
     # ───────────────────────────────────────────────
     buildCommand: |
       ./install.sh
@@ -14,40 +14,40 @@ services:
       pip install -r requirements.txt
 
     # ───────────────────────────────────────────────
-    # 🚀 Start command (Gunicorn + Flask)
+    # 🚀 Start Command (Gunicorn for Production)
     # ───────────────────────────────────────────────
     startCommand: gunicorn main:flask_app --bind 0.0.0.0:$PORT
 
     # ───────────────────────────────────────────────
-    # ⚙️ Deploy settings
+    # ⚙️ Deployment Settings
     # ───────────────────────────────────────────────
     autoDeploy: true
-    plan: free  # Consider 'starter' or higher for background tasks & better perf
+    plan: starter  # Use 'starter' or higher for background tasks and better reliability
 
     # ───────────────────────────────────────────────
-    # 🔐 Environment variables
-    # (Values are configured via Render Dashboard)
-    # Avoid hardcoding secrets here
+    # 🔐 Environment Variables
+    # Configure these in Render Dashboard
+    # Secrets should NOT be hardcoded
     # ───────────────────────────────────────────────
     envVars:
+      # Environment Mode
       - key: FLASK_ENV
         value: production
 
-      # Feature toggles
+      # Feature Toggles
       - key: USE_OPENAI
         value: false
       - key: USE_GOOGLE_CLOUD_TTS
         value: false
 
-      # API keys (should be set in Render UI or synced)
+      # API Keys (set securely via Render Dashboard)
       - key: OPENAI_API_KEY
         sync: false
 
-      # TTS Configuration
+      # TTS Voice Configuration
       - key: GOOGLE_CLOUD_TTS_VOICE
         value: en-US-Wavenet-D
 
-      # For Google Cloud credentials (optional methods)
-      # Recommended: Render Secret Files or base64 decode in runtime
+      # Optional: Google Cloud credentials file path
       # - key: GOOGLE_APPLICATION_CREDENTIALS
       #   value: /etc/secrets/credentials.json

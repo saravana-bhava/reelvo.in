@@ -1,71 +1,75 @@
 # ========================
-# File: requirements.txt — reelvo Requirements
+# File: requirements.txt — Reelvo Production Requirements
 # ========================
 
 # ------------------------
-# Web Framework
+# 🌐 Web Framework & Server
 # ------------------------
 flask>=2.2
-waitress>=2.1  # WSGI server for production use
+waitress>=2.1  # WSGI server for production (Windows-compatible)
+# Optional: For async frameworks like FastAPI
+# uvicorn[standard]>=0.23.0
+# gunicorn>=21.2.0
 
 # ------------------------
-# AI Integration (OpenAI)
+# 🤖 AI Integration
 # ------------------------
 openai>=1.0.0
+# Whisper (subtitle alignment)
+git+https://github.com/openai/whisper.git
 
 # ------------------------
-# HTTP Clients
+# 🌐 HTTP Clients
 # ------------------------
 requests>=2.28
-httpx<0.26  # Avoid breaking changes in async behavior
+httpx<0.26  # Avoids breaking async changes
 
 # ------------------------
-# Text-to-Speech (TTS)
+# 🔊 Text-to-Speech (TTS)
 # ------------------------
 google-cloud-texttospeech>=2.27.0
 gTTS>=2.3.2
 
 # ------------------------
-# Audio / Video Processing
+# 🎥 Audio / Video Processing
 # ------------------------
 ffmpeg-python>=0.2.0
-moviepy==1.0.3
+moviepy==1.0.3  # Avoid issues with >1.0.3
 opencv-python>=4.7.0
 pydub>=0.25.1
 Pillow>=9.0.0
-freesound-python
-deep_translator
 numpy>=1.23
 
 # ------------------------
-# Subtitles
+# 📝 Subtitles
 # ------------------------
 srt>=3.5.0
+deep_translator  # Optional but useful for multi-language reels
 
 # ------------------------
-# Utilities
+# 🧰 Utilities
 # ------------------------
 tqdm>=4.64
-python-dotenv>=1.0.0  # Load environment variables from .env
+python-dotenv>=1.0.0  # Load from .env
 
 # ------------------------
-# Whisper for Subtitle Alignment (includes torch)
-# ------------------------
-git+https://github.com/openai/whisper.git
-
-# ------------------------
-# Google Drive API
+# ☁️ Google API
 # ------------------------
 google-api-python-client>=2.98.0
 google-auth>=2.22.0
 google-auth-oauthlib>=1.0.0
 
 # ------------------------
-# Optional: Torch Installation (override if needed)
-# Uncomment only if Whisper fails due to torch installation issues
+# 🔊 Sound Effects (Optional)
+# ------------------------
+freesound-python
 
+# ------------------------
+# 🧠 Optional: Torch (needed by Whisper)
+# ------------------------
+
+# If Whisper fails due to missing torch, uncomment one:
 # CPU-only:
 # torch==2.2.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
 # GPU:
 # torch==2.2.1

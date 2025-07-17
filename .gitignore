@@ -1,27 +1,30 @@
+# File: .gitignore
+
 # ─────────────────────────────────────────────
-# Python Bytecode
+# PYTHON BYTECODE & CACHES
 # ─────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 
 # ─────────────────────────────────────────────
-# Virtual Environments
+# PYTHON VIRTUAL ENVIRONMENTS
 # ─────────────────────────────────────────────
 .venv/
-env/
 venv/
+env/
 
 # ─────────────────────────────────────────────
-# Environment Variables & Secrets
+# ENVIRONMENT VARIABLES & SECRETS
 # ─────────────────────────────────────────────
 .env
-.env.*
 *.env
 secure/
+user_tokens/
 
 # ─────────────────────────────────────────────
-# IDE & Editor Settings
+# IDE / EDITOR SETTINGS
 # ─────────────────────────────────────────────
 .vscode/
 .idea/
@@ -29,38 +32,31 @@ secure/
 *.swo
 
 # ─────────────────────────────────────────────
-# Output Media & Generated Assets
+# GENERATED MEDIA & OUTPUT FILES
 # ─────────────────────────────────────────────
-db/
-db/reel_logs/
 output/
-*.jsonl
-*.marks.json
-*.srt
-*.avi
 *.mp4
 *.mov
-*.webm
+*.avi
 *.mkv
 *.ts
+*.webm
 *.part
+*.srt
 *.wav
+*.mp3
 *.jpg
 *.jpeg
 *.png
 *.ffmpeg.*
+*.jsonl
+*.marks.json
 
 # ─────────────────────────────────────────────
-# Build Artifacts
+# DATABASE & LOG FILES
 # ─────────────────────────────────────────────
-*.egg-info/
-*.spec
-build/
-dist/
-
-# ─────────────────────────────────────────────
-# Logs & Temporary Files
-# ─────────────────────────────────────────────
+db/
+db/reel_logs/
 *.log
 *.tmp
 *.bak
@@ -68,46 +64,47 @@ dist/
 *.out
 
 # ─────────────────────────────────────────────
-# System-Specific Files
+# BUILD ARTIFACTS
 # ─────────────────────────────────────────────
-.DS_Store
-Thumbs.db
+*.egg-info/
+*.spec
+build/
+dist/
 
 # ─────────────────────────────────────────────
-# Jupyter Notebooks
+# JUPYTER NOTEBOOKS
 # ─────────────────────────────────────────────
 .ipynb_checkpoints/
 
 # ─────────────────────────────────────────────
-# Web Server Configs
+# WEB SERVER CONFIGURATION
 # ─────────────────────────────────────────────
 .htaccess
 
 # ─────────────────────────────────────────────
-# Test Utilities & Fixtures
+# TESTS & FIXTURES
 # ─────────────────────────────────────────────
 __tests__/
-tests/
 test/
+tests/
 *.test.py
 
 # ─────────────────────────────────────────────
-# Python Testing Tools
+# TESTING & COVERAGE TOOLS
 # ─────────────────────────────────────────────
-.coverage
 .pytest_cache/
+.coverage
 .tox/
 
 # ─────────────────────────────────────────────
-# Caching & Temporary
+# TEMPORARY / CACHED FILES
 # ─────────────────────────────────────────────
 cache/
-docs/
 temp/
-user_tokens/
+docs/
 
 # ─────────────────────────────────────────────
-# Frontend (Node, Next.js, etc.)
+# FRONTEND (NODE, NEXT.JS, ETC.)
 # ─────────────────────────────────────────────
 .next/
 node_modules/
@@ -117,6 +114,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # ─────────────────────────────────────────────
-# Miscellaneous
+# MISCELLANEOUS
 # ─────────────────────────────────────────────
 *.orig

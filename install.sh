@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# File: install.sh — Setup script for reelvo
+# File: install.sh — Setup script for Reelvo
 set -euo pipefail
 
 # ─────────────────────────────────────────────
-# Color Codes
+# COLOR CODES
 # ─────────────────────────────────────────────
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -14,7 +14,15 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}🔧 Starting Reelvo system setup...${NC}"
 
 # ─────────────────────────────────────────────
-# FFmpeg Installation Check
+# CHECK: RUNNING IN PROJECT ROOT?
+# ─────────────────────────────────────────────
+if [[ ! -f "main.py" ]]; then
+    echo -e "${RED}❌ Please run this script from the Reelvo project root directory.${NC}"
+    exit 1
+fi
+
+# ─────────────────────────────────────────────
+# CHECK: FFMPEG INSTALLATION
 # ─────────────────────────────────────────────
 if command -v ffmpeg &>/dev/null; then
     echo -e "${GREEN}✅ FFmpeg is already installed.${NC}"
@@ -25,13 +33,13 @@ else
         sudo apt-get install -y ffmpeg
         echo -e "${GREEN}✅ FFmpeg installed successfully.${NC}"
     else
-        echo -e "${RED}❌ Unsupported OS for automatic FFmpeg installation. Please install FFmpeg manually.${NC}"
+        echo -e "${RED}❌ Unsupported OS for automatic FFmpeg installation. Please install it manually.${NC}"
         exit 1
     fi
 fi
 
 # ─────────────────────────────────────────────
-# Optional: Python Virtual Environment Setup
+# OPTIONAL: PYTHON VIRTUAL ENVIRONMENT SETUP
 # ─────────────────────────────────────────────
 # echo -e "${YELLOW}🐍 Setting up Python virtual environment...${NC}"
 # if ! command -v python3 &>/dev/null; then
@@ -48,4 +56,7 @@ fi
 #     echo -e "${RED}❌ requirements.txt not found.${NC}"
 # fi
 
+# ─────────────────────────────────────────────
+# DONE
+# ─────────────────────────────────────────────
 echo -e "${GREEN}🎉 System setup complete! You're ready to go.${NC}"

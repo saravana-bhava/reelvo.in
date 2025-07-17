@@ -57,8 +57,8 @@ An AI-powered platform that **automatically generates and schedules Instagram Re
 ## ⚙️ LOCAL DEVELOPMENT
 
 ```bash
-git clone https://github.com/your-org/reelvo-ai.git
-cd reelvo-ai
+git clone https://github.com/your-org/reelvo.git
+cd reelvo
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 sudo apt-get install -y ffmpeg
