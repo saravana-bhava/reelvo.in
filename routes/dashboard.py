@@ -43,4 +43,5 @@ def dashboard():
         connected=connected,
         videos=videos,
         vid_date_map=vid_date_map,
+        total_reels=len(videos),
     )

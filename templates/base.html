@@ -1,6 +1,6 @@
 <!-- File: templates/base.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,16 +10,14 @@
   <meta name="theme-color" content="#1e88e5" />
   <meta name="description" content="Generate Instagram Reels with AI - Reelvo" />
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
-
-  <!-- Tailwind CSS -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/animate.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animate.min.css') }}" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      transition: background-color 0.3s, color 0.3s;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
   </style>
 </head>
@@ -27,9 +25,11 @@
 <body class="{% if session.get('theme') == 'dark' %}dark{% endif %} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
   {% set endpoint = request.endpoint %}
 
+  <!-- Accessibility: Skip link -->
   <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-blue-600 text-white px-4 py-1 rounded z-50">
     Skip to content
   </a>
+
   <div class="min-h-screen flex flex-col">
     <!-- Navbar -->
     <header class="sticky top-0 z-30 bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -41,58 +41,80 @@
         </a>
 
         <!-- Desktop Nav -->
-        <nav class="hidden md:flex space-x-4 text-sm items-center" role="navigation" aria-label="Main Navigation">
+        <nav class="hidden md:flex space-x-4 text-sm items-center" aria-label="Main Navigation">
           {% if session.get('user') %}
-            <a href="{{ url_for('dashboard.dashboard') }}" class="{% if endpoint == 'dashboard.dashboard' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-blue-600 dark:text-blue-400 hover:underline{% endif %}">🏠 Dashboard</a>
-            <a href="{{ url_for('profile.user_profile') }}" class="{% if endpoint == 'profile.user_profile' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-blue-600 dark:text-blue-400 hover:underline{% endif %}">👤 Profile</a>
-            <a href="{{ url_for('auth.logout') }}" class="text-red-600 dark:text-red-400 hover:underline">🚪 Logout</a>
+            <a href="{{ url_for('dashboard.dashboard') }}"
+               class="{{ 'font-semibold underline' if endpoint == 'dashboard.dashboard' else 'hover:underline' }} text-blue-600 dark:text-blue-400">
+              🏠 Dashboard
+            </a>
+            <a href="{{ url_for('profile.user_profile') }}"
+               class="{{ 'font-semibold underline' if endpoint == 'profile.user_profile' else 'hover:underline' }} text-blue-600 dark:text-blue-400">
+              👤 Profile
+            </a>
+            <a href="{{ url_for('auth.logout') }}"
+               class="text-red-600 dark:text-red-400 hover:underline">
+              🚪 Logout
+            </a>
           {% else %}
             <a href="{{ url_for('auth.login') }}" class="text-blue-600 dark:text-blue-400 hover:underline">🔐 Login</a>
             <a href="{{ url_for('auth.register') }}" class="text-blue-600 dark:text-blue-400 hover:underline">📝 Register</a>
           {% endif %}
-          <!-- 🌙 Theme Toggle -->
+          <!-- 🌗 Theme Toggle -->
           <form method="POST" action="{{ url_for('auth.toggle_theme') }}">
-            <button type="submit" title="Toggle Theme" class="ml-2 text-lg hover:scale-110 transition-transform duration-150">
-              {% if session.get('theme', 'light') == 'light' %}
-                🌙
-              {% else %}
-                🌞
-              {% endif %}
+            <button type="submit" aria-label="Toggle Theme"
+                    class="ml-2 text-lg hover:scale-110 transition-transform duration-150">
+              {% if session.get('theme', 'light') == 'light' %}🌙{% else %}🌞{% endif %}
             </button>
           </form>
         </nav>
 
         <!-- Mobile Nav Toggle -->
         <div class="md:hidden">
-          <button id="mobile-menu-toggle" class="text-xl focus:outline-none">☰</button>
+          <button id="mobile-menu-toggle"
+                  aria-expanded="false"
+                  aria-controls="mobile-menu"
+                  class="text-xl focus:outline-none">
+            ☰
+          </button>
         </div>
       </div>
 
       <!-- Mobile Nav -->
       <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 space-y-2 text-sm">
         {% if session.get('user') %}
-          <a href="{{ url_for('dashboard.dashboard') }}" class="block {% if endpoint == 'dashboard.dashboard' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-blue-600 dark:text-blue-400 hover:underline{% endif %}">🏠 Dashboard</a>
-          <a href="{{ url_for('profile.user_profile') }}" class="block {% if endpoint == 'profile.user_profile' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-blue-600 dark:text-blue-400 hover:underline{% endif %}">👤 Profile</a>
-          <a href="{{ url_for('auth.logout') }}" class="block text-red-600 dark:text-red-400 hover:underline">🚪 Logout</a>
+          <a href="{{ url_for('dashboard.dashboard') }}"
+             class="block {{ 'font-semibold underline' if endpoint == 'dashboard.dashboard' else 'hover:underline' }} text-blue-600 dark:text-blue-400">
+            🏠 Dashboard
+          </a>
+          <a href="{{ url_for('profile.user_profile') }}"
+             class="block {{ 'font-semibold underline' if endpoint == 'profile.user_profile' else 'hover:underline' }} text-blue-600 dark:text-blue-400">
+            👤 Profile
+          </a>
+          <a href="{{ url_for('auth.logout') }}"
+             class="block text-red-600 dark:text-red-400 hover:underline">
+            🚪 Logout
+          </a>
         {% else %}
           <a href="{{ url_for('auth.login') }}" class="block text-blue-600 dark:text-blue-400 hover:underline">🔐 Login</a>
           <a href="{{ url_for('auth.register') }}" class="block text-blue-600 dark:text-blue-400 hover:underline">📝 Register</a>
         {% endif %}
         <form method="POST" action="{{ url_for('auth.toggle_theme') }}">
-          <button type="submit" title="Toggle Theme" class="text-lg mt-2 hover:scale-110 transition-transform duration-150">
+          <button type="submit" aria-label="Toggle Theme"
+                  class="text-lg mt-2 hover:scale-110 transition-transform duration-150">
             {% if session.get('theme', 'light') == 'light' %}🌙{% else %}🌞{% endif %}
           </button>
         </form>
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Content Section -->
     <div class="flex flex-1">
       {% if session.get('user') %}
         {% include 'includes/sidebar.html' %}
       {% endif %}
 
       <main id="main-content" class="flex-1 p-6 max-w-7xl mx-auto w-full">
+        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             <div class="mb-4 space-y-2 animate__animated animate__fadeInUp">
@@ -106,19 +128,24 @@
           {% endif %}
         {% endwith %}
 
+        <!-- Heading Block -->
         {% block heading %}
           <h2 class="text-2xl font-semibold mb-4">Reelvo</h2>
         {% endblock %}
 
+        <!-- Content Block -->
         {% block content %}{% endblock %}
       </main>
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-sm py-6 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 dark:text-gray-100" role="contentinfo">
+    <footer class="text-center text-sm py-6 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 dark:text-gray-100">
       &copy; {{ current_year or 2025 }} Reelvo — All rights reserved.<br />
       <small>
-        Powered by <a href="https://sazm.in" target="_blank" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-500">SazM</a>
+        Powered by
+        <a href="https://sazm.in" target="_blank" rel="noopener" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-500">
+          SazM
+        </a>
       </small>
     </footer>
   </div>
@@ -128,13 +155,16 @@
     const mobileMenu = document.getElementById('mobile-menu');
 
     mobileToggle?.addEventListener('click', () => {
+      const isExpanded = mobileToggle.getAttribute("aria-expanded") === "true";
+      mobileToggle.setAttribute("aria-expanded", !isExpanded);
       mobileMenu.classList.toggle('hidden');
     });
 
-    // Hide mobile menu if resized to desktop
+    // Hide mobile menu on desktop resize
     window.addEventListener('resize', () => {
       if (window.innerWidth >= 768) {
         mobileMenu.classList.add('hidden');
+        mobileToggle.setAttribute("aria-expanded", "false");
       }
     });
   </script>

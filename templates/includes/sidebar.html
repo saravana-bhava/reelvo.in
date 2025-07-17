@@ -3,27 +3,26 @@
 {% set has_profile_pic = session.get('connected') and session.get('instagram_profile_picture') %}
 {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
 
-<aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6">
+<aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6 min-h-screen shadow-lg">
   <!-- Profile Section -->
-  <div class="flex flex-col items-center text-center space-y-3 mb-6">
+  <div class="flex flex-col items-center text-center space-y-3 mb-8">
     <img src="/{{ logo_path if has_profile_pic else 'static/images/avatar.png' }}"
          alt="{{ 'Instagram Profile Picture' if has_profile_pic else 'Default Avatar' }}"
          title="{{ 'Instagram profile picture' if has_profile_pic else 'Using default avatar' }}"
-         class="w-20 h-20 rounded-full shadow object-cover ring-2 ring-blue-400 dark:ring-blue-300 transition" />
-    <div class="text-sm font-medium text-gray-700 dark:text-gray-300 break-words max-w-full text-center">
+         class="w-24 h-24 rounded-full shadow-lg object-cover ring-4 ring-primary transition" />
+    <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 break-words max-w-full text-center">
       {{ user_email }}
     </div>
+    {% if not session.get("connected") %}
+      <a href="{{ url_for('instagram.connect_instagram') }}"
+         class="text-white bg-blue-600 hover:bg-blue-700 transition text-sm font-medium px-4 py-2 rounded shadow">
+        🔗 Connect Instagram
+      </a>
+    {% endif %}
   </div>
 
   <!-- Navigation -->
   <nav class="space-y-1 text-sm" role="navigation" aria-label="Sidebar Navigation">
-    {% if not session.get("connected") %}
-      <a href="{{ url_for('instagram.connect_instagram') }}"
-         class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 transition text-blue-600 font-medium w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition text-center">
-        🔗 Connect Instagram
-      </a>
-    {% endif %}
-
     {% set nav_links = [
       ('🏠', 'Dashboard', 'dashboard.dashboard', None),
       ('🎬', 'Create Reel', 'reels.create_reel', None),
@@ -37,27 +36,29 @@
     {% for icon, label, endpoint_name, feature in nav_links %}
       {% set is_active = request.endpoint == endpoint_name and (feature is none or (request.view_args and request.view_args.get('feature') == feature)) %}
       <a href="{{ url_for(endpoint_name, feature=feature) if feature else url_for(endpoint_name) }}"
-         class="flex items-center gap-2 px-3 py-2 rounded transition
+         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
            {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if is_active else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
-        {{ icon }} {{ label }}
+        <span class="text-lg">{{ icon }}</span> <span>{{ label }}</span>
       </a>
     {% endfor %}
 
+    <hr class="my-4 border-gray-300 dark:border-gray-600" />
+
     <a href="mailto:support@reelvo.in"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
-      🆘 Help Center
+       class="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+      🆘 <span>Help Center</span>
     </a>
 
     <a href="{{ url_for('auth.logout') }}"
-       class="flex items-center gap-2 px-3 py-2 rounded text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition">
-      🚪 Logout
+       class="flex items-center gap-3 px-4 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition">
+      🚪 <span>Logout</span>
     </a>
   </nav>
 
   <!-- Theme Toggle -->
-  <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-6">
+  <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-8">
     <button type="submit"
-            class="w-full py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium text-gray-800 dark:text-gray-100 transition">
+            class="w-full py-2 px-4 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-semibold text-gray-800 dark:text-gray-100 transition">
       {% if session.get('theme') == 'dark' %}
         ☀️ Light Mode
       {% else %}

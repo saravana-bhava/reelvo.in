@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | Reelvo{% endblock %}
 {% block heading %}
-<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
-  📊 Dashboard
-</span>
+<div class="flex items-center justify-between">
+  <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+    📊 Dashboard
+  </span>
+  <a href="{{ url_for('reels.create_reel') }}"
+     class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded shadow">
+    ➕ Create New Reel
+  </a>
+</div>
 {% endblock %}
 
 {% block content %}
@@ -20,6 +26,12 @@
       <p class="text-sm text-gray-600 dark:text-gray-400 max-w-lg mx-auto">
         Save time and grow your Instagram with automated video generation and publishing.
       </p>
+    </div>
+
+    <!-- Total Reels Created -->
+    <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
+      <p class="text-sm text-gray-600 dark:text-gray-300">Total Reels Created</p>
+      <p class="text-3xl font-bold text-primary mt-1">{{ total_reels }}</p>
     </div>
 
     <!-- Recent Reels -->
@@ -42,6 +54,13 @@
         {% else %}
           <p class="text-gray-500 dark:text-gray-400 col-span-full">❌ No reels found.</p>
         {% endfor %}
+      </div>
+      <!-- View All Reels Button -->
+      <div class="text-center mt-4">
+        <a href="{{ url_for('reels.list_reels') }}"
+           class="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded shadow">
+          📁 View All Reels
+        </a>
       </div>
     </div>
   </section>
