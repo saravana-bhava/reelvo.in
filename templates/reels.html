@@ -1,51 +1,74 @@
 {% extends "base.html" %}
 {% block title %}Reel History | Reelvo{% endblock %}
+
 {% block heading %}
-<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+<div class="flex items-center justify-between flex-wrap gap-4">
+  <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
     📂 Reel History for <span class="text-blue-600 dark:text-blue-400">{{ user }}</span>
-</span>
+  </span>
+</div>
 {% endblock %}
 
 {% block content %}
 {% if videos %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" role="region" aria-label="List of generated reels">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 animate-fade-in" role="region" aria-label="List of generated reels">
     {% for vid in videos %}
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 transition hover:shadow-lg">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 transition hover:shadow-xl">
 
         <!-- Video Player -->
-        <video controls
-               class="w-full aspect-video bg-black"
-               aria-label="Reel video for {{ vid }}">
-          <source src="{{ url_for('reels.serve_video', user_email=user, filename=vid) }}" type="video/mp4">
-          Your browser does not support the video tag.
-        </video>
+        <div class="relative">
+          <video controls
+                 class="w-full aspect-video bg-black rounded-t-2xl"
+                 aria-label="Reel video for {{ vid }}">
+            <source src="{{ url_for('reels.serve_video', user_email=user, filename=vid) }}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
 
-        <!-- Metadata & Controls -->
-        <div class="p-4 flex flex-col flex-1 justify-between space-y-4">
+        <!-- Content -->
+        <div class="p-5 flex flex-col justify-between h-full gap-4">
 
-          <!-- Video Info -->
-          <div class="space-y-1">
-            <strong class="block text-sm font-semibold text-gray-800 dark:text-gray-100 truncate" title="{{ vid }}">🎞️ {{ vid }}</strong>
-            {% if vid_date_map and vid in vid_date_map %}
-              <span class="block text-xs text-gray-500 dark:text-gray-400">🗓️ {{ vid_date_map[vid] }}</span>
-            {% endif %}
+          <!-- Header -->
+          <div>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title="{{ vid }}">
+                🎞️ {{ vid }}
+              </h3>
+              {% if vid_date_map and vid in vid_date_map %}
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  🗓️ {{ vid_date_map[vid] }}
+                </span>
+              {% endif %}
+            </div>
           </div>
 
           <!-- Script Preview -->
-          {% if scripts and scripts.get(vid) %}
-            <pre class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-3 text-sm text-gray-800 dark:text-gray-200 max-h-48 overflow-y-auto whitespace-pre-line">
-{{ scripts[vid] }}
-            </pre>
-          {% else %}
-            <div class="text-xs italic text-gray-400 dark:text-gray-500">No script available for this reel.</div>
-          {% endif %}
+          <div>
+            {% if scripts and scripts.get(vid) %}
+              {% set full_script = scripts[vid] %}
+              {% set preview_script = full_script[:400] ~ ('...' if full_script|length > 400 else '') %}
+              <pre class="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-3 text-sm text-gray-800 dark:text-gray-100 overflow-y-auto max-h-40 whitespace-pre-line">
+{{ preview_script }}
+              </pre>
+              {% if full_script|length > 400 %}
+              <details class="text-xs text-blue-600 dark:text-blue-400 mt-1 cursor-pointer">
+                <summary class="hover:underline">Show full script</summary>
+                <pre class="mt-2 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-3 text-sm text-gray-800 dark:text-gray-100 overflow-y-auto max-h-60 whitespace-pre-line">
+{{ full_script }}
+                </pre>
+              </details>
+              {% endif %}
+            {% else %}
+              <div class="text-xs italic text-gray-400 dark:text-gray-500">No script available for this reel.</div>
+            {% endif %}
+          </div>
 
-          <!-- Delete Button -->
+          <!-- Actions -->
           <form method="post"
                 action="{{ url_for('reels.delete_reel', filename=vid) }}"
                 onsubmit="return confirm('Are you sure you want to delete this reel?');">
             <button type="submit"
-                    class="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition focus:outline-none focus:ring-2 focus:ring-red-500"
+                    class="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-red-500"
                     aria-label="Delete Reel {{ vid }}">
               🗑️ Delete Reel
             </button>
@@ -55,21 +78,20 @@
     {% endfor %}
   </div>
 {% else %}
-  <p class="text-center text-gray-600 dark:text-gray-400 text-lg mt-12 animate-fade-in">
+  <p class="text-center text-gray-600 dark:text-gray-600 text-lg mt-16 animate-fade-in">
     ❌ No reels found yet.
   </p>
 {% endif %}
 
-<!-- Back to Dashboard -->
-<div class="mt-12 text-center">
-  <a href="{{ url_for('dashboard.dashboard') }}"
-     class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition"
-     aria-label="Back to Dashboard">
-    ⬅️ Back to Dashboard
-  </a>
-</div>
+  <!-- Back to Dashboard -->
+  <div class="mt-12 text-center">
+    <a href="{{ url_for('dashboard.dashboard') }}"
+       class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition"
+       aria-label="Back to Dashboard">
+      ⬅️ Back to Dashboard
+    </a>
+  </div>
 
-<!-- Optional animation class -->
 <style>
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(12px); }

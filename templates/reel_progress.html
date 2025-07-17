@@ -4,57 +4,76 @@
 {% block title %}Creating Reel...{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto mt-10 text-center">
-  <h2 class="text-2xl font-semibold mb-4">🎬 Creating your reel...</h2>
+<div class="max-w-xl mx-auto mt-16 px-6 text-center">
+  <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-600 mb-6 animate__animated animate__fadeInDown flex items-center justify-center gap-2">
+    🎬 Creating Your Reel
+    <svg id="spinner" class="animate-spin h-6 w-6 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+  </h2>
 
-  <div class="w-full bg-gray-300 rounded-full h-6 overflow-hidden mb-4">
-    <div id="progress-bar" class="bg-blue-600 h-full text-white text-xs text-center transition-all duration-500 ease-in-out" style="width: 0%">
+  <!-- Progress Bar Container -->
+  <div class="relative w-full h-6 rounded-full bg-gray-300 dark:bg-gray-700 overflow-hidden shadow-inner">
+    <div id="progress-bar"
+         class="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white text-sm font-medium flex items-center justify-center transition-all duration-500 ease-in-out rounded-full"
+         style="width: 0%">
       0%
     </div>
   </div>
 
-  <p id="progress-message" class="text-gray-700 mb-4">Initializing...</p>
-  <div id="final-link" class="mt-4 text-green-700 font-bold"></div>
+  <!-- Progress Message -->
+  <p id="progress-message" class="text-gray-600 dark:text-gray-300 text-sm mt-4">
+    Initializing...
+  </p>
+
+  <!-- Final Output -->
+  <div id="final-link"
+       class="mt-6 text-green-700 dark:text-green-400 font-semibold text-md leading-relaxed">
+  </div>
 </div>
 
+<!-- Polling Script -->
 <script>
-const taskId = "{{ task_id }}";
-const bar = document.getElementById("progress-bar");
-const msg = document.getElementById("progress-message");
-const link = document.getElementById("final-link");
+  const taskId = "{{ task_id }}";
+  const bar = document.getElementById("progress-bar");
+  const msg = document.getElementById("progress-message");
+  const link = document.getElementById("final-link");
+  const spinner = document.getElementById("spinner");
 
-async function pollProgress() {
-  try {
-    const res = await fetch(`/progress/${taskId}`);
-    const data = await res.json();
+  async function pollProgress() {
+    try {
+      const res = await fetch(`/progress/${taskId}`);
+      const data = await res.json();
 
-    const percent = data.percent || 0;
-    bar.style.width = percent + "%";
-    bar.textContent = percent + "%";
+      const percent = data.percent || 0;
+      bar.style.width = percent + "%";
+      bar.textContent = percent + "%";
 
-    if (data.message) {
-      msg.innerHTML = data.message;
-    } else if (data.status) {
-      msg.innerHTML = data.status;
-    } else {
-      msg.innerHTML = "Working...";
+      const progressMessage = data.message?.trim() || data.status?.trim() || "Working...";
+      msg.innerHTML = progressMessage;
+
+      if (data.elapsed !== undefined) {
+        msg.innerHTML += `<br><small class="text-gray-400">⏱ Elapsed: ${data.elapsed}s</small>`;
+      }
+
+      if (percent < 100) {
+        setTimeout(pollProgress, 1500);
+      } else {
+        spinner.style.display = "none"; // Hide spinner on completion
+        link.innerHTML = `
+          ✅ <span class="block mb-1">${data.message || 'Reel generation complete!'}</span>
+          <a href="${data.download_url}"
+             class="inline-block mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow transition">
+            ⬇️ Download Your Reel
+          </a>`;
+      }
+    } catch (err) {
+      console.error("Error polling progress:", err);
+      msg.innerHTML = `<span class="text-red-600">⚠️ Connection lost. Please refresh or try again later.</span>`;
     }
-
-    if (data.elapsed !== undefined) {
-      msg.innerHTML += `<br><small>⏱ Elapsed: ${data.elapsed}s</small>`;
-    }
-
-        if (percent < 100) {
-          setTimeout(pollProgress, 1500);
-        } else {
-          link.innerHTML = `${data.message}<br><a href="${data.download_url}" class="underline">Download Link</a>`;
-        }
-  } catch (err) {
-    console.error("Error polling progress:", err);
-    msg.textContent = "⚠️ Lost connection to progress tracker.";
   }
-}
 
-pollProgress();
+  pollProgress();
 </script>
 {% endblock %}
