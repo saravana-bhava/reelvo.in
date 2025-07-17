@@ -1,11 +1,23 @@
-/* assets/css/safelist.css */
+/* File: assets/css/safelist.css */
+/*
+  This file ensures that dynamic or conditionally added Tailwind classes
+  are not purged during build. Keep it updated as new classes are introduced.
+*/
+
 @layer utilities {
+  /* Base Colors */
   .bg-white {}
+
+  /* Primary Theme Colors */
   .text-primary {}
   .bg-primary {}
   .hover\:bg-primary-dark {}
+
+  /* Grid Layouts */
   .grid-cols-1 {}
   .md\:grid-cols-3 {}
+
+  /* Dark Mode Variants */
   .dark\:text-blue-400 {}
   .dark\:bg-gray-800 {}
   .dark\:bg-gray-900 {}
