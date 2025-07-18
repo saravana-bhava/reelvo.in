@@ -14,8 +14,9 @@ sys.path.append(ROOT_DIR)
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 # Logger setup
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_video")
+if not logger.hasHandlers():
+    logging.basicConfig(level=logging.INFO)
 
 # Import progress updater
 try:

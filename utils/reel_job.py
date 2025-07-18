@@ -15,25 +15,16 @@ from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video
 from utils.google_drive import upload_to_google_drive
 from utils.reel_history import add_reel_to_history
-from utils.progress_tracker import progress_status, start_progress, update_progress, finish_progress
+from utils.progress_tracker import (
+    progress_status,
+    start_progress,
+    update_progress,
+    finish_progress,
+    get_stage_percent,
+)
 
 ORIGINAL_STDOUT = sys.stdout
 ORIGINAL_STDERR = sys.stderr
-
-def get_stage_percent(stage_index, sub_progress=0.0):
-    STAGES = [
-        5,   # 0 - Setup
-        5,   # 1 - Overlay
-        10,  # 2 - Audio gen / processing
-        10,  # 3 - Subtitles
-        10,  # 4 - Translate + BGM
-        15,  # 5 - Clip fetching
-        15,  # 6 - Merging clips
-        20,  # 7 - Final render
-        10,  # 8 - Uploading
-    ]
-    base = sum(STAGES[:stage_index])
-    return int(base + sub_progress * STAGES[stage_index])
 
 class StreamToLogger:
     def __init__(self, logger, level):

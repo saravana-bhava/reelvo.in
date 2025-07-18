@@ -15,7 +15,11 @@ import warnings
 import logging
 from datetime import timedelta
 
-from utils.progress_tracker import update_progress
+# Optional progress UI support
+try:
+    from utils.progress_tracker import update_progress
+except ImportError:
+    def update_progress(task_id, status, percent): pass
 
 # Logging setup
 logger = logging.getLogger("subtitle_gen")
@@ -99,7 +103,9 @@ def generate_srt_from_audio(
         index += 1
         i += words_per_line
 
-        update_progress("Subtitles", i // words_per_line, total_chunks)  # ✅ Progress logging
+        current_chunk = index - 1
+        percent = int((current_chunk / total_chunks) * 100)
+        update_progress("Subtitles", f"Generating subtitles {current_chunk}/{total_chunks}", percent)
 
     os.makedirs(os.path.dirname(srt_path), exist_ok=True)
     with open(srt_path, "w", encoding="utf-8") as f:

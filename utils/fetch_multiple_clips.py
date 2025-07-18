@@ -117,7 +117,8 @@ def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_t
             logger.warning(f"[⚠️] Clip {i+1} could not be downloaded from any source.")
 
         if task_id and found:
-            percent = get_stage_percent(i, count, start_percent, end_percent)
+            fraction = (i + 1) / count
+            percent = int(start_percent + fraction * (end_percent - start_percent))
             update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", percent)
 
     return downloaded_clips
@@ -157,8 +158,8 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
             if success:
                 reencoded_clips.append(fixed)
 
-        except Exception as e:
-            logger.error(f"[❌] Failed to re-encode {clip}: {e}")
+        except Exception:
+            logger.exception(f"[❌] Failed to re-encode {clip}")
 
     if not reencoded_clips:
         raise RuntimeError("[❌] No valid clips to concatenate.")
