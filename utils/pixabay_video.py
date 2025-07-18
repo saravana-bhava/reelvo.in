@@ -49,7 +49,8 @@ def fetch_pixabay_video(
     if used_video_ids is None:
         used_video_ids = set()
 
-    logger.info(f"[🌐] Searching Pixabay for vertical videos: '{theme}'")
+    logger.info(f"[🌐] Searching Pixabay for vertical videos: '{theme}' "
+                f"(Duration: {min_duration}-{max_duration}s, Min Res: 1080x1920)")
 
     try:
         response = requests.get(
@@ -76,6 +77,7 @@ def fetch_pixabay_video(
                 continue
 
             if not (min_duration <= duration <= max_duration):
+                logger.debug(f"[⏱️] Skipped: ID={video_id} (Duration: {duration}s)")
                 continue
 
             video_options = result.get("videos", {})
@@ -89,20 +91,20 @@ def fetch_pixabay_video(
                 height = video.get("height")
 
                 if url and width >= 1080 and height >= 1920:
-                    logger.info(f"[🎞️] Trying: {url} ({width}x{height}, {duration}s, {quality})")
+                    logger.info(f"[🎞️] Trying {quality.upper()}: {url} "
+                                f"({width}x{height}, {duration}s)")
 
-                    success = download_video(
+                    if download_video(
                         url,
                         output_path,
                         min_duration=min_duration,
                         max_duration=max_duration
-                    )
-                    if success:
+                    ):
                         used_video_ids.add(video_id)
                         logger.info(f"[✅] Downloaded and saved to {output_path}")
                         return url
                     else:
-                        logger.warning(f"[⚠️] Download failed for {url}, trying next resolution...")
+                        logger.warning(f"[⚠️] Download failed for {quality.upper()} resolution")
 
         logger.warning("[⚠️] No suitable 1080x1920+ vertical video found in the results.")
         return None
@@ -125,12 +127,11 @@ if __name__ == "__main__":
         print("Usage: python utils/pixabay_video.py <theme> <output_path>")
         sys.exit(1)
 
-    theme: str = sys.argv[1]
-    output: str = sys.argv[2]
+    theme = sys.argv[1]
+    output = sys.argv[2]
 
-    used_ids: Set[int] = set()
-    result = fetch_pixabay_video(theme, output, used_video_ids=used_ids)
-    if result:
-        print(f"✅ Downloaded from: {result}")
+    downloaded_url = fetch_pixabay_video(theme, output, used_video_ids=set())
+    if downloaded_url:
+        print(f"✅ Downloaded from: {downloaded_url}")
     else:
         print("❌ No suitable video found.")

@@ -105,9 +105,10 @@ def fetch_multiple_clips(
     language: str,
     script_text: str,
     target_duration: float,
-    task_id: Optional[str] = None
+    task_id: str = None
 ) -> List[str]:
     """Fetch themed vertical clips using APIs or fallback if necessary."""
+
     logger.info("🎞️ Fetching video clips...")
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
@@ -128,24 +129,35 @@ def fetch_multiple_clips(
 
         for source in sources:
             try:
-                url = source(search_query, clip_path, used_video_ids=used_video_ids)
+                url = source(
+                    search_query,
+                    clip_path,
+                    used_video_ids=used_video_ids  # Passed internally to source function
+                )
                 if url:
                     downloaded_clips.append(clip_path)
                     found = True
                     break
             except Exception as e:
-                logger.warning(f"[⚠️] {source.__name__} failed: {e}")
+                logger.warning(f"[⚠️] {source.__name__} failed for clip {i+1}: {e}")
 
         if not found:
             fallback_index = (i % FALLBACK_COUNT) + 1
             fallback_file = os.path.join("assets", "clips", f"fallback{fallback_index}.mp4")
             if os.path.exists(fallback_file):
-                success = download_video(fallback_file, clip_path, task_id=task_id, index=i, total=count)
+                success = download_video(
+                    fallback_file,
+                    clip_path,
+                    task_id=task_id,
+                    index=i,
+                    total=count
+                )
                 if success:
+                    logger.info(f"[📼] Used fallback clip for {i+1}/{count}")
                     downloaded_clips.append(clip_path)
                     found = True
             else:
-                logger.warning(f"[⚠️] Missing fallback: {fallback_file}")
+                logger.warning(f"[⚠️] Missing fallback clip: {fallback_file}")
 
         if not found:
             logger.warning(f"[❌] Could not fetch clip {i+1}/{count}")
@@ -154,8 +166,8 @@ def fetch_multiple_clips(
             progress = get_stage_percent(5, (i + 1) / count)
             update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", progress)
 
+    logger.info(f"[✅] Total clips fetched: {len(downloaded_clips)} / {count}")
     return downloaded_clips
-
 
 def concatenate_clips(
     temp_dir: str,

@@ -81,7 +81,7 @@ def fetch_pexels_video(
                 logger.debug(f"[⏩] Skipping video {video_id} due to duration {duration}s")
                 continue
 
-            used_video_ids.add(video_id)  # ✅ Add before file loop to avoid duplicate attempts
+            used_video_ids.add(video_id)  # ✅ Add early to avoid multiple attempts
 
             files = result.get("video_files", [])
 
@@ -90,7 +90,10 @@ def fetch_pexels_video(
                 height = file.get("height", 0)
                 link = file.get("link")
 
-                if width >= 1080 and height >= 1920 and link:
+                if not link:
+                    continue
+
+                if width >= 1080 and height >= 1920:
                     logger.info(f"[🎞️] Trying: {link} ({width}x{height}, {duration}s)")
 
                     success = download_video(
@@ -105,7 +108,7 @@ def fetch_pexels_video(
                     else:
                         logger.warning("[⚠️] Download failed, trying next file...")
                 else:
-                    logger.debug(f"[🔻] Skipping file due to low resolution: {width}x{height}")
+                    logger.debug(f"[🔻] Skipped low-res file: {width}x{height}")
 
         logger.warning("[⚠️] No valid vertical video found on Pexels.")
         return None
@@ -128,10 +131,9 @@ if __name__ == "__main__":
 
     theme = sys.argv[1]
     output_path = sys.argv[2]
-    used_ids = set()
 
-    result = fetch_pexels_video(theme, output_path, used_video_ids=used_ids)
-    if result:
-        print(f"✅ Downloaded from: {result}")
+    downloaded = fetch_pexels_video(theme, output_path, used_video_ids=set())
+    if downloaded:
+        print(f"✅ Downloaded from: {downloaded}")
     else:
         print("❌ No suitable video found.")
