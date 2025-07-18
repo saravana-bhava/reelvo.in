@@ -148,7 +148,8 @@ def progress_status(task_id):
             "percent": percent,
             "message": message,
             "elapsed": elapsed,
-            "done": done
+            "done": done,
+            "download_url": status.get("download_url", "")
         })
     except Exception as e:
         logger.error(f"[Progress Status] Error fetching progress for {task_id}: {e}")
