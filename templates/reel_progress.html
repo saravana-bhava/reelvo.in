@@ -50,7 +50,12 @@
       bar.style.width = percent + "%";
       bar.textContent = percent + "%";
 
-      const progressMessage = data.message?.trim() || data.status?.trim() || "Working...";
+      let progressMessage = "Working...";
+      if (data.message && data.message.trim() !== "") {
+        progressMessage = data.message.trim();
+      } else if (data.status && data.status.trim() !== "") {
+        progressMessage = data.status.trim();
+      }
       msg.innerHTML = progressMessage;
 
       if (data.elapsed !== undefined) {

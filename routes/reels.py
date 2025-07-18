@@ -125,6 +125,7 @@ def create_reel_action():
 def progress_status(task_id):
     try:
         status = get_progress(task_id)
+        logger.debug(f"[Progress Status] Task {task_id} => {status}")
 
         if not status:
             session.pop("reel_in_progress", None)
@@ -137,12 +138,11 @@ def progress_status(task_id):
             }), 404
 
         percent = status.get("percent", 0)
-        message = status.get("message", "Working...")
+        message = status.get("status", "Working...")
         elapsed = status.get("elapsed", 0)
         done = percent >= 100
 
         if done:
-            # ✅ Remove reel in progress if task completed
             session.pop("reel_in_progress", None)
 
         return jsonify({
