@@ -55,6 +55,7 @@ flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
 # SMTP CONFIGURATION
 # ─────────────────────────────────────────────
 flask_app.config.update(
+    ADMIN_MASTER_PASSWORD=os.getenv("ADMIN_MASTER_PASSWORD"),
     SMTP_HOST=os.getenv("SMTP_HOST"),
     SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
     SMTP_USERNAME=os.getenv("SMTP_USERNAME"),
