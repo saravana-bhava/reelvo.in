@@ -4,7 +4,7 @@ import os
 import re
 import logging
 import subprocess
-from typing import List
+from typing import List, Set
 from dotenv import load_dotenv
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
@@ -87,7 +87,7 @@ def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_t
 
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
-    used_urls = set()
+    used_video_ids: Set[int] = set()
 
     sources = []
     if USE_PEXELS:
@@ -106,9 +106,8 @@ def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_t
 
         for source in sources:
             try:
-                url = source(search_query, clip_path, used_urls=used_urls)
+                url = source(search_query, clip_path, used_video_ids=used_video_ids)
                 if url:
-                    used_urls.add(url)
                     downloaded_clips.append(clip_path)
                     found = True
                     break
@@ -125,7 +124,7 @@ def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_t
 
         if task_id and found:
             progress = (i + 1) / count
-            stage_progress = get_stage_percent(5, progress)  # Stage 5 = Clip fetching
+            stage_progress = get_stage_percent(5, progress)
             update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", stage_progress)
 
     return downloaded_clips
@@ -142,7 +141,7 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
     for i, clip in enumerate(clips):
         fixed = os.path.join(temp_dir, f"{theme_name}_{language}_fixed_clip{i+1}.mp4")
         cmd = [
-            "ffmpeg", "-y", "-i", clip,
+            "ffmpeg", "-y", "-ss", "0", "-t", str(CLIP_DURATION), "-i", clip,
             "-vf", "scale=1080:1920,fps=30",
             "-c:v", "libx264", "-preset", "fast", "-crf", "20",
             "-c:a", "aac", "-ac", "2", "-b:a", "128k",
@@ -155,7 +154,6 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
                 # Stage 6: Re-encoding
                 sub_offset = i / total_clips
                 sub_scale = 1.0 / total_clips
-
                 success = run_ffmpeg_with_progress(
                     cmd,
                     CLIP_DURATION,

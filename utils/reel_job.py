@@ -184,10 +184,12 @@ def generate_reel_background(
                 logger.error(e.stderr)
 
         update_progress(task_id, "🎞️ Fetching video clips...", get_stage_percent(5, 0.0))
+        used_video_ids = set()
         clips = fetch_multiple_clips(
             temp_dir, theme_name, language,
             english_script_text, audio_duration,
-            task_id=task_id
+            task_id=task_id,
+            used_video_ids=used_video_ids
         )
 
         if not clips:

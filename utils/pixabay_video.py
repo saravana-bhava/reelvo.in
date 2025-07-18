@@ -2,7 +2,7 @@
 
 """
 Fetches a vertical video clip (1080x1920+, 5–60s) from Pixabay based on a keyword.
-Avoids reused URLs and ensures video quality meets Instagram Reel specs.
+Avoids reused video IDs and ensures video quality meets Instagram Reel specs.
 """
 
 import os
@@ -26,7 +26,7 @@ PIXABAY_API_URL = "https://pixabay.com/api/videos/"
 def fetch_pixabay_video(
     theme: str,
     output_path: str,
-    used_urls: Optional[Set[str]] = None,
+    used_video_ids: Optional[Set[int]] = None,
     min_duration: int = 5,
     max_duration: int = 6
 ) -> Optional[str]:
@@ -36,19 +36,19 @@ def fetch_pixabay_video(
     Args:
         theme (str): Category keyword like 'motivation' or 'life'.
         output_path (str): Where the selected video will be saved.
-        used_urls (set): Set of URLs already used in this reel.
+        used_video_ids (set): Set of video IDs already used in this reel.
         min_duration (int): Minimum duration in seconds.
         max_duration (int): Maximum duration in seconds.
 
     Returns:
-        str | None: Downloaded URL (added to used_urls), or None on failure.
+        str | None: Downloaded URL (added to used_video_ids), or None on failure.
     """
     if not PIXABAY_API_KEY:
         logger.error("[❌] Missing PIXABAY_API_KEY in .env")
         return None
 
-    if used_urls is None:
-        used_urls = set()
+    if used_video_ids is None:
+        used_video_ids = set()
 
     logger.info(f"[🌐] Searching Pixabay for vertical videos: '{theme}'")
 
@@ -70,7 +70,12 @@ def fetch_pixabay_video(
         logger.info(f"[ℹ️] Found {len(hits)} results on Pixabay.")
 
         for result in hits:
+            video_id = result.get("id")
             duration = result.get("duration", 0)
+
+            if not video_id or video_id in used_video_ids:
+                continue
+
             if not (min_duration <= duration <= max_duration):
                 continue
 
@@ -86,7 +91,6 @@ def fetch_pixabay_video(
 
                 if (
                     url
-                    and url not in used_urls
                     and width >= 1080
                     and height >= 1920
                 ):
@@ -99,7 +103,7 @@ def fetch_pixabay_video(
                         max_duration=max_duration
                     )
                     if success:
-                        used_urls.add(url)
+                        used_video_ids.add(video_id)
                         logger.info(f"[✅] Saved to {output_path}")
                         return url
                     else:
@@ -127,7 +131,8 @@ if __name__ == "__main__":
     theme = sys.argv[1]
     output = sys.argv[2]
 
-    result = fetch_pixabay_video(theme, output)
+    used_ids = set()
+    result = fetch_pixabay_video(theme, output, used_video_ids=used_ids)
     if result:
         print(f"✅ Downloaded from: {result}")
     else:

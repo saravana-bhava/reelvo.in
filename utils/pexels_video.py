@@ -1,10 +1,5 @@
 # File: utils/pexels_video.py
 
-"""
-Fetches a portrait video clip (1080x1920+, 5–60s) from Pexels based on a category keyword.
-Avoids reusing video URLs stored in `used_urls` during a session.
-"""
-
 import os
 import logging
 import requests
@@ -20,89 +15,104 @@ logger = logging.getLogger("pexels_video")
 logging.basicConfig(level=logging.INFO)
 
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
-HEADERS_PEXELS = {"Authorization": PEXELS_API_KEY}
+PEXELS_API_URL = "https://api.pexels.com/videos/search"
+
+HEADERS = {
+    "Authorization": PEXELS_API_KEY
+}
 
 
 def fetch_pexels_video(
-    category: str,
+    theme: str,
     output_path: str,
-    used_urls: Optional[Set[str]] = None,
+    used_video_ids: Optional[Set[int]] = None,
     min_duration: int = 5,
     max_duration: int = 6
 ) -> Optional[str]:
     """
-    Fetches a suitable 1080x1920+ portrait video from Pexels matching the category.
+    Searches Pexels for a vertical (1080x1920+) video matching the theme.
 
     Args:
-        category (str): Search keyword like "motivation", "life", etc.
-        output_path (str): Where to save the downloaded video.
-        used_urls (set): URLs already used in this reel session.
-        min_duration (int): Minimum duration allowed in seconds.
-        max_duration (int): Maximum duration allowed in seconds.
+        theme (str): e.g. "inspiration", "love", etc.
+        output_path (str): Path to save the downloaded clip.
+        used_video_ids (set): Set of previously used video IDs.
+        min_duration (int): Minimum video duration in seconds.
+        max_duration (int): Maximum video duration in seconds.
 
     Returns:
-        str | None: Selected video URL, or None if no suitable clip found.
+        str | None: URL of downloaded video, or None if none found.
     """
     if not PEXELS_API_KEY:
-        logger.error("[❌] Pexels API key not configured in .env")
+        logger.error("[❌] Missing PEXELS_API_KEY in .env")
         return None
 
-    if used_urls is None:
-        used_urls = set()
+    if used_video_ids is None:
+        used_video_ids = set()
 
-    logger.info(f"[🔎] Searching Pexels for category: '{category}'")
+    logger.info(f"[🌐] Searching Pexels for vertical videos: '{theme}'")
 
     try:
         response = requests.get(
-            "https://api.pexels.com/videos/search",
-            headers=HEADERS_PEXELS,
+            PEXELS_API_URL,
+            headers=HEADERS,
             params={
-                "query": category,
+                "query": theme,
                 "orientation": "portrait",
-                "size": "large",
                 "per_page": 40
             },
             timeout=10
         )
         response.raise_for_status()
-        videos = response.json().get("videos", [])
-        logger.info(f"[ℹ️] Fetched {len(videos)} videos from Pexels.")
-    except requests.exceptions.RequestException as e:
-        logger.warning(f"[❌] Failed to fetch from Pexels: {e}")
-        return None
+        results = response.json().get("videos", [])
+        logger.info(f"[ℹ️] Found {len(results)} results on Pexels.")
 
-    for video in videos:
-        duration = video.get("duration", 0)
-        if not (min_duration <= duration <= max_duration):
-            continue
+        for result in results:
+            video_id = result.get("id")
+            duration = result.get("duration", 0)
 
-        for file in video.get("video_files", []):
-            url = file.get("link")
-            width = file.get("width")
-            height = file.get("height")
+            if not video_id or video_id in used_video_ids:
+                continue
 
-            if (
-                url
-                and width >= 1080
-                and height >= 1920
-                and url not in used_urls
-            ):
-                logger.info(f"[🎞️] Candidate found: {url} ({width}x{height}, {duration}s)")
+            if not (min_duration <= duration <= max_duration):
+                continue
+
+            files = result.get("video_files", [])
+            best_file = None
+
+            for file in files:
+                width = file.get("width", 0)
+                height = file.get("height", 0)
+                link = file.get("link")
+
+                if width >= 1080 and height >= 1920 and link:
+                    best_file = file
+                    break
+
+            if best_file:
+                url = best_file.get("link")
+                logger.info(f"[🎞️] Candidate: {url} ({best_file['width']}x{best_file['height']}, {duration}s)")
 
                 success = download_video(
-                    url, output_path,
+                    url,
+                    output_path,
                     min_duration=min_duration,
                     max_duration=max_duration
                 )
-
                 if success:
-                    used_urls.add(url)
-                    logger.info(f"[✅] Downloaded successfully → {output_path}")
+                    used_video_ids.add(video_id)
+                    logger.info(f"[✅] Saved to {output_path}")
                     return url
                 else:
-                    logger.warning("[⚠️] Download failed, trying next candidate...")
+                    logger.warning("[⚠️] Download failed, trying next...")
 
-    logger.warning("[⚠️] No valid 1080x1920+ portrait video found on Pexels.")
+        logger.warning("[⚠️] No valid vertical video found on Pexels.")
+        return None
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[❌] Pexels API request failed: {e}")
+    except Exception as e:
+        logger.exception(f"[❌] Unexpected error during Pexels fetch: {e}")
+
     return None
 
 
@@ -117,7 +127,7 @@ if __name__ == "__main__":
     category = sys.argv[1]
     output_path = sys.argv[2]
 
-    result = fetch_pexels_video(category, output_path)
+    result = fetch_pexels_video(category, output_path, used_video_ids=used_ids)
     if result:
         print(f"✅ Downloaded from: {result}")
     else:
