@@ -15,7 +15,9 @@ from typing import Optional, Tuple
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
+
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").strip().lower() == "true"
 
 # Logging setup
@@ -132,7 +134,11 @@ def download_video(
         os.replace(temp_path, output_path)
         logger.info(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
         if not DISABLE_CACHE:
-            shutil.copyfile(output_path, cached_path)
+            if os.path.exists(output_path):
+                logger.info(f"[📁] Caching {output_path} → {cached_path}")
+                shutil.copyfile(output_path, cached_path)
+            else:
+                logger.warning(f"[⚠️] Output path missing, cannot cache: {output_path}")
 
         return (output_path, url) if return_url else output_path
 

@@ -216,8 +216,20 @@ def list_reels():
     video_folder = os.path.join("output", user_email, "videos")
     os.makedirs(video_folder, exist_ok=True)
 
-    videos = [f for f in os.listdir(video_folder) if f.endswith(".mp4")]
+    # Get video files with their modification times
+    videos = [
+        (f, os.path.getmtime(os.path.join(video_folder, f)))
+        for f in os.listdir(video_folder)
+        if f.endswith(".mp4")
+    ]
 
+    # Sort videos by last modified time descending
+    videos.sort(key=lambda x: x[1], reverse=True)
+
+    # Extract just filenames (without timestamps)
+    sorted_video_files = [f for f, _ in videos]
+
+    # Load associated scripts
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}
     if os.path.exists(scripts_path):
@@ -226,7 +238,7 @@ def list_reels():
                 with open(os.path.join(scripts_path, f), encoding="utf-8") as file:
                     scripts[f.replace("_text.txt", "_video.mp4")] = file.read().strip()
 
-    return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
+    return render_template("reels.html", user=user_email, videos=sorted_video_files, scripts=scripts)
 
 @reels_bp.route("/reels/delete/<filename>", methods=["POST"])
 def delete_reel(filename):
