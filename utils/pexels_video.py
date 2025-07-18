@@ -27,20 +27,20 @@ def fetch_pexels_video(
     output_path: str,
     used_video_ids: Optional[Set[int]] = None,
     min_duration: int = 5,
-    max_duration: int = 6
+    max_duration: int = 30
 ) -> Optional[str]:
     """
     Searches Pexels for a vertical (1080x1920+) video matching the theme.
 
     Args:
-        theme (str): e.g. "inspiration", "love", etc.
-        output_path (str): Path to save the downloaded clip.
-        used_video_ids (set): Set of previously used video IDs to avoid repeats.
-        min_duration (int): Minimum video duration in seconds.
-        max_duration (int): Maximum video duration in seconds.
+        theme (str): Search keyword like "inspiration", "travel", etc.
+        output_path (str): File path to save the downloaded video.
+        used_video_ids (set): Track previously used video IDs to avoid duplicates.
+        min_duration (int): Minimum video length in seconds.
+        max_duration (int): Maximum video length in seconds.
 
     Returns:
-        str | None: URL of downloaded video, or None if none found.
+        str | None: Downloaded video URL, or None if no suitable clip is found.
     """
     if not PEXELS_API_KEY:
         logger.error("[❌] Missing PEXELS_API_KEY in .env")
@@ -70,21 +70,16 @@ def fetch_pexels_video(
             video_id = result.get("id")
             duration = result.get("duration", 0)
 
-            if not video_id:
-                continue
-
-            if video_id in used_video_ids:
-                logger.debug(f"[⏩] Skipping previously used video ID: {video_id}")
+            if not video_id or video_id in used_video_ids:
                 continue
 
             if not (min_duration <= duration <= max_duration):
                 logger.debug(f"[⏩] Skipping video {video_id} due to duration {duration}s")
                 continue
 
-            used_video_ids.add(video_id)  # ✅ Add early to avoid multiple attempts
+            used_video_ids.add(video_id)  # ✅ Add early to avoid retry
 
             files = result.get("video_files", [])
-
             for file in files:
                 width = file.get("width", 0)
                 height = file.get("height", 0)
@@ -94,8 +89,7 @@ def fetch_pexels_video(
                     continue
 
                 if width >= 1080 and height >= 1920:
-                    logger.info(f"[🎞️] Trying: {link} ({width}x{height}, {duration}s)")
-
+                    logger.info(f"[🎞️] Trying video {video_id}: {width}x{height}, {duration}s")
                     success = download_video(
                         link,
                         output_path,

@@ -27,7 +27,7 @@ def fetch_pixabay_video(
     output_path: str,
     used_video_ids: Optional[Set[int]] = None,
     min_duration: int = 5,
-    max_duration: int = 6
+    max_duration: int = 30
 ) -> Optional[str]:
     """
     Searches Pixabay for a vertical (1080x1920+) video matching the theme.
@@ -91,15 +91,16 @@ def fetch_pixabay_video(
                 height = video.get("height")
 
                 if url and width >= 1080 and height >= 1920:
-                    logger.info(f"[🎞️] Trying {quality.upper()}: {url} "
-                                f"({width}x{height}, {duration}s)")
+                    logger.info(f"[🎞️] Trying {quality.upper()} quality: "
+                                f"{url} ({width}x{height}, {duration}s)")
 
-                    if download_video(
+                    success = download_video(
                         url,
                         output_path,
                         min_duration=min_duration,
                         max_duration=max_duration
-                    ):
+                    )
+                    if success:
                         used_video_ids.add(video_id)
                         logger.info(f"[✅] Downloaded and saved to {output_path}")
                         return url
@@ -132,6 +133,6 @@ if __name__ == "__main__":
 
     downloaded_url = fetch_pixabay_video(theme, output, used_video_ids=set())
     if downloaded_url:
-        print(f"✅ Downloaded from: {downloaded_url}")
+        print(f"[✅] Downloaded from: {downloaded_url}")
     else:
-        print("❌ No suitable video found.")
+        print("[❌] No suitable video found.")
