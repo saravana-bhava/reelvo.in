@@ -18,13 +18,12 @@ DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 
-# Logger setup
 logger = logging.getLogger("download_clips")
 logging.basicConfig(level=logging.INFO)
 
 
 def sanitize_english(text: str) -> str:
-    """Extract English words from input text for search query."""
+    """Extract ASCII/English-like words for better search accuracy."""
     words = re.findall(r'\b\w+\b', text.lower())
     ascii_words = [w for w in words if w.isascii()]
     return " ".join(ascii_words) or "inspiration"
@@ -39,16 +38,14 @@ def run_ffmpeg_with_progress(
     substage_offset: float = 0.0,
     substage_scale: float = 1.0
 ) -> bool:
-    """Run FFmpeg with stderr parsing to update task progress."""
-    import re
-
-    pattern = re.compile(r'time=(\d+):(\d+):(\d+\.\d+)')
+    """Run FFmpeg while monitoring stderr to update progress."""
+    time_pattern = re.compile(r'time=(\d+):(\d+):(\d+\.\d+)')
     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
 
     last_percent = -1
     for line in process.stderr:
         if 'time=' in line:
-            match = pattern.search(line)
+            match = time_pattern.search(line)
             if match:
                 h, m, s = map(float, match.groups())
                 current = h * 3600 + m * 60 + s
@@ -56,12 +53,11 @@ def run_ffmpeg_with_progress(
                 smooth_progress = substage_offset + raw_progress * substage_scale
                 smooth_percent = get_stage_percent(stage_index, smooth_progress)
                 if smooth_percent > last_percent:
-                    update_progress(task_id, f"{base_msg} ({smooth_percent}%)", smooth_percent)
+                    update_progress(task_id, f"{base_msg} ({smooth_percent:.0f}%)", smooth_percent)
                     last_percent = smooth_percent
 
     process.wait()
 
-    # Ensure 100% of stage reached
     final_percent = get_stage_percent(stage_index, substage_offset + substage_scale)
     if last_percent < final_percent:
         update_progress(task_id, f"{base_msg} (100%)", final_percent)
@@ -78,7 +74,7 @@ def download_video(
     index: int = 0,
     total: int = 1
 ) -> bool:
-    """Trim a local video clip and apply basic formatting."""
+    """Trim and re-encode a local fallback video clip."""
     cmd = [
         "ffmpeg", "-y", "-i", src_path,
         "-ss", "0", "-t", str(max_duration),
@@ -90,12 +86,14 @@ def download_video(
     ]
     try:
         if task_id:
-            # Stage 5: Clip fetching (arbitrary choice for fallback download)
-            return run_ffmpeg_with_progress(cmd, max_duration, task_id, f"📥 Fallback clip {index+1}/{total}", 5)
+            return run_ffmpeg_with_progress(
+                cmd, max_duration, task_id,
+                f"📥 Fallback clip {index+1}/{total}", 5
+            )
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except Exception as e:
-        logger.error(f"[❌] Failed to trim fallback clip '{src_path}' → '{dest_path}': {e}")
+        logger.error(f"[❌] Failed to trim fallback '{src_path}': {e}")
         return False
 
 
@@ -107,9 +105,8 @@ def fetch_multiple_clips(
     target_duration: float,
     task_id: Optional[str] = None
 ) -> List[str]:
-    """Download or fallback to multiple video clips based on a theme and language."""
+    """Fetch themed vertical clips using APIs or fallback if necessary."""
     logger.info("🎞️ Fetching video clips...")
-
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_video_ids: Set[int] = set()
@@ -135,7 +132,7 @@ def fetch_multiple_clips(
                     found = True
                     break
             except Exception as e:
-                logger.warning(f"[⚠️] Source error: {source.__name__} failed: {e}")
+                logger.warning(f"[⚠️] {source.__name__} failed: {e}")
 
         if not found:
             fallback_file = os.path.join("assets", "clips", f"fallback{(i % 5) + 1}.mp4")
@@ -148,11 +145,11 @@ def fetch_multiple_clips(
                 logger.warning(f"[⚠️] Missing fallback: {fallback_file}")
 
         if not found:
-            logger.warning(f"[❌] Clip {i+1}/{count} could not be fetched.")
+            logger.warning(f"[❌] Could not fetch clip {i+1}/{count}")
 
         if task_id and found:
-            stage_progress = get_stage_percent(5, (i + 1) / count)
-            update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", stage_progress)
+            progress = get_stage_percent(5, (i + 1) / count)
+            update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", progress)
 
     return downloaded_clips
 
@@ -164,11 +161,11 @@ def concatenate_clips(
     clips: List[str],
     task_id: Optional[str] = None
 ) -> str:
-    """Re-encode and concatenate video clips into a single vertical video with progress updates."""
+    """Re-encode and concatenate vertical clips into a single file."""
     logger.info("[🔁] Re-encoding and concatenating clips...")
 
     reencoded_clips = []
-    total_clips = len(clips)
+    total = len(clips)
 
     for i, clip in enumerate(clips):
         fixed = os.path.join(temp_dir, f"{theme_name}_{language}_fixed_clip{i+1}.mp4")
@@ -180,16 +177,13 @@ def concatenate_clips(
             "-movflags", "+faststart",
             fixed
         ]
-
         try:
             if task_id:
-                sub_offset = i / total_clips
-                sub_scale = 1.0 / total_clips
+                sub_offset = i / total
+                sub_scale = 1.0 / total
                 success = run_ffmpeg_with_progress(
-                    cmd,
-                    CLIP_DURATION,
-                    task_id,
-                    f"🔧 Re-encoding clip {i+1}/{total_clips}",
+                    cmd, CLIP_DURATION, task_id,
+                    f"🔧 Re-encoding clip {i+1}/{total}",
                     stage_index=6,
                     substage_offset=sub_offset,
                     substage_scale=sub_scale
@@ -200,47 +194,34 @@ def concatenate_clips(
 
             if success:
                 reencoded_clips.append(fixed)
-
         except Exception:
             logger.exception(f"[❌] Failed to re-encode {clip}")
 
     if not reencoded_clips:
-        raise RuntimeError("[❌] No valid clips to concatenate.")
+        raise RuntimeError("[❌] No clips to concatenate.")
 
-    list_file = os.path.join(temp_dir, "concat_list.txt")
-    with open(list_file, "w") as f:
+    concat_list = os.path.join(temp_dir, "concat_list.txt")
+    with open(concat_list, "w") as f:
         for clip in reencoded_clips:
             f.write(f"file '{os.path.abspath(clip)}'\n")
 
-    if task_id:
-        update_progress(task_id, "📜 Creating concat list...", get_stage_percent(6, 1.0))
-
-    combined_video_path = os.path.join(temp_dir, f"{theme_name}_{language}_combined.mp4")
+    combined_path = os.path.join(temp_dir, f"{theme_name}_{language}_combined.mp4")
     concat_cmd = [
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
+        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
         "-c:a", "aac", "-b:a", "128k",
         "-movflags", "+faststart",
-        combined_video_path
+        combined_path
     ]
 
     try:
-        duration = CLIP_DURATION * len(reencoded_clips)
+        total_duration = CLIP_DURATION * total
         if task_id:
-            run_ffmpeg_with_progress(
-                concat_cmd,
-                duration,
-                task_id,
-                "📦 Merging clips",
-                stage_index=7
-            )
+            run_ffmpeg_with_progress(concat_cmd, total_duration, task_id, "📦 Merging clips", stage_index=7)
+            update_progress(task_id, "✅ All clips merged.", get_stage_percent(7, 1.0))
         else:
             subprocess.run(concat_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        if task_id:
-            update_progress(task_id, "✅ All clips merged.", get_stage_percent(7, 1.0))
-
     except Exception as e:
-        raise RuntimeError(f"[❌] Failed to concatenate clips: {e}")
+        raise RuntimeError(f"[❌] Concatenation failed: {e}")
 
-    return combined_video_path
+    return combined_path
