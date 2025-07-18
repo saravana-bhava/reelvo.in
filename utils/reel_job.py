@@ -3,6 +3,8 @@
 import os
 import subprocess
 import logging
+import sys
+from datetime import datetime
 from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_audio
 from utils.generate_srt_from_audio import generate_srt_from_audio
@@ -15,6 +17,35 @@ from utils.reel_history import add_reel_to_history
 from utils.progress_tracker import progress_status, start_progress, update_progress, finish_progress
 
 logger = logging.getLogger("reel_job")
+logger.setLevel(logging.DEBUG)
+
+class StreamToLogger:
+    def __init__(self, logger, level):
+        self.logger = logger
+        self.level = level
+        self.linebuf = ''
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            self.logger.log(self.level, line.rstrip())
+
+    def flush(self):
+        pass
+
+def setup_user_logger(user_email):
+    log_dir = os.path.join("output", user_email, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_filename = datetime.now().strftime("reel_%Y%m%d_%H%M%S.log")
+    log_path = os.path.join(log_dir, log_filename)
+
+    handler = logging.FileHandler(log_path, encoding='utf-8')
+    handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
+
+    sys.stdout = StreamToLogger(logger, logging.INFO)
+    sys.stderr = StreamToLogger(logger, logging.ERROR)
+
+    return log_path
 
 def generate_reel_background(
     task_id,
@@ -28,6 +59,9 @@ def generate_reel_background(
     subtitles_enabled,
     watermark_enabled
 ):
+    log_path = setup_user_logger(user_email)
+    logger.info(f"🎬 Starting reel generation for {user_email} | Task ID: {task_id}")
+
     try:
         start_progress(task_id)
 
@@ -112,6 +146,7 @@ def generate_reel_background(
             start_percent=55,
             end_percent=65
         )
+
         if not clips:
             fallback_clips_dir = os.path.join("assets", "clips")
             clips = sorted([
@@ -188,7 +223,6 @@ def generate_reel_background(
             return
 
         update_progress(task_id, "✅ Rendering complete!", 89)
-
         update_progress(task_id, "☁️ Uploading to Google Drive...", 95)
         upload_url, error = upload_to_google_drive(video_path, user_email)
         if error:
@@ -196,9 +230,9 @@ def generate_reel_background(
             return
 
         add_reel_to_history(user_email, os.path.basename(video_path), script_text)
-
         finish_progress(task_id, "✅ Reel created!", 100)
         progress_status[task_id]["download_url"] = upload_url
+        logger.info(f"✅ Reel generation complete. Log: {log_path}")
 
     except Exception as e:
         logger.exception("[Background Reel Task] Error:")
