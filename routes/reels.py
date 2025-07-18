@@ -255,6 +255,7 @@ def delete_reel(filename):
             "video": os.path.join(base_path, "videos", filename),
             "image": os.path.join(base_path, "images", base_video.replace("_video", "_text_image") + ".png"),
             "script": os.path.join(base_path, "scripts", base_video.replace("_video", "_text") + ".txt"),
+            "ass": os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".ass"),
             "srt": os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".srt"),
             "temp_concat_list": os.path.join(base_path, "temp", "concat_list.txt"),
             "tts": os.path.join(base_path, "tts", base_video.replace("_video", "_voice") + ".mp3"),
