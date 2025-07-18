@@ -16,18 +16,19 @@ from utils.google_drive import upload_to_google_drive
 from utils.reel_history import add_reel_to_history
 from utils.progress_tracker import progress_status, start_progress, update_progress, finish_progress
 
-logger = logging.getLogger("reel_job")
-logger.setLevel(logging.DEBUG)
+ORIGINAL_STDOUT = sys.stdout
+ORIGINAL_STDERR = sys.stderr
 
 class StreamToLogger:
     def __init__(self, logger, level):
         self.logger = logger
         self.level = level
-        self.linebuf = ''
 
-    def write(self, buf):
-        for line in buf.rstrip().splitlines():
-            self.logger.log(self.level, line.rstrip())
+    def write(self, message):
+        message = message.strip()
+        if message:
+            for line in message.splitlines():
+                self.logger.log(self.level, line.strip())
 
     def flush(self):
         pass
@@ -38,14 +39,34 @@ def setup_user_logger(user_email):
     log_filename = datetime.now().strftime("reel_%Y%m%d_%H%M%S.log")
     log_path = os.path.join(log_dir, log_filename)
 
-    handler = logging.FileHandler(log_path, encoding='utf-8')
-    handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
-    logger.addHandler(handler)
+    root_logger = logging.getLogger()
+    if not root_logger.hasHandlers():
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='[%(asctime)s] %(levelname)s:%(name)s: %(message)s',
+            handlers=[
+                logging.FileHandler(log_path, encoding='utf-8'),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
+    else:
+        # Remove existing handlers and set new ones
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+        file_handler = logging.FileHandler(log_path, encoding='utf-8')
+        stream_handler = logging.StreamHandler(sys.stdout)
+        root_logger.addHandler(file_handler)
+        root_logger.addHandler(stream_handler)
+        root_logger.setLevel(logging.DEBUG)
 
-    sys.stdout = StreamToLogger(logger, logging.INFO)
-    sys.stderr = StreamToLogger(logger, logging.ERROR)
+    # Redirect stdout and stderr
+    sys.stdout = StreamToLogger(root_logger, logging.INFO)
+    sys.stderr = StreamToLogger(root_logger, logging.ERROR)
 
     return log_path
+
+logger = logging.getLogger("reel_job")
+logger.setLevel(logging.DEBUG)
 
 def generate_reel_background(
     task_id,
@@ -98,11 +119,20 @@ def generate_reel_background(
         else:
             audio_path = os.path.join(tts_dir, custom_voice_file.filename)
             custom_voice_file.save(audio_path)
-            audio_duration = float(subprocess.check_output([
-                "ffprobe", "-v", "error", "-show_entries",
-                "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
-                audio_path
-            ]).decode().strip())
+            try:
+                result = subprocess.run([
+                    "ffprobe", "-v", "error", "-show_entries",
+                    "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
+                    audio_path
+                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                audio_duration = float(result.stdout.strip())
+                logger.info(result.stdout.strip())
+                if result.stderr:
+                    logger.error(result.stderr.strip())
+            except subprocess.CalledProcessError as e:
+                logger.error("Error extracting audio duration with ffprobe")
+                logger.error(e.stderr)
+                raise
 
         if audio_duration < 2.0:
             finish_progress(task_id, "❌ Audio too short.", 0)
@@ -131,12 +161,19 @@ def generate_reel_background(
         audio_to_use = audio_path
 
         if os.path.exists(bgm_path):
-            subprocess.run([
-                "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
-                "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
-                "-c:a", "aac", "-b:a", "192k", mixed_audio_path
-            ], check=True)
-            audio_to_use = mixed_audio_path
+            try:
+                result = subprocess.run([
+                    "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
+                    "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
+                    "-c:a", "aac", "-b:a", "192k", mixed_audio_path
+                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                logger.info(result.stdout)
+                if result.stderr:
+                    logger.error(result.stderr.strip())
+                audio_to_use = mixed_audio_path
+            except subprocess.CalledProcessError as e:
+                logger.error("Error mixing audio:")
+                logger.error(e.stderr)
 
         update_progress(task_id, "🎞️ Fetching video clips...", 55)
         clips = fetch_multiple_clips(
@@ -237,3 +274,7 @@ def generate_reel_background(
     except Exception as e:
         logger.exception("[Background Reel Task] Error:")
         finish_progress(task_id, "❌ Unexpected error during reel creation.", 0)
+
+    finally:
+        sys.stdout = ORIGINAL_STDOUT
+        sys.stderr = ORIGINAL_STDERR

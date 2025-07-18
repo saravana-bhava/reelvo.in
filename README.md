@@ -57,15 +57,15 @@ An AI-powered platform that **automatically generates and schedules Instagram Re
 ## ⚙️ LOCAL DEVELOPMENT
 
 ```bash
-git clone https://github.com/your-org/reelvo.git
-cd reelvo
+git clone https://github.com/your-org/reelvo.in.git
+cd reelvo.in
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 sudo apt-get install -y ffmpeg
 FLASK_ENV=development ./start.sh
 ```
 
-Visit: [http://localhost:5000/reelvo.ai](http://localhost:5000/reelvo.ai)
+Visit: [http://localhost:5000/reelvo.in](http://localhost:5000/reelvo.in)
 
 ---
 
@@ -131,7 +131,7 @@ OPENAI_MODEL=deepseek/deepseek-chat-v3-0324:free
 # GOOGLE CLOUD TTS SETTINGS
 # ──────────────────────────────────────────────────
 USE_GOOGLE_CLOUD_TTS=true
-GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/SazM/reelvo.ai/secure/credentials.json
+GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/SazM/reelvo.in/secure/credentials.json
 GOOGLE_CLOUD_TTS_VOICE=hi-IN-Wavenet-A
 
 # ──────────────────────────────────────────────────
