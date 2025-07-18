@@ -14,6 +14,8 @@ from utils.progress_tracker import get_stage_percent, update_progress
 load_dotenv()
 
 CLIP_DURATION = 5.5
+FALLBACK_COUNT = 5
+
 DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").lower() == "true"
 USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
@@ -135,7 +137,8 @@ def fetch_multiple_clips(
                 logger.warning(f"[⚠️] {source.__name__} failed: {e}")
 
         if not found:
-            fallback_file = os.path.join("assets", "clips", f"fallback{(i % 5) + 1}.mp4")
+            fallback_index = (i % FALLBACK_COUNT) + 1
+            fallback_file = os.path.join("assets", "clips", f"fallback{fallback_index}.mp4")
             if os.path.exists(fallback_file):
                 success = download_video(fallback_file, clip_path, task_id=task_id, index=i, total=count)
                 if success:

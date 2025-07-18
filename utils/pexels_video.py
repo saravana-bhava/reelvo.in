@@ -70,11 +70,18 @@ def fetch_pexels_video(
             video_id = result.get("id")
             duration = result.get("duration", 0)
 
-            if not video_id or video_id in used_video_ids:
+            if not video_id:
+                continue
+
+            if video_id in used_video_ids:
+                logger.debug(f"[⏩] Skipping previously used video ID: {video_id}")
                 continue
 
             if not (min_duration <= duration <= max_duration):
+                logger.debug(f"[⏩] Skipping video {video_id} due to duration {duration}s")
                 continue
+
+            used_video_ids.add(video_id)  # ✅ Add before file loop to avoid duplicate attempts
 
             files = result.get("video_files", [])
 
@@ -93,11 +100,12 @@ def fetch_pexels_video(
                         max_duration=max_duration
                     )
                     if success:
-                        used_video_ids.add(video_id)
                         logger.info(f"[✅] Saved to {output_path}")
                         return link
                     else:
                         logger.warning("[⚠️] Download failed, trying next file...")
+                else:
+                    logger.debug(f"[🔻] Skipping file due to low resolution: {width}x{height}")
 
         logger.warning("[⚠️] No valid vertical video found on Pexels.")
         return None
@@ -115,14 +123,14 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 3:
-        print("Usage: python utils/pexels_video.py <category> <output_path>")
+        print("Usage: python utils/pexels_video.py <theme> <output_path>")
         sys.exit(1)
 
-    category = sys.argv[1]
+    theme = sys.argv[1]
     output_path = sys.argv[2]
     used_ids = set()
 
-    result = fetch_pexels_video(category, output_path, used_video_ids=used_ids)
+    result = fetch_pexels_video(theme, output_path, used_video_ids=used_ids)
     if result:
         print(f"✅ Downloaded from: {result}")
     else:

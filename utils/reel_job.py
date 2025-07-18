@@ -188,8 +188,7 @@ def generate_reel_background(
         clips = fetch_multiple_clips(
             temp_dir, theme_name, language,
             english_script_text, audio_duration,
-            task_id=task_id,
-            used_video_ids=used_video_ids
+            task_id=task_id
         )
 
         if not clips:
