@@ -102,6 +102,14 @@ def create_reel_action():
         return redirect_with_form_data("Topic name too long.")
 
     theme_name = secure_filename(raw_theme)
+    audio_path = None
+    if custom_voice_file:
+        user_audio_dir = os.path.join("output", user_email, "tts")
+        os.makedirs(user_audio_dir, exist_ok=True)
+        tts_filename = f"{theme_name}_{language}_voice.mp3"
+        audio_path = os.path.join(user_audio_dir, tts_filename)
+        custom_voice_file.save(audio_path)
+
     task_id = str(uuid.uuid4())
     session["reel_in_progress"] = task_id
     start_progress(task_id)

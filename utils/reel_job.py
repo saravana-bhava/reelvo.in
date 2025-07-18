@@ -127,8 +127,6 @@ def generate_reel_background(
                 cache=True
             )
         else:
-            audio_path = os.path.join(tts_dir, custom_voice_file.filename)
-            custom_voice_file.save(audio_path)
             try:
                 result = subprocess.run([
                     "ffprobe", "-v", "error", "-show_entries",
