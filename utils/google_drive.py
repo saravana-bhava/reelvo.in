@@ -31,8 +31,12 @@ CREDENTIALS_PATH = os.getenv("GOOGLE_OAUTH_CREDENTIALS", "credentials.json")
 SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "credentials.json")
 USE_SERVICE_ACCOUNT = os.getenv("USE_SERVICE_ACCOUNT", "false").lower() == "true"
 TOKEN_PATH = "token.json"
+REELVO_ROOT_FOLDER = "reels"
 PARENT_SHARED_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID")
 USE_SHARED_DRIVE = os.getenv("GOOGLE_USE_SHARED_DRIVE", "false").lower() == "true"
+
+if not PARENT_SHARED_FOLDER_ID:
+    raise EnvironmentError("Missing GOOGLE_DRIVE_PARENT_FOLDER_ID in .env.")
 
 # Optional: UI progress tracker
 try:
@@ -78,7 +82,9 @@ def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) ->
         spaces="drive",
         fields="files(id, name)",
         supportsAllDrives=True,
-        includeItemsFromAllDrives=True
+        includeItemsFromAllDrives=True,
+        driveId=PARENT_SHARED_FOLDER_ID if USE_SHARED_DRIVE else None,
+        corpora="drive" if USE_SHARED_DRIVE else "user"
     ).execute()
 
     folders = result.get("files", [])
@@ -91,6 +97,8 @@ def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) ->
     }
     if parent_id:
         metadata["parents"] = [parent_id]
+    if USE_SHARED_DRIVE:
+        metadata["driveId"] = PARENT_SHARED_FOLDER_ID
 
     folder = service.files().create(
         body=metadata,
@@ -98,6 +106,7 @@ def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) ->
         supportsAllDrives=True
     ).execute()
 
+    logger.info(f"[📁] Created folder '{name}' under parent ID {parent_id}")
     return folder["id"]
 
 
@@ -119,12 +128,13 @@ def upload_to_google_drive(
         update_progress(task_id, "📁 Connecting to Google Drive...", 83)
         service = get_drive_service()
 
-        if not PARENT_SHARED_FOLDER_ID:
-            return None, "[❌] Missing GOOGLE_DRIVE_PARENT_FOLDER_ID in .env."
-
-        # Folder hierarchy: reels (shared) → user
-        reels_folder_id = PARENT_SHARED_FOLDER_ID
-        user_folder_id = get_or_create_folder(service, user_name, reels_folder_id)
+        if USE_SERVICE_ACCOUNT:
+            # Folder hierarchy: reels (shared)
+            user_folder_id = PARENT_SHARED_FOLDER_ID
+        else:
+            # Folder hierarchy: reels (shared) → user
+            reels_folder_id = get_or_create_folder(service, REELVO_ROOT_FOLDER, PARENT_SHARED_FOLDER_ID)
+            user_folder_id = get_or_create_folder(service, user_name, reels_folder_id)
 
         filename = os.path.basename(local_path)
         mime_type = mimetypes.guess_type(local_path)[0] or "video/mp4"
@@ -178,6 +188,6 @@ if __name__ == "__main__":
 
     url, error = upload_to_google_drive(path, user)
     if error:
-        logger.error(error)
+        print(error, file=sys.stderr)
     else:
         print(f"✅ {url}")
