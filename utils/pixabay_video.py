@@ -17,7 +17,6 @@ load_dotenv()
 
 # Logger setup
 logger = logging.getLogger("pixabay_video")
-logging.basicConfig(level=logging.INFO)
 
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
@@ -89,12 +88,8 @@ def fetch_pixabay_video(
                 width = video.get("width")
                 height = video.get("height")
 
-                if (
-                    url
-                    and width >= 1080
-                    and height >= 1920
-                ):
-                    logger.info(f"[🎞️] Candidate: {url} ({width}x{height}, {duration}s, {quality})")
+                if url and width >= 1080 and height >= 1920:
+                    logger.info(f"[🎞️] Trying: {url} ({width}x{height}, {duration}s, {quality})")
 
                     success = download_video(
                         url,
@@ -104,12 +99,12 @@ def fetch_pixabay_video(
                     )
                     if success:
                         used_video_ids.add(video_id)
-                        logger.info(f"[✅] Saved to {output_path}")
+                        logger.info(f"[✅] Downloaded and saved to {output_path}")
                         return url
                     else:
-                        logger.warning("[⚠️] Download failed, trying next...")
+                        logger.warning(f"[⚠️] Download failed for {url}, trying next resolution...")
 
-        logger.warning("[⚠️] No valid vertical 1080x1920+ video found on Pixabay.")
+        logger.warning("[⚠️] No suitable 1080x1920+ vertical video found in the results.")
         return None
 
     except requests.exceptions.RequestException as e:
@@ -124,14 +119,16 @@ def fetch_pixabay_video(
 if __name__ == "__main__":
     import sys
 
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     if len(sys.argv) != 3:
         print("Usage: python utils/pixabay_video.py <theme> <output_path>")
         sys.exit(1)
 
-    theme = sys.argv[1]
-    output = sys.argv[2]
+    theme: str = sys.argv[1]
+    output: str = sys.argv[2]
 
-    used_ids = set()
+    used_ids: Set[int] = set()
     result = fetch_pixabay_video(theme, output, used_video_ids=used_ids)
     if result:
         print(f"✅ Downloaded from: {result}")

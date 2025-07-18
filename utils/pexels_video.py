@@ -35,7 +35,7 @@ def fetch_pexels_video(
     Args:
         theme (str): e.g. "inspiration", "love", etc.
         output_path (str): Path to save the downloaded clip.
-        used_video_ids (set): Set of previously used video IDs.
+        used_video_ids (set): Set of previously used video IDs to avoid repeats.
         min_duration (int): Minimum video duration in seconds.
         max_duration (int): Maximum video duration in seconds.
 
@@ -77,7 +77,6 @@ def fetch_pexels_video(
                 continue
 
             files = result.get("video_files", [])
-            best_file = None
 
             for file in files:
                 width = file.get("width", 0)
@@ -85,25 +84,20 @@ def fetch_pexels_video(
                 link = file.get("link")
 
                 if width >= 1080 and height >= 1920 and link:
-                    best_file = file
-                    break
+                    logger.info(f"[🎞️] Trying: {link} ({width}x{height}, {duration}s)")
 
-            if best_file:
-                url = best_file.get("link")
-                logger.info(f"[🎞️] Candidate: {url} ({best_file['width']}x{best_file['height']}, {duration}s)")
-
-                success = download_video(
-                    url,
-                    output_path,
-                    min_duration=min_duration,
-                    max_duration=max_duration
-                )
-                if success:
-                    used_video_ids.add(video_id)
-                    logger.info(f"[✅] Saved to {output_path}")
-                    return url
-                else:
-                    logger.warning("[⚠️] Download failed, trying next...")
+                    success = download_video(
+                        link,
+                        output_path,
+                        min_duration=min_duration,
+                        max_duration=max_duration
+                    )
+                    if success:
+                        used_video_ids.add(video_id)
+                        logger.info(f"[✅] Saved to {output_path}")
+                        return link
+                    else:
+                        logger.warning("[⚠️] Download failed, trying next file...")
 
         logger.warning("[⚠️] No valid vertical video found on Pexels.")
         return None
@@ -126,6 +120,7 @@ if __name__ == "__main__":
 
     category = sys.argv[1]
     output_path = sys.argv[2]
+    used_ids = set()
 
     result = fetch_pexels_video(category, output_path, used_video_ids=used_ids)
     if result:

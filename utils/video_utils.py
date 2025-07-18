@@ -48,8 +48,15 @@ def get_video_duration(filepath: str) -> Optional[float]:
         return None
 
 
-def trim_video(input_path: str, output_path: str, max_duration: int = 30) -> bool:
-    """Trim video to max_duration using FFmpeg."""
+def trim_video(input_path: str, output_path: str, max_duration: int = 6) -> bool:
+    """
+    Trim video to max_duration using FFmpeg.
+
+    Args:
+        input_path: Path to original video.
+        output_path: Path for trimmed video.
+        max_duration: Duration in seconds to trim to (default 6).
+    """
     try:
         subprocess.run(
             [
@@ -80,6 +87,13 @@ def download_video(
     """
     Download video from URL, validate duration, optionally trim and cache.
 
+    Args:
+        url: Video source URL.
+        output_path: Path to save the downloaded video.
+        min_duration: Minimum acceptable duration in seconds.
+        max_duration: Maximum duration allowed (clips trimmed to this).
+        return_url: If True, returns (path, url) tuple else just path.
+
     Returns:
         str | tuple: Output path (or path, url), or None on failure.
     """
@@ -105,11 +119,12 @@ def download_video(
             with open(temp_path, "wb") as f:
                 for chunk in r.iter_content(1024 * 1024):
                     f.write(chunk)
+            # file is flushed and closed automatically here
 
         duration = get_video_duration(temp_path)
         if duration is None:
             logger.warning("[⚠️] No duration detected. Saving as-is.")
-            os.rename(temp_path, output_path)
+            os.replace(temp_path, output_path)
             if not DISABLE_CACHE:
                 shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else output_path
@@ -127,7 +142,7 @@ def download_video(
                 shutil.copyfile(output_path, cached_path)
             return (output_path, url) if return_url else (output_path if success else None)
 
-        os.rename(temp_path, output_path)
+        os.replace(temp_path, output_path)
         logger.info(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
         if not DISABLE_CACHE:
             shutil.copyfile(output_path, cached_path)
