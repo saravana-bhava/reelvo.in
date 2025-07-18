@@ -125,7 +125,6 @@ def create_reel_action():
 def progress_status(task_id):
     try:
         status = get_progress(task_id)
-        logger.debug(f"[Progress Status] Task {task_id} => {status}")
 
         if not status:
             session.pop("reel_in_progress", None)

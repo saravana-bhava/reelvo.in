@@ -35,11 +35,7 @@ def start_progress(task_id: str) -> None:
 def update_progress(task_id: str, status: str, percent: int) -> None:
     """
     Update the current progress of a task.
-
-    Args:
-        task_id (str): Unique task identifier.
-        status (str): Current progress status message.
-        percent (int): Completion percentage (0–100).
+    Only logs changes to avoid spammy output.
     """
     if task_id not in progress_status:
         return  # Ignore update if task not initialized
@@ -61,12 +57,14 @@ def update_progress(task_id: str, status: str, percent: int) -> None:
     if new_percent == current_percent and status == current_status:
         return
 
-    # Update progress
+    # Update and log
     task.update({
         "status": status,
         "percent": new_percent,
         "elapsed": int(now - start)
     })
+
+    print(f"[Progress Status] Task {task_id} => {task}")
 
 def finish_progress(task_id: str, status: str, percent: int = 100, download_url: str = None) -> None:
     """
@@ -87,14 +85,14 @@ def finish_progress(task_id: str, status: str, percent: int = 100, download_url:
     # Clamp percent between 0–100
     percent = min(max(int(percent), 0), 100)
 
+    if download_url:
+        progress_status[task_id]["download_url"] = download_url
+
     progress_status[task_id].update({
         "status": f"{status}<br>⏱️ Took {elapsed:.1f} sec",
         "percent": percent,
         "elapsed": int(elapsed)
     })
-
-    if download_url:
-        progress_status[task_id]["download_url"] = download_url
 
 def get_progress(task_id: str) -> Dict[str, Any]:
     """
