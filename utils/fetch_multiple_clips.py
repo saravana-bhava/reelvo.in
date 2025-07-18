@@ -4,7 +4,6 @@ import os
 import re
 import logging
 import subprocess
-import time
 from typing import List
 from dotenv import load_dotenv
 from utils.pixabay_video import fetch_pixabay_video
@@ -32,6 +31,7 @@ def sanitize_english(text: str) -> str:
 
 
 def run_ffmpeg_with_progress(cmd: List[str], duration: float, task_id: str, base_msg: str, percent_start: int, percent_end: int):
+    """Run FFmpeg with stderr parsing to update task progress."""
     pattern = re.compile(r'time=(\d+):(\d+):(\d+\.\d+)')
     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
 
@@ -75,7 +75,7 @@ def download_video(src_path: str, dest_path: str, min_duration=5, max_duration=6
 
 def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_text: str,
                          target_duration: float, task_id: str = None, start_percent: int = 55, end_percent: int = 65) -> List[str]:
-
+    """Download or fallback to multiple video clips based on a theme and language."""
     logger.info("🎞️ Fetching video clips...")
 
     count = int(target_duration / CLIP_DURATION) + 1
@@ -144,11 +144,12 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
 
         try:
             if task_id:
-                success = run_ffmpeg_with_progress(cmd, CLIP_DURATION, task_id,
-                                                   f"🔧 Re-encoding clip {i+1}/{total_clips}",
-                                                   start_percent,
-                                                   start_percent + int(((i+1)/total_clips)*(end_percent - start_percent) * 0.6)
-                                                  )
+                success = run_ffmpeg_with_progress(
+                    cmd, CLIP_DURATION, task_id,
+                    f"🔧 Re-encoding clip {i+1}/{total_clips}",
+                    start_percent,
+                    start_percent + int(((i + 1) / total_clips) * (end_percent - start_percent) * 0.6)
+                )
             else:
                 subprocess.run(cmd, check=True)
                 success = True
@@ -182,7 +183,7 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
     try:
         duration = CLIP_DURATION * len(reencoded_clips)
         if task_id:
-            run_ffmpeg_with_progress(concat_cmd, duration, task_id, "📦 Merging clips", start_percent + 80, end_percent)
+            run_ffmpeg_with_progress(concat_cmd, duration, task_id, "📦 Merging clips", min(start_percent + 10, 80), end_percent)
         else:
             subprocess.run(concat_cmd, check=True)
 

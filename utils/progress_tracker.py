@@ -45,15 +45,30 @@ def update_progress(task_id: str, status: str, percent: int) -> None:
         return  # Ignore update if task not initialized
 
     now = time.time()
-    start = progress_status[task_id].get("start_time", now)
-    progress_status[task_id].update({
+    task = progress_status[task_id]
+    start = task.get("start_time", now)
+
+    # Clamp percent between 0–100
+    new_percent = min(max(int(percent), 0), 100)
+    current_percent = task.get("percent", 0)
+    current_status = task.get("status", "")
+
+    # Prevent regressions in percent
+    if new_percent < current_percent:
+        new_percent = current_percent
+
+    # Avoid updating if nothing changed
+    if new_percent == current_percent and status == current_status:
+        return
+
+    # Update progress
+    task.update({
         "status": status,
-        "percent": percent,
+        "percent": new_percent,
         "elapsed": int(now - start)
     })
 
-
-def finish_progress(task_id: str, status: str, percent: int = 100) -> None:
+def finish_progress(task_id: str, status: str, percent: int = 100, download_url: str = None) -> None:
     """
     Mark a task as complete and finalize elapsed time.
 
@@ -68,12 +83,18 @@ def finish_progress(task_id: str, status: str, percent: int = 100) -> None:
     now = time.time()
     start = progress_status[task_id].get("start_time", now)
     elapsed = now - start
+
+    # Clamp percent between 0–100
+    percent = min(max(int(percent), 0), 100)
+
     progress_status[task_id].update({
         "status": f"{status}<br>⏱️ Took {elapsed:.1f} sec",
         "percent": percent,
         "elapsed": int(elapsed)
     })
 
+    if download_url:
+        progress_status[task_id]["download_url"] = download_url
 
 def get_progress(task_id: str) -> Dict[str, Any]:
     """

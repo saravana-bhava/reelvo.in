@@ -65,7 +65,12 @@
       if (percent < 100) {
         setTimeout(pollProgress, 1500);
       } else {
-        spinner.style.display = "none"; // Hide spinner on completion
+        spinner.style.display = "none"; // Hide spinner
+        msg.innerHTML = ""; // ✅ Clear repeated final message here
+        bar.style.width = "100%";
+        bar.textContent = "100%";
+
+        // ✅ Show only once in final result block
         link.innerHTML = `
           ✅ <span class="block mb-1">${data.message || 'Reel generation complete!'}</span>
           <a href="${data.download_url}"

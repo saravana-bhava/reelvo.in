@@ -34,6 +34,10 @@ class StreamToLogger:
     def flush(self):
         pass
 
+class SuppressProgressLogs(logging.Filter):
+    def filter(self, record):
+        return "/progress/" not in record.getMessage()
+
 def setup_user_logger(user_email):
     log_dir = os.path.join("output", user_email, "logs")
     os.makedirs(log_dir, exist_ok=True)
@@ -55,6 +59,7 @@ def setup_user_logger(user_email):
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
         file_handler = logging.FileHandler(log_path, encoding='utf-8')
+        file_handler.addFilter(SuppressProgressLogs())
         stream_handler = logging.StreamHandler(sys.stdout)
         root_logger.addHandler(file_handler)
         root_logger.addHandler(stream_handler)
@@ -268,8 +273,7 @@ def generate_reel_background(
             return
 
         add_reel_to_history(user_email, os.path.basename(video_path), script_text)
-        finish_progress(task_id, "✅ Reel created!", 100)
-        progress_status[task_id]["download_url"] = upload_url
+        finish_progress(task_id, "✅ Reel created!", 100, download_url=upload_url)
         logger.info(f"✅ Reel generation complete. Log: {log_path}")
 
     except Exception as e:
