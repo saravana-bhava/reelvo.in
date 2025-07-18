@@ -20,6 +20,21 @@ from utils.progress_tracker import progress_status, start_progress, update_progr
 ORIGINAL_STDOUT = sys.stdout
 ORIGINAL_STDERR = sys.stderr
 
+def get_stage_percent(stage_index, sub_progress=0.0):
+    STAGES = [
+        5,   # 0 - Setup
+        5,   # 1 - Overlay
+        10,  # 2 - Audio gen / processing
+        10,  # 3 - Subtitles
+        10,  # 4 - Translate + BGM
+        15,  # 5 - Clip fetching
+        15,  # 6 - Merging clips
+        20,  # 7 - Final render
+        10,  # 8 - Uploading
+    ]
+    base = sum(STAGES[:stage_index])
+    return int(base + sub_progress * STAGES[stage_index])
+
 class StreamToLogger:
     def __init__(self, logger, level):
         self.logger = logger
@@ -55,7 +70,6 @@ def setup_user_logger(user_email):
             ]
         )
     else:
-        # Remove existing handlers and set new ones
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
         file_handler = logging.FileHandler(log_path, encoding='utf-8')
@@ -65,7 +79,6 @@ def setup_user_logger(user_email):
         root_logger.addHandler(stream_handler)
         root_logger.setLevel(logging.DEBUG)
 
-    # Redirect stdout and stderr
     sys.stdout = StreamToLogger(root_logger, logging.INFO)
     sys.stderr = StreamToLogger(root_logger, logging.ERROR)
 
@@ -100,17 +113,17 @@ def generate_reel_background(
         os.makedirs(images_dir, exist_ok=True)
         os.makedirs(tts_dir, exist_ok=True)
 
-        update_progress(task_id, "📜 Saving script...", 5)
+        update_progress(task_id, "📜 Saving script...", get_stage_percent(0))
         script_filename = f"{theme_name}_{language}_text.txt"
         script_path = os.path.join(scripts_dir, script_filename)
         with open(script_path, "w", encoding="utf-8") as f:
             f.write(script_text)
 
-        update_progress(task_id, "🖼️ Generating overlay...", 10)
+        update_progress(task_id, "🖼️ Generating overlay...", get_stage_percent(1))
         text_image_path = os.path.join(images_dir, f"{theme_name}_{language}_text_image.png")
         generate_text_overlay(text_image_path, language, script_text)
 
-        update_progress(task_id, "🔊 Processing voice...", 20)
+        update_progress(task_id, "🔊 Processing voice...", get_stage_percent(2, 0.0))
         tts_filename = f"{theme_name}_{language}_voice.mp3"
         audio_path = os.path.join(tts_dir, tts_filename)
 
@@ -146,23 +159,23 @@ def generate_reel_background(
 
         srt_path = ""
         if subtitles_enabled:
-            update_progress(task_id, "📃 Generating subtitles...", 30)
+            update_progress(task_id, "📃 Generating subtitles...", get_stage_percent(3))
             srt_dir = os.path.join(output_dir, "srt")
             os.makedirs(srt_dir, exist_ok=True)
             srt_filename = f"{theme_name}_{language}_srt.srt"
             srt_path = os.path.join(srt_dir, srt_filename)
             generate_srt_from_audio(srt_path, language, audio_path, 6)
 
-        update_progress(task_id, "🎶 Mixing background music...", 40)
-        update_progress(task_id, "🎼 Translating script to English...", 41)
+        update_progress(task_id, "🎶 Mixing background music...", get_stage_percent(4, 0.1))
+        update_progress(task_id, "🎼 Translating script to English...", get_stage_percent(4, 0.2))
         english_script_text = translate_to_english(script_text)
         temp_dir = os.path.join(output_dir, "temp")
         os.makedirs(temp_dir, exist_ok=True)
 
-        update_progress(task_id, "🎹 Fetching BGM...", 42)
+        update_progress(task_id, "🎹 Fetching BGM...", get_stage_percent(4, 0.5))
         bgm_path = fetch_bgm(english_script_text, "en", "default") or "assets/music/default.mp3"
 
-        update_progress(task_id, "🎧 Mixing BGM with voice...", 45)
+        update_progress(task_id, "🎧 Mixing BGM with voice...", get_stage_percent(4, 0.9))
         mixed_audio_path = os.path.join(temp_dir, f"{theme_name}_{language}_mixed.m4a")
         audio_to_use = audio_path
 
@@ -181,13 +194,13 @@ def generate_reel_background(
                 logger.error("Error mixing audio:")
                 logger.error(e.stderr)
 
-        update_progress(task_id, "🎞️ Fetching video clips...", 55)
+        update_progress(task_id, "🎞️ Fetching video clips...", get_stage_percent(5, 0.0))
         clips = fetch_multiple_clips(
             temp_dir, theme_name, language,
             english_script_text, audio_duration,
             task_id=task_id,
-            start_percent=55,
-            end_percent=65
+            start_percent=get_stage_percent(5, 0.1),
+            end_percent=get_stage_percent(5, 0.9)
         )
 
         if not clips:
@@ -198,26 +211,25 @@ def generate_reel_background(
                 if f.lower().endswith((".mp4", ".mov", ".webm"))
             ])[:5]
 
-        update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", 65)
+        update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", get_stage_percent(5, 0.9))
 
         for idx, clip_path in enumerate(clips):
-            percent = 65 + int((idx + 1) / len(clips) * 5)
-            update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", percent)
+            update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", get_stage_percent(5, (idx + 1) / len(clips)))
             time.sleep(0.5)
 
-        update_progress(task_id, "🎛️ Merging all clips...", 70)
+        update_progress(task_id, "🎛️ Merging all clips...", get_stage_percent(6, 0.0))
         combined_video_path = concatenate_clips(
             temp_dir, theme_name, language, clips,
             task_id=task_id,
-            start_percent=70,
-            end_percent=80
+            start_percent=get_stage_percent(6, 0.1),
+            end_percent=get_stage_percent(6, 0.9)
         )
 
         if not combined_video_path:
             finish_progress(task_id, "❌ Video clips could not be combined.", 0)
             return
 
-        update_progress(task_id, "🎬 Preparing final rendering filters...", 80)
+        update_progress(task_id, "🎬 Preparing final rendering filters...", get_stage_percent(7, 0.0))
         inputs = ["-i", combined_video_path, "-i", audio_to_use]
         input_index = 2
         logo_index = None
@@ -259,14 +271,14 @@ def generate_reel_background(
         os.makedirs(videos_dir, exist_ok=True)
         video_path = os.path.join(videos_dir, f"{theme_name}_{language}_video.mp4")
 
-        update_progress(task_id, "🎬 Generating final video with FFmpeg...", 82)
+        update_progress(task_id, "🎬 Generating final video with FFmpeg...", get_stage_percent(7, 0.5))
         video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
         if not video_path:
             finish_progress(task_id, "❌ Video could not be generated.", 0)
             return
 
-        update_progress(task_id, "✅ Rendering complete!", 89)
-        update_progress(task_id, "☁️ Uploading to Google Drive...", 95)
+        update_progress(task_id, "✅ Rendering complete!", get_stage_percent(7, 1.0))
+        update_progress(task_id, "☁️ Uploading to Google Drive...", get_stage_percent(8, 0.5))
         upload_url, error = upload_to_google_drive(video_path, user_email)
         if error:
             finish_progress(task_id, error, 0)

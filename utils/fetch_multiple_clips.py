@@ -8,7 +8,7 @@ from typing import List
 from dotenv import load_dotenv
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
-from utils.progress_tracker import update_progress
+from utils.progress_tracker import get_stage_percent, update_progress
 
 # Load environment variables
 load_dotenv()
@@ -117,7 +117,7 @@ def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_t
             logger.warning(f"[⚠️] Clip {i+1} could not be downloaded from any source.")
 
         if task_id and found:
-            percent = start_percent + int((i + 1) / count * (end_percent - start_percent))
+            percent = get_stage_percent(i, count, start_percent, end_percent)
             update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", percent)
 
     return downloaded_clips
@@ -147,8 +147,8 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
                 success = run_ffmpeg_with_progress(
                     cmd, CLIP_DURATION, task_id,
                     f"🔧 Re-encoding clip {i+1}/{total_clips}",
-                    start_percent,
-                    start_percent + int(((i + 1) / total_clips) * (end_percent - start_percent) * 0.6)
+                    get_stage_percent(i, total_clips, start_percent, end_percent - 5),
+                    get_stage_percent(i + 1, total_clips, start_percent, end_percent - 5)
                 )
             else:
                 subprocess.run(cmd, check=True)
@@ -169,7 +169,7 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
             f.write(f"file '{os.path.abspath(clip)}'\n")
 
     if task_id:
-        update_progress(task_id, "📜 Creating concat list...", start_percent + int((end_percent - start_percent) * 0.7))
+        update_progress(task_id, "📜 Creating concat list...", end_percent - 4)
 
     combined_video_path = os.path.join(temp_dir, f"{theme_name}_{language}_combined.mp4")
     concat_cmd = [
@@ -183,7 +183,7 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
     try:
         duration = CLIP_DURATION * len(reencoded_clips)
         if task_id:
-            run_ffmpeg_with_progress(concat_cmd, duration, task_id, "📦 Merging clips", min(start_percent + 10, 80), end_percent)
+            run_ffmpeg_with_progress(concat_cmd, duration, task_id, "📦 Merging clips", end_percent - 3, end_percent)
         else:
             subprocess.run(concat_cmd, check=True)
 

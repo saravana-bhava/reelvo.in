@@ -1,4 +1,4 @@
-# File: progress.py
+# File: progress_tracker.py
 
 """
 In-memory task progress tracker for async operations.
@@ -7,6 +7,7 @@ Provides:
 - update_progress(task_id, status, percent)
 - finish_progress(task_id, status, percent)
 - get_progress(task_id)
+- get_stage_percent(step_index, total_steps, start_percent, end_percent)
 """
 
 import time
@@ -66,6 +67,7 @@ def update_progress(task_id: str, status: str, percent: int) -> None:
 
     print(f"[Progress Status] Task {task_id} => {task}")
 
+
 def finish_progress(task_id: str, status: str, percent: int = 100, download_url: str = None) -> None:
     """
     Mark a task as complete and finalize elapsed time.
@@ -94,6 +96,7 @@ def finish_progress(task_id: str, status: str, percent: int = 100, download_url:
         "elapsed": int(elapsed)
     })
 
+
 def get_progress(task_id: str) -> Dict[str, Any]:
     """
     Get the current progress status of a task.
@@ -113,3 +116,21 @@ def get_progress(task_id: str) -> Dict[str, Any]:
         "percent": -1,
         "elapsed": 0
     })
+
+
+def get_stage_percent(index: int, total: int, start_percent: int, end_percent: int) -> int:
+    """
+    Helper to calculate progress percent between a start and end range based on step index.
+
+    Args:
+        index (int): Current step index (starting from 0).
+        total (int): Total number of steps.
+        start_percent (int): Start of the percent range.
+        end_percent (int): End of the percent range.
+
+    Returns:
+        int: Computed percent for current step.
+    """
+    if total <= 1:
+        return end_percent
+    return start_percent + int((end_percent - start_percent) * (index / (total - 1)))

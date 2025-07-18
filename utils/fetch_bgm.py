@@ -9,6 +9,7 @@ from pathlib import Path
 
 from utils.freesound_bgm import search_freesound
 from utils.translate_text import translate_to_english
+from utils.progress_tracker import update_progress
 
 # Setup
 logger = logging.getLogger("bgm_fetcher")
@@ -26,10 +27,13 @@ def sanitize_filename(name: str) -> str:
     return ''.join(c for c in name if c in string.ascii_letters + string.digits + "_").lower()
 
 
-def download_bgm_from_url(url: str, dest_path: Path) -> Optional[str]:
+def download_bgm_from_url(url: str, dest_path: Path, task_id: Optional[str] = None) -> Optional[str]:
     """Download an audio file from a URL and save it locally."""
     try:
         logger.info(f"[🌐] Downloading BGM from: {url}")
+        if task_id:
+            update_progress(task_id, "🎵 Downloading music...", 30)
+
         response = requests.get(url, stream=True, timeout=15)
         response.raise_for_status()
 
@@ -43,6 +47,8 @@ def download_bgm_from_url(url: str, dest_path: Path) -> Optional[str]:
                 f.write(chunk)
 
         logger.info(f"[✅] BGM saved to: {dest_path}")
+        if task_id:
+            update_progress(task_id, "🎵 Music downloaded", 40)
         return str(dest_path)
 
     except requests.RequestException as e:
@@ -57,10 +63,14 @@ def fetch_bgm(
     script_text: str,
     language: str = "en",
     fallback_category: Optional[str] = None,
-    force_download: bool = False
+    force_download: bool = False,
+    task_id: Optional[str] = None
 ) -> Optional[str]:
     """Fetch background music matching the script content."""
     original_text = script_text
+
+    if task_id:
+        update_progress(task_id, "🎵 Translating script...", 10)
 
     if language != "en":
         try:
@@ -84,20 +94,27 @@ def fetch_bgm(
 
     if cached_path.exists() and not force_download:
         logger.info(f"[💾] Using cached BGM: {cached_path}")
+        if task_id:
+            update_progress(task_id, "🎵 Using cached music", 40)
         return str(cached_path)
 
     try:
+        if task_id:
+            update_progress(task_id, f"🎵 Searching for music using keyword '{keyword}'", 20)
+
         bgm_url_or_path = search_freesound(keyword, language=language)
 
         if bgm_url_or_path:
             if bgm_url_or_path.startswith("http"):
-                return download_bgm_from_url(bgm_url_or_path, cached_path)
+                return download_bgm_from_url(bgm_url_or_path, cached_path, task_id)
             else:
                 source_path = Path(bgm_url_or_path)
                 if source_path.exists():
                     try:
                         source_path.rename(cached_path)
                         logger.info(f"[✅] Renamed BGM to cache: {cached_path}")
+                        if task_id:
+                            update_progress(task_id, "🎵 Music copied to cache", 40)
                         return str(cached_path)
                     except Exception as e:
                         logger.warning(f"[⚠️] Failed to move BGM file: {e}")
@@ -111,6 +128,8 @@ def fetch_bgm(
         fallback_path = ASSETS_DIR / f"{fallback_category}.mp3"
         if fallback_path.exists():
             logger.info(f"[🎼] Using fallback BGM for category '{fallback_category}': {fallback_path}")
+            if task_id:
+                update_progress(task_id, "🎵 Using fallback category music", 40)
             return str(fallback_path)
         else:
             logger.warning(f"[⚠️] Fallback category file not found: {fallback_path}")
@@ -118,7 +137,11 @@ def fetch_bgm(
     # Final fallback to generic default
     if DEFAULT_BGM.exists():
         logger.info(f"[🎼] Using default fallback BGM: {DEFAULT_BGM}")
+        if task_id:
+            update_progress(task_id, "🎵 Using default fallback music", 40)
         return str(DEFAULT_BGM)
 
     logger.warning("[⚠️] No suitable BGM found or fallback failed.")
+    if task_id:
+        update_progress(task_id, "❌ No suitable BGM found", 40)
     return None

@@ -15,6 +15,8 @@ import warnings
 import logging
 from datetime import timedelta
 
+from utils.progress_tracker import update_progress
+
 # Logging setup
 logger = logging.getLogger("subtitle_gen")
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +72,7 @@ def generate_srt_from_audio(
     last_end_time = 0.5
 
     i = 0
+    total_chunks = len(words) // words_per_line + (1 if len(words) % words_per_line else 0)
     while i < len(words):
         chunk = words[i:i + words_per_line]
         if not chunk:
@@ -95,6 +98,8 @@ def generate_srt_from_audio(
         last_end_time = end
         index += 1
         i += words_per_line
+
+        update_progress("Subtitles", i // words_per_line, total_chunks)  # ✅ Progress logging
 
     os.makedirs(os.path.dirname(srt_path), exist_ok=True)
     with open(srt_path, "w", encoding="utf-8") as f:

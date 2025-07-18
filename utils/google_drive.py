@@ -94,7 +94,7 @@ def upload_to_google_drive(
         return None, "[❌] File does not exist."
 
     try:
-        update_progress(task_id, "📁 Connecting to Google Drive...", 80)
+        update_progress(task_id, "📁 Connecting to Google Drive...", 83)
         service = get_drive_service()
 
         # Create folder hierarchy: reels → user_name
@@ -105,7 +105,7 @@ def upload_to_google_drive(
         mime_type = mimetypes.guess_type(local_path)[0] or "video/mp4"
         media = MediaFileUpload(local_path, mimetype=mime_type, resumable=True)
 
-        update_progress(task_id, f"⏫ Uploading {filename}...", 85)
+        update_progress(task_id, f"⏫ Uploading {filename}...", 86)
         logger.info(f"[📤] Uploading file: {filename}")
 
         uploaded = service.files().create(
@@ -126,7 +126,7 @@ def upload_to_google_drive(
         ).execute()
 
         public_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        update_progress(task_id, "✅ Upload complete", 90)
+        update_progress(task_id, "✅ Upload complete", 95)
         logger.info(f"[✅] File URL: {public_url}")
         return public_url, None
 

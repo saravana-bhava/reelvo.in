@@ -8,14 +8,15 @@ from urllib.parse import quote
 from typing import Optional
 from dotenv import load_dotenv
 
+# Configure logging before anything else
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("freesound_bgm")
+
 # Load environment variables from .env
 load_dotenv()
 
 FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY")
 FREESOUND_API_URL = "https://freesound.org/apiv2/search/text/"
-
-logger = logging.getLogger("freesound_bgm")
-logging.basicConfig(level=logging.INFO)
 
 HEADERS = {
     "Authorization": f"Token {FREESOUND_API_KEY}"

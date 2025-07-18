@@ -45,13 +45,15 @@ def generate_text_overlay(
         possible_fonts = [
             "assets/fonts/NotoSansDevanagari-Regular.ttf",
             "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
-            "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf"
+            "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansDevanagari-Regular.otf"
         ]
     else:
         possible_fonts = [
             "assets/fonts/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/local/share/fonts/DejaVuSans-Bold.ttf"
+            "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"
         ]
 
     for path in possible_fonts:

@@ -142,6 +142,8 @@ def generate_script_for_user(
     """
     logger.info(f"[📝] Generating script for User: '{user_email}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
 
+    update_progress(folder_name, "generating_script", 25)
+
     output_dir = os.path.join("output", user_email, folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -151,6 +153,7 @@ def generate_script_for_user(
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
 
+    update_progress(folder_name, "script_generated", 30)
     logger.info(f"[📄] Script saved → {script_path}")
     return script_path
 

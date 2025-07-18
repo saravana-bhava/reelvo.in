@@ -17,13 +17,20 @@ load_dotenv(os.path.join(ROOT_DIR, ".env"))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_video")
 
+# Import progress updater
+try:
+    from progress import update_progress
+except ImportError:
+    def update_progress(task_id, status, percent): pass
+
 
 def create_video(
     video_path: str,
     inputs: List[str],
     audio_duration: float,
     filters: List[str],
-    map_video: str
+    map_video: str,
+    task_id: Optional[str] = None
 ) -> Optional[str]:
     """
     Final video render with FFmpeg using composed clips, overlays, and audio.
@@ -34,6 +41,7 @@ def create_video(
         audio_duration (float): Total duration of final video in seconds.
         filters (List[str]): FFmpeg filter_complex commands, joined with ';'.
         map_video (str): Output video stream reference (e.g., "[v]").
+        task_id (Optional[str]): Task ID for progress tracking (if available).
 
     Returns:
         Optional[str]: Path to the created video, or None on failure.
@@ -76,20 +84,30 @@ def create_video(
                     h, m, s = map(float, match.groups())
                     current_time = h * 3600 + m * 60 + s
                     percent = int((current_time / audio_duration) * 100)
-                    if percent != last_logged_percent and percent <= 100:
+                    percent = max(0, min(percent, 100))  # clamp
+
+                    if percent != last_logged_percent:
                         logger.info(f"[🎞️] Rendering progress: {percent}%")
+                        if task_id:
+                            update_progress(task_id, "🎞️ Rendering final video...", percent)
                         last_logged_percent = percent
 
         process.wait()
         if process.returncode == 0:
             logger.info(f"[✅] Reel created → {video_path}")
+            if task_id:
+                update_progress(task_id, "✅ Reel rendering complete.", 100)
             return video_path
         else:
             logger.error("[❌] FFmpeg exited with error.")
+            if task_id:
+                update_progress(task_id, "❌ FFmpeg exited with error.", 100)
             return None
 
     except Exception as e:
         logger.exception("[❌] FFmpeg render failed.")
+        if task_id:
+            update_progress(task_id, "❌ Render failed due to exception.", 100)
         return None
 
 
