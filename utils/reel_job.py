@@ -189,9 +189,7 @@ def generate_reel_background(
         clips = fetch_multiple_clips(
             temp_dir, theme_name, language,
             english_script_text, audio_duration,
-            task_id=task_id,
-            start_percent=get_stage_percent(5, 0.1),
-            end_percent=get_stage_percent(5, 0.9)
+            task_id=task_id
         )
 
         if not clips:
@@ -202,7 +200,7 @@ def generate_reel_background(
                 if f.lower().endswith((".mp4", ".mov", ".webm"))
             ])[:5]
 
-        update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", get_stage_percent(5, 0.9))
+        update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", get_stage_percent(5, 1.0))
 
         for idx, clip_path in enumerate(clips):
             update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", get_stage_percent(5, (idx + 1) / len(clips)))
@@ -211,9 +209,7 @@ def generate_reel_background(
         update_progress(task_id, "🎛️ Merging all clips...", get_stage_percent(6, 0.0))
         combined_video_path = concatenate_clips(
             temp_dir, theme_name, language, clips,
-            task_id=task_id,
-            start_percent=get_stage_percent(6, 0.1),
-            end_percent=get_stage_percent(6, 0.9)
+            task_id=task_id
         )
 
         if not combined_video_path:
@@ -262,7 +258,7 @@ def generate_reel_background(
         os.makedirs(videos_dir, exist_ok=True)
         video_path = os.path.join(videos_dir, f"{theme_name}_{language}_video.mp4")
 
-        update_progress(task_id, "🎬 Generating final video with FFmpeg...", get_stage_percent(7, 0.5))
+        update_progress(task_id, "🎬 Generating final video...", get_stage_percent(7, 0.5))
         video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
         if not video_path:
             finish_progress(task_id, "❌ Video could not be generated.", 0)

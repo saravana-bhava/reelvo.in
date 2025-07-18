@@ -30,7 +30,7 @@ def sanitize_english(text: str) -> str:
     return " ".join(ascii_words) or "inspiration"
 
 
-def run_ffmpeg_with_progress(cmd: List[str], duration: float, task_id: str, base_msg: str, percent_start: int, percent_end: int):
+def run_ffmpeg_with_progress(cmd: List[str], duration: float, task_id: str, base_msg: str, stage_index: int, substage_offset: float = 0.0, substage_scale: float = 1.0):
     """Run FFmpeg with stderr parsing to update task progress."""
     pattern = re.compile(r'time=(\d+):(\d+):(\d+\.\d+)')
     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
@@ -42,13 +42,19 @@ def run_ffmpeg_with_progress(cmd: List[str], duration: float, task_id: str, base
             if match:
                 h, m, s = map(float, match.groups())
                 current = h * 3600 + m * 60 + s
-                percent = int(current / duration * 100)
-                smooth_percent = percent_start + int((percent / 100) * (percent_end - percent_start))
+                raw_progress = min(current / duration, 1.0)
+                smooth_progress = substage_offset + raw_progress * substage_scale
+                smooth_percent = get_stage_percent(stage_index, smooth_progress)
                 if smooth_percent > last_percent:
                     update_progress(task_id, f"{base_msg} ({smooth_percent}%)", smooth_percent)
                     last_percent = smooth_percent
 
     process.wait()
+
+    # Ensure 100% of stage reached if FFmpeg didn't reach end
+    if last_percent < get_stage_percent(stage_index, substage_offset + substage_scale):
+        update_progress(task_id, f"{base_msg} (100%)", get_stage_percent(stage_index, substage_offset + substage_scale))
+
     return process.returncode == 0
 
 
@@ -65,7 +71,8 @@ def download_video(src_path: str, dest_path: str, min_duration=5, max_duration=6
     ]
     try:
         if task_id:
-            return run_ffmpeg_with_progress(cmd, max_duration, task_id, f"📥 Fallback clip {index+1}/{total}", 55, 65)
+            # Stage 5: Clip fetching (arbitrary choice for fallback download)
+            return run_ffmpeg_with_progress(cmd, max_duration, task_id, f"📥 Fallback clip {index+1}/{total}", 5)
         subprocess.run(cmd, check=True)
         return True
     except Exception as e:
@@ -74,7 +81,7 @@ def download_video(src_path: str, dest_path: str, min_duration=5, max_duration=6
 
 
 def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_text: str,
-                         target_duration: float, task_id: str = None, start_percent: int = 55, end_percent: int = 65) -> List[str]:
+                         target_duration: float, task_id: str = None) -> List[str]:
     """Download or fallback to multiple video clips based on a theme and language."""
     logger.info("🎞️ Fetching video clips...")
 
@@ -117,15 +124,15 @@ def fetch_multiple_clips(temp_dir: str, theme_name: str, language: str, script_t
             logger.warning(f"[⚠️] Clip {i+1} could not be downloaded from any source.")
 
         if task_id and found:
-            fraction = (i + 1) / count
-            percent = int(start_percent + fraction * (end_percent - start_percent))
-            update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", percent)
+            progress = (i + 1) / count
+            stage_progress = get_stage_percent(5, progress)  # Stage 5 = Clip fetching
+            update_progress(task_id, f"📥 Downloaded clip {i + 1}/{count}", stage_progress)
 
     return downloaded_clips
 
 
 def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List[str],
-                      task_id: str = None, start_percent: int = 70, end_percent: int = 80) -> str:
+                      task_id: str = None) -> str:
     """Re-encode and concatenate video clips into a single vertical video with progress updates."""
     logger.info("[🔁] Re-encoding and concatenating clips...")
 
@@ -145,11 +152,18 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
 
         try:
             if task_id:
+                # Stage 6: Re-encoding
+                sub_offset = i / total_clips
+                sub_scale = 1.0 / total_clips
+
                 success = run_ffmpeg_with_progress(
-                    cmd, CLIP_DURATION, task_id,
+                    cmd,
+                    CLIP_DURATION,
+                    task_id,
                     f"🔧 Re-encoding clip {i+1}/{total_clips}",
-                    get_stage_percent(i, total_clips, start_percent, end_percent - 5),
-                    get_stage_percent(i + 1, total_clips, start_percent, end_percent - 5)
+                    stage_index=6,
+                    substage_offset=sub_offset,
+                    substage_scale=sub_scale
                 )
             else:
                 subprocess.run(cmd, check=True)
@@ -170,7 +184,7 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
             f.write(f"file '{os.path.abspath(clip)}'\n")
 
     if task_id:
-        update_progress(task_id, "📜 Creating concat list...", end_percent - 4)
+        update_progress(task_id, "📜 Creating concat list...", get_stage_percent(6, 1.0))
 
     combined_video_path = os.path.join(temp_dir, f"{theme_name}_{language}_combined.mp4")
     concat_cmd = [
@@ -184,12 +198,18 @@ def concatenate_clips(temp_dir: str, theme_name: str, language: str, clips: List
     try:
         duration = CLIP_DURATION * len(reencoded_clips)
         if task_id:
-            run_ffmpeg_with_progress(concat_cmd, duration, task_id, "📦 Merging clips", end_percent - 3, end_percent)
+            run_ffmpeg_with_progress(
+                concat_cmd,
+                duration,
+                task_id,
+                "📦 Merging clips",
+                stage_index=7
+            )
         else:
             subprocess.run(concat_cmd, check=True)
 
         if task_id:
-            update_progress(task_id, "✅ All clips merged.", end_percent)
+            update_progress(task_id, "✅ All clips merged.", get_stage_percent(7, 1.0))
 
     except Exception as e:
         raise RuntimeError(f"[❌] Failed to concatenate clips: {e}")

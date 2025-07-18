@@ -67,14 +67,15 @@ def finish_progress(task_id: str, status: str, percent: int = 100, download_url:
 
     percent = min(max(int(percent), 0), 100)
 
-    if download_url:
-        progress_status[task_id]["download_url"] = download_url
-
-    progress_status[task_id].update({
+    update_data = {
         "status": f"{status}<br>⏱️ Took {elapsed:.1f} sec",
         "percent": percent,
         "elapsed": int(elapsed)
-    })
+    }
+    if download_url:
+        update_data["download_url"] = download_url
+
+    progress_status[task_id].update(update_data)
 
 
 def get_progress(task_id: str) -> Dict[str, Any]:
