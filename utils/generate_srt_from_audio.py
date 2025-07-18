@@ -105,7 +105,7 @@ def generate_srt_from_audio(
 
         current_chunk = index - 1
         percent = int((current_chunk / total_chunks) * 100)
-        update_progress("Subtitles", f"Generating subtitles {current_chunk}/{total_chunks}", percent)
+        update_progress("Subtitles", f"Processing voice {current_chunk}/{total_chunks}", percent)
 
     os.makedirs(os.path.dirname(srt_path), exist_ok=True)
     with open(srt_path, "w", encoding="utf-8") as f:

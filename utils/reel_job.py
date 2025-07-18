@@ -224,6 +224,7 @@ def generate_reel_background(
             os.makedirs(watermark_dir, exist_ok=True)
             watermark_path = os.path.join(watermark_dir, "logo.png")
             if not os.path.exists(watermark_path):
+                logger.warning("Custom logo not found, using default logo.")
                 watermark_path = os.path.join("assets", "logo", "default.png")
             inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
             logo_index = input_index
@@ -237,14 +238,20 @@ def generate_reel_background(
         base = "[bg]"
 
         if logo_index is not None:
-            filters.append(f"{base}[{logo_index}:v]overlay=W-w-30:H-h-30[wm]")
+            filters.append(
+                f"[2:v][bg]scale2ref=w=iw/8:h=ow/mdar[logo][base_scaled];"
+                f"[base_scaled][logo]overlay=W-w-30:H-h-30[wm]"
+            )
             base = "[wm]"
+
+        if subtitles_enabled and not os.path.exists(srt_path):
+            logger.warning("Subtitles were enabled, but no SRT file was generated.")
 
         if subtitles_enabled and os.path.exists(srt_path):
             style = (
                 "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
                 "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
-                "BorderStyle=3,Outline=2,MarginV=10"
+                "BorderStyle=3,Outline=2,MarginV=25"
             )
             escaped_srt = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
             filters.append(f"{base}subtitles='{escaped_srt}':force_style='{style}'[outv]")
@@ -270,7 +277,7 @@ def generate_reel_background(
             return
 
         add_reel_to_history(user_email, os.path.basename(video_path), script_text)
-        finish_progress(task_id, "✅ Reel created!", 100, download_url=upload_url)
+        finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
         logger.info(f"✅ Reel generation complete. Log: {log_path}")
 
     except Exception as e:
