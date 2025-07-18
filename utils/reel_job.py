@@ -4,6 +4,7 @@ import os
 import subprocess
 import logging
 import sys
+import time
 from datetime import datetime
 from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_audio
@@ -194,10 +195,10 @@ def generate_reel_background(
 
         update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", 65)
 
-        # Simulate progress as each clip is prepared (optional)
         for idx, clip_path in enumerate(clips):
             percent = 65 + int((idx + 1) / len(clips) * 5)
-            update_progress(task_id, f"🧩 Queuing clip {idx + 1} of {len(clips)}...", percent)
+            update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", percent)
+            time.sleep(0.5)
 
         update_progress(task_id, "🎛️ Merging all clips...", 70)
         combined_video_path = concatenate_clips(

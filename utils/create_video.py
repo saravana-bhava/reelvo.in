@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import sys
+import re
 from dotenv import load_dotenv
 from typing import List, Optional
 
@@ -52,13 +53,42 @@ def create_video(
         "-y", video_path
     ]
 
-    try:
-        logger.info(f"[📦] FFmpeg command:\n{' '.join(cmd)}")
-        subprocess.run(cmd, check=True)
-        logger.info(f"[✅] Reel created → {video_path}")
-        return video_path
+    logger.info(f"[📦] FFmpeg command:\n{' '.join(cmd)}")
 
-    except subprocess.CalledProcessError as e:
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        time_pattern = re.compile(r"time=(\d+):(\d+):(\d+\.\d+)")
+        last_logged_percent = -1
+
+        for line in process.stderr:
+            line = line.strip()
+            if "time=" in line:
+                match = time_pattern.search(line)
+                if match:
+                    h, m, s = map(float, match.groups())
+                    current_time = h * 3600 + m * 60 + s
+                    percent = int((current_time / audio_duration) * 100)
+                    if percent != last_logged_percent and percent <= 100:
+                        logger.info(f"[🎞️] Rendering progress: {percent}%")
+                        last_logged_percent = percent
+
+        process.wait()
+        if process.returncode == 0:
+            logger.info(f"[✅] Reel created → {video_path}")
+            return video_path
+        else:
+            logger.error("[❌] FFmpeg exited with error.")
+            return None
+
+    except Exception as e:
         logger.exception("[❌] FFmpeg render failed.")
         return None
 
