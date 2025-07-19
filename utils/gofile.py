@@ -1,87 +1,127 @@
 # File: utils/gofile.py
 
-"""
-GoFile.io integration for temporary video hosting.
-- Uploads videos via GoFile's API.
-- Returns a public download URL.
-"""
-
 import os
-import requests
+import sys
 import logging
-from typing import Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
-# Load .env
 load_dotenv()
 
-# Logging
-logger = logging.getLogger("gofile")
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("gofile")
 
-# Optional: UI progress tracker
-try:
-    from utils.progress_tracker import update_progress
-except ImportError:
-    def update_progress(task_id, status, percent): pass
+GOFILE_ACCOUNT_TOKEN = os.getenv("GOFILE_ACCOUNT_TOKEN")
+GOFILE_PARENT_FOLDER_ID = os.getenv("GOFILE_PARENT_FOLDER_ID")
 
+API_BASE = "https://api.gofile.io"
 
-def upload_to_gofile(
-    local_path: str,
-    user_name: str,
-    task_id: Optional[str] = None
-) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Uploads a video to GoFile.io and returns a public download URL.
+def get_or_create_user_folder(email: str) -> str | None:
+    headers = {
+        "Authorization": f"Bearer {GOFILE_ACCOUNT_TOKEN}"
+    }
+    data = {
+        "parentFolderId": GOFILE_PARENT_FOLDER_ID,
+        "folderName": email
+    }
 
-    Returns:
-        (public_url, error_message)
-    """
-    if not os.path.exists(local_path):
-        return None, "[❌] File does not exist."
+    response = requests.post(f"{API_BASE}/contents/createFolder", json=data, headers=headers)
+    if response.status_code != 200:
+        logger.error(f"[❌] Failed to create/find folder: {response.status_code} - {response.text}")
+        return None
 
     try:
-        update_progress(task_id, "📁 Connecting to GoFile.io...", 83)
-        logger.info(f"[📤] Uploading: {local_path}")
-
-        # Step 1: Get the best upload server
-        server_resp = requests.get("https://api.gofile.io/getServer").json()
-        server = server_resp["data"]["server"]
-        logger.info(f"[🔌] Upload server: {server}")
-
-        update_progress(task_id, "⏫ Uploading video...", 88)
-        with open(local_path, 'rb') as f:
-            upload_resp = requests.post(
-                f"https://{server}.gofile.io/uploadFile",
-                files={"file": f}
-            ).json()
-
-        if upload_resp["status"] != "ok":
-            return None, "[❌] Upload failed."
-
-        public_url = upload_resp["data"]["downloadPage"]
-        update_progress(task_id, "✅ Upload complete", 95)
-        logger.info(f"[✅] Uploaded URL: {public_url}")
-        return public_url, None
-
+        result = response.json()
+        if result["status"] != "ok":
+            logger.error(f"[❌] createFolder error: {result}")
+            return None
+        folder_id = result["data"]["id"]
+        logger.info(f"[📁] Folder ID for {email}: {folder_id}")
+        return folder_id
     except Exception as e:
-        logger.exception("[❌] GoFile upload failed.")
-        return None, f"[❌] Upload failed: {str(e)}"
+        logger.exception("[❌] Failed to parse createFolder response")
+        return None
 
+def upload_to_gofile(file_path: str, email: str) -> str | None:
+    logger.info(f"[📤] Uploading: {file_path}")
 
-# CLI test
+    folder_id = get_or_create_user_folder(email)
+    if not folder_id:
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {GOFILE_ACCOUNT_TOKEN}"
+    }
+
+    with open(file_path, "rb") as f:
+        files = {"file": f}
+        data = {"folderId": folder_id}
+        response = requests.post("https://upload.gofile.io/uploadfile", files=files, headers=headers, data=data)
+
+    if response.status_code != 200:
+        logger.error(f"[❌] Upload failed: {response.status_code} - {response.text}")
+        return None
+
+    try:
+        result = response.json()
+        logger.info(f"[🧾] Raw response: {result}")
+        if result["status"] != "ok":
+            logger.error(f"[❌] Upload error: {result}")
+            return None
+
+        file_data = result["data"]
+        server = file_data["servers"][0]
+        file_id = file_data["id"]
+        file_name = file_data["name"]
+
+        direct_link = f"https://{server}.gofile.io/download/web/{file_id}/{file_name}"
+        logger.info(f"[🔗] Direct download link: {direct_link}")
+        return direct_link
+    except Exception as e:
+        logger.exception("[❌] Failed to parse upload response")
+        return None
+
+def download_from_gofile(url: str, output_path: str, account_token: str):
+    print(url)
+    print(output_path)
+    print(account_token)
+    headers = {
+        "Referer": "https://gofile.io/",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+    }
+    cookies = {
+        "accountToken": account_token
+    }
+
+    logger.info(f"[⬇️] Downloading from: {url}")
+    try:
+        response = requests.get(url, headers=headers, cookies=cookies, stream=True)
+        response.raise_for_status()
+
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        with open(output_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+
+        logger.info(f"[✅] Download completed: {output_path}")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[❌] Download failed: {e}")
+
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) != 3:
-        print("Usage: python utils/gofile.py <local_path> <user_name>")
+    if len(sys.argv) < 3:
+        print("Usage: python utils/gofile.py <file_path> <user_email>")
         sys.exit(1)
 
-    path = sys.argv[1]
-    user = sys.argv[2]
+    file_path = sys.argv[1]
+    user_email = sys.argv[2]
 
-    url, error = upload_to_gofile(path, user)
-    if error:
-        print(error, file=sys.stderr)
+    direct_url = upload_to_gofile(file_path, user_email)
+    if direct_url and GOFILE_ACCOUNT_TOKEN:
+        file_name = os.path.basename(direct_url)
+        local_download_path = os.path.join("downloads", user_email, file_name)
+        download_from_gofile(direct_url, local_download_path, GOFILE_ACCOUNT_TOKEN)
+        print(f"[🔗] {direct_url}")
     else:
-        print(f"✅ {url}")
+        logger.error("[⚠️] Upload or download skipped due to missing token or link.")
