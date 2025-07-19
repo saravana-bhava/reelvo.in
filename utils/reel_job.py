@@ -14,6 +14,7 @@ from utils.fetch_bgm import fetch_bgm
 from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video
 from utils.google_drive import upload_to_google_drive
+from utils.gofile import upload_to_gofile
 from utils.reel_history import add_reel_to_history
 from utils.progress_tracker import (
     progress_status,
@@ -22,6 +23,10 @@ from utils.progress_tracker import (
     finish_progress,
     get_stage_percent,
 )
+
+UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
+UPLOAD_TO_GOFILE = os.getenv("UPLOAD_TO_GOFILE", "false").lower() == "true"
+HOST = os.getenv("HOST", "reelvo.in")
 
 ORIGINAL_STDOUT = sys.stdout
 ORIGINAL_STDERR = sys.stderr
@@ -271,8 +276,34 @@ def generate_reel_background(
             return
 
         update_progress(task_id, "✅ Rendering complete!", get_stage_percent(7, 1.0))
-        update_progress(task_id, "☁️ Uploading to Google Drive...", get_stage_percent(8, 0.5))
-        upload_url, error = upload_to_google_drive(video_path, user_email)
+
+        upload_url = None
+        error = None
+
+        if UPLOAD_TO_DRIVE:
+            update_progress(task_id, "☁️ Uploading to Google Drive...", get_stage_percent(8, 0.5))
+            upload_url, error = upload_to_google_drive(video_path, user_email)
+            if upload_url:
+                logger.info(f"[✅] Uploaded to Google Drive: {upload_url}")
+            elif error:
+                logger.error(f"[❌] Google Drive upload failed: {error}")
+
+        if UPLOAD_TO_GOFILE:
+            update_progress(task_id, "☁️ Uploading to GoFile.io...", get_stage_percent(8, 0.6))
+            gofile_url, gofile_error = upload_to_gofile(video_path, user_email)
+            if gofile_url:
+                logger.info(f"[✅] Uploaded to GoFile.io: {gofile_url}")
+                upload_url = gofile_url
+            elif gofile_error:
+                logger.error(f"[❌] GoFile.io upload failed: {gofile_error}")
+
+        # Fallback: use local path URL
+        if not upload_url:
+            update_progress(task_id, "📂 Upload failed. Using local file path.", get_stage_percent(8, 0.9))
+            filename = os.path.basename(video_path)
+            upload_url = os.path.join("https://", HOST, "videos", user_email, filename).replace("\\", "/")
+            logger.warning(f"[⚠️] Using fallback local video URL: {upload_url}")
+
         if error:
             finish_progress(task_id, error, 0)
             return

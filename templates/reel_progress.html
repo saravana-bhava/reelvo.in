@@ -40,21 +40,32 @@
   const msg = document.getElementById("progress-message");
   const link = document.getElementById("final-link");
   const spinner = document.getElementById("spinner");
+  let failureCount = 0;
 
   async function pollProgress() {
     try {
       const res = await fetch(`/progress/${taskId}`);
-      const data = await res.json();
+      if (!res.ok) throw new Error("Progress endpoint returned error");
 
+      const data = await res.json();
+      const status = data.status || "unknown";
       const percent = data.percent || 0;
+
+      // Handle known failure statuses
+      if (status === "failed" || status === "not_found" || status === "error") {
+        msg.innerHTML = `<span class="text-red-600">❌ ${data.message || 'Reel creation failed.'}</span><br><a href="/create-reel" class="text-blue-600 underline mt-2 inline-block">🔁 Try Again</a>`;
+        spinner.style.display = "none";
+        return; // Stop polling
+      }
+
       bar.style.width = percent + "%";
       bar.textContent = percent + "%";
 
       let progressMessage = "Working...";
       if (data.message && data.message.trim() !== "") {
         progressMessage = data.message.trim();
-      } else if (data.status && data.status.trim() !== "") {
-        progressMessage = data.status.trim();
+      } else if (status) {
+        progressMessage = status;
       }
       msg.innerHTML = progressMessage;
 
@@ -65,12 +76,11 @@
       if (percent < 100) {
         setTimeout(pollProgress, 1500);
       } else {
-        spinner.style.display = "none"; // Hide spinner
-        msg.innerHTML = ""; // ✅ Clear repeated final message here
+        spinner.style.display = "none";
+        msg.innerHTML = "";
         bar.style.width = "100%";
         bar.textContent = "100%";
 
-        // ✅ Show only once in final result block
         link.innerHTML = `
           ✅ <span class="block mb-1">${data.message || 'Reel generation complete!'}</span>
           <a href="${data.download_url}"
@@ -80,7 +90,16 @@
       }
     } catch (err) {
       console.error("Error polling progress:", err);
-      msg.innerHTML = `<span class="text-red-600">⚠️ Connection lost. Please refresh or try again later.</span>`;
+      failureCount++;
+      if (failureCount >= 3) {
+        msg.innerHTML = `<span class="text-red-600">⚠️ Network error. Redirecting...</span>`;
+        spinner.style.display = "none";
+        setTimeout(() => {
+          window.location.href = "/create-reel";
+        }, 4000);
+      } else {
+        setTimeout(pollProgress, 2000);
+      }
     }
   }
 

@@ -133,8 +133,7 @@ def upload_to_google_drive(
             user_folder_id = PARENT_SHARED_FOLDER_ID
         else:
             # Folder hierarchy: reels (shared) → user
-            reels_folder_id = get_or_create_folder(service, REELVO_ROOT_FOLDER, PARENT_SHARED_FOLDER_ID)
-            user_folder_id = get_or_create_folder(service, user_name, reels_folder_id)
+            user_folder_id = get_or_create_folder(service, user_name, PARENT_SHARED_FOLDER_ID)
 
         filename = os.path.basename(local_path)
         mime_type = mimetypes.guess_type(local_path)[0] or "video/mp4"
