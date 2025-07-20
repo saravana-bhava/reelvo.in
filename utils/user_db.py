@@ -10,18 +10,21 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional
 
-# Directories
+# Directory: Base = project root
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-USER_DB_DIR = os.path.join(BASE_DIR, "..", "db", "user_tokens")
-LOG_DIR = os.path.join(BASE_DIR, "..", "db", "reel_logs")
+OUTPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "output"))  # output/
 
-os.makedirs(USER_DB_DIR, exist_ok=True)
-os.makedirs(LOG_DIR, exist_ok=True)
-
+def get_user_output_dir(user_email: str) -> str:
+    """Return the base output dir for the user."""
+    return os.path.join(OUTPUT_DIR, user_email)
 
 def get_user_token_path(user_email: str) -> str:
-    """Returns the path to the user's token JSON file."""
-    return os.path.join(USER_DB_DIR, f"{user_email}.json")
+    """Returns the path to the user's token JSON file inside output/<email>/"""
+    return os.path.join(get_user_output_dir(user_email), "user_tokens.json")
+
+def get_user_log_path(user_email: str) -> str:
+    """Returns the path to the user's log file inside output/<email>/"""
+    return os.path.join(get_user_output_dir(user_email), "reel_logs.log")
 
 
 def save_user_tokens(user_email: str, access_token: str, refresh_token: str, expires_in: int):
@@ -35,8 +38,6 @@ def save_user_tokens(user_email: str, access_token: str, refresh_token: str, exp
         expires_in (int): Expiration in seconds.
     """
     path = get_user_token_path(user_email)
-
-    # ✅ Ensure the parent directory exists
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     data = {
@@ -130,7 +131,9 @@ def log_post(user_email: str, video_path: str, caption: str, drive_url: str = ""
         caption (str): Reel caption.
         drive_url (str): Optional Google Drive share URL.
     """
-    log_file = os.path.join(LOG_DIR, f"{user_email}.log")
+    log_path = get_user_log_path(user_email)
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
     log_entry = f"{datetime.utcnow().isoformat()} | {video_path} | {caption} | {drive_url or 'N/A'}\n"
-    with open(log_file, "a", encoding="utf-8") as f:
+    with open(log_path, "a", encoding="utf-8") as f:
         f.write(log_entry)
