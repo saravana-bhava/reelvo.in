@@ -5,6 +5,7 @@ import json
 import logging
 import uuid
 import glob
+import sqlite3
 from threading import Thread
 from flask import (
     Blueprint, request, render_template, session, redirect,
@@ -14,13 +15,24 @@ from werkzeug.utils import secure_filename
 from utils.generate_script import generate_script_for_user
 from utils.reel_job import generate_reel_background
 from utils.progress_tracker import start_progress, get_progress
+from db.conn import get_db_conn
 
 reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
 logging.basicConfig(level=logging.INFO)
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-THEME_JSON_PATH = os.path.join(ROOT_DIR, "theme.json")
+
+def get_available_themes():
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM themes ORDER BY name ASC")
+        rows = cur.fetchall()
+        return [row["name"] for row in rows]
+    except Exception as e:
+        logger.error(f"Error loading themes from DB: {e}")
+        return []
 
 @reels_bp.route("/create-reel", methods=["GET"])
 def create_reel():
@@ -41,8 +53,7 @@ def create_reel():
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
 
     latest_script = ""
-    with open(THEME_JSON_PATH, encoding="utf-8") as f:
-        themes = sorted(json.load(f).keys())  # ✅ will migrate to SQLite later
+    themes = get_available_themes()
 
     return render_template(
         "create_reel.html",
@@ -114,7 +125,6 @@ def create_reel_action():
     session["reel_in_progress"] = task_id
     start_progress(task_id)
 
-    # ✅ Launch reel generation in background thread
     thread = Thread(target=generate_reel_background, args=(
         task_id,
         user_email,
