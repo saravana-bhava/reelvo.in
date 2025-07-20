@@ -1,43 +1,33 @@
 # File: routes/auth.py
 
 import os
-import json
 import time
 import hmac
 import hashlib
-import threading
 import secrets
 import smtplib
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.utils import formataddr
+
 from flask import (
     Blueprint, render_template, request, redirect, session,
     url_for, flash, current_app
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from db.models import db, User
+
 auth_bp = Blueprint("auth", __name__)
-USERS_FILE = "db/users.json"
-user_file_lock = threading.Lock()
 
-# ----------------- User Data Helpers -----------------
-
-def load_users():
-    if not os.path.exists(USERS_FILE):
-        return {}
-    with user_file_lock, open(USERS_FILE, "r") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return {}
-
-def save_users(users):
-    with user_file_lock, open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
-
-# ----------------- Token Logic -----------------
+# ─────────────────────────────────────────────
+# TOKEN GENERATION & VERIFICATION
+# ─────────────────────────────────────────────
 
 def generate_reset_token(email, secret_key, expires_in=3600):
+    """
+    Generate a secure reset token with an expiry timestamp.
+    """
     expires = int(time.time()) + expires_in
     token = secrets.token_urlsafe(16)
     data = f"{email}|{expires}"
@@ -45,6 +35,9 @@ def generate_reset_token(email, secret_key, expires_in=3600):
     return f"{email}|{expires}|{token}|{sig}"
 
 def verify_reset_token(token_str, secret_key):
+    """
+    Validate a reset token and return the associated email if valid.
+    """
     try:
         email, expires, token, sig = token_str.split("|")
         if int(expires) < time.time():
@@ -56,18 +49,23 @@ def verify_reset_token(token_str, secret_key):
         current_app.logger.warning(f"[Token Error] Verification failed: {e}")
     return None
 
-# ----------------- SMTP Email -----------------
+# ─────────────────────────────────────────────
+# SMTP EMAIL LOGIC
+# ─────────────────────────────────────────────
 
 def send_email(to_email, subject, body):
+    """
+    Send a plaintext email using configured SMTP settings.
+    """
     config = current_app.config
     smtp_host = config.get("SMTP_HOST")
     smtp_port = int(config.get("SMTP_PORT", 587))
     smtp_user = config.get("SMTP_USERNAME")
     smtp_pass = config.get("SMTP_PASSWORD")
-    sender_name = config.get("SMTP_SENDER_NAME", "Support")
+    sender_name = config.get("SMTP_SENDER_NAME", "Reelvo")
     from_email = config.get("SMTP_FROM_EMAIL", smtp_user)
 
-    msg = MIMEText(body)
+    msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = formataddr((sender_name, from_email))
     msg["To"] = to_email
@@ -83,16 +81,24 @@ def send_email(to_email, subject, body):
         current_app.logger.error(f"[SMTP Error] Failed to send email to {to_email}: {e}")
         return False
 
-# ----------------- Routes -----------------
+# ─────────────────────────────────────────────
+# ROUTES
+# ─────────────────────────────────────────────
 
 @auth_bp.route("/")
 def index():
+    """
+    Redirect to dashboard if logged in, else to login.
+    """
     if "user" in session:
         return redirect(url_for("dashboard.dashboard"))
     return redirect(url_for("auth.login"))
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    User login with fallback to master password.
+    """
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -101,12 +107,11 @@ def login():
             flash("Email and password are required.", "warning")
             return redirect(url_for("auth.login"))
 
-        users = load_users()
-        user = users.get(email)
-
+        user = User.query.filter_by(email=email).first()
         admin_master_password = current_app.config.get("ADMIN_MASTER_PASSWORD")
+
         if not user or (
-            not check_password_hash(user.get("password_hash", ""), password)
+            not check_password_hash(user.password_hash, password)
             and not (password == admin_master_password)
         ):
             flash("Invalid email or password.", "danger")
@@ -119,6 +124,9 @@ def login():
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
+    """
+    User registration.
+    """
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -127,15 +135,17 @@ def register():
             flash("Email and password are required.", "warning")
             return redirect(url_for("auth.register"))
 
-        users = load_users()
-        if email in users:
+        if User.query.filter_by(email=email).first():
             flash("Email is already registered.", "danger")
             return redirect(url_for("auth.register"))
 
-        users[email] = {
-            "password_hash": generate_password_hash(password)
-        }
-        save_users(users)
+        new_user = User(
+            email=email,
+            password_hash=generate_password_hash(password),
+            created_at=datetime.utcnow()
+        )
+        db.session.add(new_user)
+        db.session.commit()
 
         flash("Registration successful. You can now log in.", "success")
         return redirect(url_for("auth.login"))
@@ -145,17 +155,23 @@ def register():
 
 @auth_bp.route("/logout")
 def logout():
+    """
+    Logout and clear session.
+    """
     session.pop("user", None)
     flash("You’ve been logged out.", "info")
     return redirect(url_for("auth.login"))
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
+    """
+    Password reset request.
+    """
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-        users = load_users()
+        user = User.query.filter_by(email=email).first()
 
-        if email in users:
+        if user:
             token = generate_reset_token(email, current_app.secret_key)
             reset_url = url_for("auth.reset_password", token=token, _external=True)
             body = f"""Hi,
@@ -177,9 +193,17 @@ If you didn't request this, please ignore it.
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password(token):
+    """
+    Password reset handler using secure token.
+    """
     email = verify_reset_token(token, current_app.secret_key)
     if not email:
         flash("Invalid or expired reset link.", "danger")
+        return redirect(url_for("auth.login"))
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash("User not found.", "danger")
         return redirect(url_for("auth.login"))
 
     if request.method == "POST":
@@ -188,19 +212,17 @@ def reset_password(token):
             flash("Password is required.", "warning")
             return redirect(request.url)
 
-        users = load_users()
-        if email in users:
-            users[email]["password_hash"] = generate_password_hash(password)
-            save_users(users)
-            flash("Password updated successfully. You can now log in.", "success")
-            return redirect(url_for("auth.login"))
-
-        flash("User not found.", "danger")
+        user.password_hash = generate_password_hash(password)
+        db.session.commit()
+        flash("Password updated successfully. You can now log in.", "success")
         return redirect(url_for("auth.login"))
 
     return render_template("reset_password.html", email=email)
 
 @auth_bp.route("/toggle-theme", methods=["POST"])
 def toggle_theme():
+    """
+    Toggle between light/dark mode.
+    """
     session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
     return redirect(request.referrer or url_for("profile.user_profile"))

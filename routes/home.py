@@ -6,6 +6,9 @@ home_bp = Blueprint("home", __name__)
 
 @home_bp.route("/")
 def home():
+    """
+    Show the landing page or redirect logged-in users to the dashboard.
+    """
     if "user" in session:
         return redirect(url_for("dashboard.dashboard"))
     return render_template("home.html")

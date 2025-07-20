@@ -6,7 +6,7 @@ from utils.progress_tracker import progress_status
 progress_bp = Blueprint("progress", __name__)
 
 @progress_bp.route("/progress/<task_id>", methods=["GET"])
-def get_progress(task_id):
+def get_progress(task_id: str):
     """
     API Endpoint to check progress of a given task_id.
     Typically called from the frontend while a reel is being generated.
@@ -14,7 +14,7 @@ def get_progress(task_id):
     status = progress_status.get(task_id)
 
     if status:
-        current_app.logger.debug(f"[Progress] task_id={task_id} → {status}")
+        current_app.logger.debug(f"[Progress] task_id={task_id} | status={status.get('status')} | percent={status.get('percent')}")
         return jsonify({
             "status": status.get("status", "unknown"),
             "message": status.get("message", ""),
@@ -22,7 +22,7 @@ def get_progress(task_id):
             "download_url": status.get("download_url", "")
         })
 
-    current_app.logger.warning(f"[Progress] No status found for task_id={task_id}")
+    current_app.logger.warning(f"[Progress] task_id={task_id} → Status not found.")
     return jsonify({
         "status": "not_found",
         "message": "No progress available for this task."

@@ -1,12 +1,12 @@
 # File: progress_tracker.py
 
 import time
-from typing import Dict, Any
+import sqlite3
+from typing import Dict, Any, Optional
 
-# In-memory task progress registry
-progress_status: Dict[str, Dict[str, Any]] = {}
+# SQLite setup
+DB_PATH = "db/app.db"
 
-# Optional: Define progress weights centrally
 PROGRESS_STAGES = [
     5,   # 0 - Setup
     5,   # 1 - Overlay
@@ -20,84 +20,126 @@ PROGRESS_STAGES = [
 ]
 
 
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS progress (
+            task_id TEXT PRIMARY KEY,
+            status TEXT,
+            percent INTEGER,
+            start_time REAL,
+            elapsed INTEGER,
+            download_url TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+
 def start_progress(task_id: str) -> None:
     now = time.time()
-    progress_status[task_id] = {
-        "status": "🚀 Starting...",
-        "percent": 0,
-        "start_time": now,
-        "elapsed": 0
-    }
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        INSERT OR REPLACE INTO progress (task_id, status, percent, start_time, elapsed)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (task_id, "🚀 Starting...", 0, now, 0))
+    conn.commit()
+    conn.close()
 
 
 def update_progress(task_id: str, status: str, percent: int) -> None:
-    if task_id not in progress_status:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT start_time, percent, status FROM progress WHERE task_id = ?', (task_id,))
+    row = c.fetchone()
+
+    if not row:
+        conn.close()
         return
 
+    start_time, current_percent, current_status = row
     now = time.time()
-    task = progress_status[task_id]
-    start = task.get("start_time", now)
-
+    elapsed = int(now - start_time)
     new_percent = min(max(int(percent), 0), 100)
-    current_percent = task.get("percent", 0)
-    current_status = task.get("status", "")
 
     if new_percent < current_percent:
         new_percent = current_percent
 
     if new_percent == current_percent and status == current_status:
+        conn.close()
         return
 
-    task.update({
-        "status": status,
-        "percent": new_percent,
-        "elapsed": int(now - start)
-    })
+    c.execute('''
+        UPDATE progress
+        SET status = ?, percent = ?, elapsed = ?
+        WHERE task_id = ?
+    ''', (status, new_percent, elapsed, task_id))
+    conn.commit()
+    conn.close()
 
-    print(f"[Progress Status] Task {task_id} => {task}")
+    print(f"[Progress Status] Task {task_id} => {{'status': status, 'percent': {new_percent}, 'elapsed': {elapsed}}}")
 
 
-def finish_progress(task_id: str, status: str, percent: int = 100, download_url: str = None) -> None:
-    if task_id not in progress_status:
+def finish_progress(task_id: str, status: str, percent: int = 100, download_url: Optional[str] = None) -> None:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT start_time FROM progress WHERE task_id = ?', (task_id,))
+    row = c.fetchone()
+
+    if not row:
+        conn.close()
         return
 
+    start_time = row[0]
     now = time.time()
-    start = progress_status[task_id].get("start_time", now)
-    elapsed = now - start
-
+    elapsed = int(now - start_time)
     percent = min(max(int(percent), 0), 100)
 
-    update_data = {
-        "status": f"{status}<br>⏱️ Took {elapsed:.1f} sec",
-        "percent": percent,
-        "elapsed": int(elapsed)
-    }
-    if download_url:
-        update_data["download_url"] = download_url
+    status_with_time = f"{status}<br>⏱️ Took {elapsed:.1f} sec"
 
-    progress_status[task_id].update(update_data)
+    c.execute('''
+        UPDATE progress
+        SET status = ?, percent = ?, elapsed = ?, download_url = ?
+        WHERE task_id = ?
+    ''', (status_with_time, percent, elapsed, download_url, task_id))
+    conn.commit()
+    conn.close()
 
 
 def get_progress(task_id: str) -> Dict[str, Any]:
-    return progress_status.get(task_id, {
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT status, percent, elapsed, download_url FROM progress WHERE task_id = ?', (task_id,))
+    row = c.fetchone()
+    conn.close()
+
+    if row:
+        status, percent, elapsed, download_url = row
+        return {
+            "status": status,
+            "percent": percent,
+            "elapsed": elapsed,
+            "download_url": download_url or ""
+        }
+
+    return {
         "status": "❌ Task not found.",
         "percent": -1,
         "elapsed": 0
-    })
+    }
 
 
 def get_stage_percent(stage_index: int, sub_progress: float = 0.0) -> int:
-    """
-    Compute weighted progress percent based on stage and its subprogress.
-
-    Args:
-        stage_index (int): Current stage index (0-based).
-        sub_progress (float): Progress within the stage (0.0 to 1.0).
-
-    Returns:
-        int: Total progress percent.
-    """
     sub_progress = max(0.0, min(sub_progress, 1.0))
     base = sum(PROGRESS_STAGES[:stage_index])
     weight = PROGRESS_STAGES[stage_index] if stage_index < len(PROGRESS_STAGES) else 0
     return int(base + sub_progress * weight)
+
+
+def progress_status(task_id: str) -> str:
+    progress = get_progress(task_id)
+    return f"{progress['status']} ({progress['percent']}%)"

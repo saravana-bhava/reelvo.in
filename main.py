@@ -10,26 +10,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from waitress import serve
 from dotenv import load_dotenv
 
-# Background jobs
-from utils.scheduler import scheduler_runner
-from utils.instagram_token_refresher import refresh_instagram_tokens
-
-# Route blueprints
-from routes.home import home_bp
-from routes.auth import auth_bp
-from routes.dashboard import dashboard_bp
-from routes.profile import profile_bp
-from routes.reels import reels_bp
-from routes.progress import progress_bp
-from routes.instagram import instagram_bp
-from routes.schedule import schedule_bp
-from routes.coming_soon import coming_bp
-
-# ─────────────────────────────────────────────
-# ENVIRONMENT & LOGGING
-# ─────────────────────────────────────────────
+# Load environment variables
 load_dotenv()
 
+# ─────────────────────────────────────────────
+# LOGGING CONFIGURATION
+# ─────────────────────────────────────────────
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -38,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger("reelvo")
 
 # ─────────────────────────────────────────────
-# FLASK APP INITIALIZATION
+# FLASK INITIALIZATION
 # ─────────────────────────────────────────────
 flask_app = Flask(__name__)
 flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
@@ -48,8 +34,24 @@ if dev_mode:
     flask_app.config["TEMPLATES_AUTO_RELOAD"] = True
     flask_app.jinja_env.auto_reload = True
 
-# Enable reverse proxy support (e.g., Cloudflare, Nginx)
+# Enable support for reverse proxy headers (e.g., Cloudflare, Nginx)
 flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
+
+# ─────────────────────────────────────────────
+# SQLITE CONFIGURATION (Replacing JSON)
+# ─────────────────────────────────────────────
+from db.models import db  # Import after dotenv
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(BASE_DIR, "db", "app.db")
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(flask_app)
+
+with flask_app.app_context():
+    db.create_all()
 
 # ─────────────────────────────────────────────
 # SMTP CONFIGURATION
@@ -66,9 +68,19 @@ flask_app.config.update(
 )
 
 # ─────────────────────────────────────────────
-# REGISTER BLUEPRINTS
+# REGISTER ROUTE BLUEPRINTS
 # ─────────────────────────────────────────────
-for bp in [
+from routes.home import home_bp
+from routes.auth import auth_bp
+from routes.dashboard import dashboard_bp
+from routes.profile import profile_bp
+from routes.reels import reels_bp
+from routes.progress import progress_bp
+from routes.instagram import instagram_bp
+from routes.schedule import schedule_bp
+from routes.coming_soon import coming_bp
+
+blueprints = [
     home_bp,
     auth_bp,
     dashboard_bp,
@@ -77,14 +89,20 @@ for bp in [
     progress_bp,
     instagram_bp,
     schedule_bp,
-    coming_bp
-]:
+    coming_bp,
+]
+
+for bp in blueprints:
     flask_app.register_blueprint(bp)
 
 # ─────────────────────────────────────────────
-# BACKGROUND TASK STARTER
+# BACKGROUND TASKS
 # ─────────────────────────────────────────────
+from utils.scheduler import scheduler_runner
+from utils.instagram_token_refresher import refresh_instagram_tokens
+
 def start_background_tasks():
+    """Start background threads for scheduling and Instagram token refresh."""
     logger.info("🔄 Starting background tasks...")
 
     Thread(
@@ -103,6 +121,7 @@ def start_background_tasks():
 # APPLICATION RUNNER
 # ─────────────────────────────────────────────
 def run():
+    """Main entry point for running the Flask app."""
     os.makedirs("output", exist_ok=True)
     start_background_tasks()
 
@@ -117,7 +136,7 @@ def run():
     else:
         serve(flask_app, host=host, port=port)
 
-# Allow external app usage (e.g., gunicorn or tests)
+# Expose the app globally for WSGI servers
 app = flask_app
 
 if __name__ == "__main__":

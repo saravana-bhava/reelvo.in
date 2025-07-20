@@ -1,16 +1,11 @@
 # File: scripts/post_scheduled_reels.py
 
-"""
-Posts reels scheduled for today using unified schedule (db/scheduled_posts.json).
-Includes email alerting on failures and log rotation.
-"""
-
 import os
-import json
 import logging
+import smtplib
+import sqlite3
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-import smtplib
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
@@ -21,16 +16,14 @@ from utils.user_db import get_user_token_data
 load_dotenv()
 
 # ---------------------
-# Constants
+# Paths and Constants
 # ---------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 
-DB_DIR = os.path.join(ROOT_DIR, "db")
+DB_PATH = os.path.join(ROOT_DIR, "db", "db.app.db")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
-SCHEDULE_FILE = os.path.join(DB_DIR, "scheduled_posts.json")
-HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "post_scheduled.log")
 EMAIL_TEMPLATE = os.path.join(BASE_DIR, "templates", "email_alert_template.txt")
 
@@ -46,11 +39,10 @@ handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"
 logger.addHandler(handler)
 
 # ---------------------
-# Helper Functions
+# Email Alerting
 # ---------------------
 
 def send_email_alert(subject, message):
-    """Send alert email on posting failure."""
     try:
         with open(EMAIL_TEMPLATE, "r", encoding="utf-8") as f:
             body = f.read().format(log_path=LOG_FILE, error_message=message)
@@ -70,59 +62,60 @@ def send_email_alert(subject, message):
     except Exception as e:
         logger.error(f"❌ Failed to send email alert: {e}")
 
-def load_json(path):
-    """Safely load JSON data from file."""
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"❌ Failed to load {path}: {e}")
-    return {}
+# ---------------------
+# SQLite Helpers
+# ---------------------
 
-def save_json(path, data):
-    """Safely save JSON data to file."""
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        logger.error(f"❌ Failed to save {path}: {e}")
+def fetch_scheduled_reels(conn):
+    """Return all unposted reels scheduled for today or earlier."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    query = """
+        SELECT id, user_email, video, scheduled_for, script
+        FROM scheduled_posts
+        WHERE posted = 0 AND date(scheduled_for) <= date(?)
+    """
+    return conn.execute(query, (today,)).fetchall()
+
+def mark_reel_posted(conn, post_id):
+    conn.execute("""
+        UPDATE scheduled_posts
+        SET posted = 1, posted_at = ?
+        WHERE id = ?
+    """, (datetime.now().isoformat(), post_id))
+    conn.commit()
+
+def fetch_reel_history_caption(conn, user_email, video_name):
+    result = conn.execute("""
+        SELECT caption FROM reel_history
+        WHERE user_email = ? AND video = ?
+    """, (user_email, video_name)).fetchone()
+    return result[0] if result else ""
 
 # ---------------------
 # Main Logic
 # ---------------------
 
 def post_due_reels():
-    """Post reels scheduled for today."""
     logger.info("📤 Starting scheduled reel poster...")
-    schedule = load_json(SCHEDULE_FILE)
-    history = load_json(HISTORY_FILE)
-    today = datetime.now().strftime("%Y-%m-%d")
     failures = []
 
-    for user_email, jobs in schedule.items():
-        if not isinstance(jobs, list):
-            logger.warning(f"[{user_email}] ⚠️ Invalid schedule format.")
-            continue
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        posts = fetch_scheduled_reels(conn)
 
-        token_data = get_user_token_data(user_email)
-        if not token_data or "access_token" not in token_data:
-            logger.warning(f"[{user_email}] 🚫 No valid Instagram token.")
-            continue
+        logger.info(f"📋 Found {len(posts)} due scheduled reels.")
 
-        for item in jobs:
-            if not isinstance(item, dict) or item.get("posted"):
+        for row in posts:
+            post_id = row["id"]
+            user_email = row["user_email"]
+            video = row["video"]
+            scheduled_date = row["scheduled_for"]
+            caption = row["script"] or fetch_reel_history_caption(conn, user_email, video)
+
+            token_data = get_user_token_data(user_email)
+            if not token_data or "access_token" not in token_data:
+                logger.warning(f"[{user_email}] 🚫 No valid Instagram token.")
                 continue
-
-            scheduled_date = item.get("scheduled_for")
-            video = item.get("video")
-
-            if not scheduled_date or not video:
-                logger.warning(f"[{user_email}] ⚠️ Missing required fields in schedule entry.")
-                continue
-
-            if scheduled_date > today:
-                continue  # Future post
 
             video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
             if not os.path.exists(video_path):
@@ -130,14 +123,11 @@ def post_due_reels():
                 failures.append(f"[{user_email}] Missing file: {video}")
                 continue
 
-            caption = item.get("script") or history.get(user_email, {}).get(video, "")
             logger.info(f"[{user_email}] 📲 Posting scheduled reel: {video}")
-
             try:
                 success = post_to_instagram(user_email, video_path, caption)
                 if success:
-                    item["posted"] = True
-                    item["posted_at"] = datetime.now().isoformat()
+                    mark_reel_posted(conn, post_id)
                     logger.info(f"[{user_email}] ✅ Successfully posted: {video}")
                 else:
                     logger.error(f"[{user_email}] ❌ Post API failed: {video}")
@@ -146,7 +136,6 @@ def post_due_reels():
                 logger.exception(f"[{user_email}] ❌ Exception during post: {video}")
                 failures.append(f"[{user_email}] Exception: {str(e)}")
 
-    save_json(SCHEDULE_FILE, schedule)
     logger.info("✅ Finished scheduled posting.")
 
     if failures:

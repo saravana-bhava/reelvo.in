@@ -7,7 +7,7 @@
 
   <!-- Profile Info -->
   <section role="region" aria-label="Profile Info" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
-    {% set logo_path = 'watermark/' + user + '/logo.png' %}
+    {% set logo_path = 'watermark/' + user.email + '/logo.png' %}
     {% if session.get("connected") and session.get("instagram_profile_picture") %}
       <img src="/{{ logo_path }}"
            alt="Instagram Profile Picture"
@@ -18,7 +18,7 @@
            class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border dark:border-gray-600 shadow" />
     {% endif %}
     <h3 class="text-gray-800 dark:text-gray-200 text-sm font-medium">📧 Email</h3>
-    <p class="text-blue-600 dark:text-blue-400 font-semibold break-words">{{ user }}</p>
+    <p class="text-blue-600 dark:text-blue-400 font-semibold break-words">{{ user.email }}</p>
   </section>
 
   <!-- Instagram Connection -->
@@ -103,15 +103,35 @@ function copyReferralLink() {
   const statusEl = document.getElementById("copyStatus");
 
   if (!text) return alert("Referral link not available.");
-  navigator.clipboard.writeText(text).then(() => {
-    if (statusEl) {
-      statusEl.classList.remove("hidden");
-      statusEl.textContent = "✅ Copied!";
-      setTimeout(() => statusEl.classList.add("hidden"), 2500);
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (statusEl) {
+        statusEl.classList.remove("hidden");
+        statusEl.textContent = "✅ Copied!";
+        setTimeout(() => statusEl.classList.add("hidden"), 2500);
+      }
+    }).catch(() => {
+      alert("Failed to copy referral link.");
+    });
+  } else {
+    // Fallback for unsupported browsers or insecure context
+    const tempInput = document.createElement("input");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    try {
+      document.execCommand("copy");
+      if (statusEl) {
+        statusEl.classList.remove("hidden");
+        statusEl.textContent = "✅ Copied!";
+        setTimeout(() => statusEl.classList.add("hidden"), 2500);
+      }
+    } catch (err) {
+      alert("Clipboard copy not supported in this browser.");
     }
-  }).catch(() => {
-    alert("Failed to copy referral link.");
-  });
+    document.body.removeChild(tempInput);
+  }
 }
 </script>
 {% endblock %}

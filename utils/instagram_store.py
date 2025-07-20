@@ -2,11 +2,11 @@
 
 """
 Handles saving and retrieving Instagram credentials and logging reel post history.
-Stores user account data and reel logs in JSON format under /db directory.
+Now stores user account data and reel logs in SQLite under /db/reels.db.
 """
 
 import os
-import json
+import sqlite3
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
@@ -15,82 +15,101 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger("instagram_store")
 logging.basicConfig(level=logging.INFO)
 
-# Paths
+# Database path
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_DIR = os.path.join(BASE_DIR, "db")
-ACCOUNTS_FILE = os.path.join(DB_DIR, "user_accounts.json")
-HISTORY_FILE = os.path.join(DB_DIR, "reel_history.json")
+DB_PATH = os.path.join(BASE_DIR, "db", "app.db")
 
-# Ensure directories and files exist
-os.makedirs(DB_DIR, exist_ok=True)
-for path in [ACCOUNTS_FILE, HISTORY_FILE]:
-    if not os.path.exists(path):
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump({}, f)
+# Ensure DB directory exists
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
+# Initialize tables
+def _init_db():
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        # Credentials table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS instagram_accounts (
+                user_email TEXT PRIMARY KEY,
+                access_token TEXT NOT NULL,
+                ig_account_id TEXT NOT NULL
+            )
+        """)
+        # Post history table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reel_posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_email TEXT NOT NULL,
+                video_path TEXT,
+                caption TEXT,
+                permalink TEXT,
+                timestamp TEXT
+            )
+        """)
+        conn.commit()
 
-def _safe_read_json(file_path: str) -> Dict[str, Any]:
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        logger.warning(f"[⚠️] Corrupt JSON in {file_path}, resetting.")
-        return {}
-    except Exception as e:
-        logger.exception(f"[❌] Failed to read JSON: {file_path}: {e}")
-        return {}
-
-
-def _safe_write_json(file_path: str, data: dict) -> None:
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-    except Exception as e:
-        logger.exception(f"[❌] Failed to write JSON: {file_path}: {e}")
-
+_init_db()
 
 def save_instagram_credentials(user_email: str, access_token: str, ig_account_id: str) -> None:
     """
     Save Instagram access token and IG business account ID for the user.
     """
-    data = _safe_read_json(ACCOUNTS_FILE)
-    data[user_email] = {
-        "access_token": access_token,
-        "ig_account_id": ig_account_id
-    }
-    _safe_write_json(ACCOUNTS_FILE, data)
-    logger.info(f"[✅] IG credentials saved for user: {user_email}")
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO instagram_accounts (user_email, access_token, ig_account_id)
+                VALUES (?, ?, ?)
+                ON CONFLICT(user_email) DO UPDATE SET
+                    access_token = excluded.access_token,
+                    ig_account_id = excluded.ig_account_id
+            """, (user_email, access_token, ig_account_id))
+            conn.commit()
+        logger.info(f"[✅] IG credentials saved for user: {user_email}")
+    except Exception as e:
+        logger.exception(f"[❌] Failed to save IG credentials for {user_email}: {e}")
 
 
-def get_instagram_credentials(user_email: str) -> Optional[dict]:
+def get_instagram_credentials(user_email: str) -> Optional[Dict[str, Any]]:
     """
     Retrieve Instagram credentials (access token, IG account ID) for a user.
     """
-    data = _safe_read_json(ACCOUNTS_FILE)
-    return data.get(user_email)
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT access_token, ig_account_id
+                FROM instagram_accounts
+                WHERE user_email = ?
+            """, (user_email,))
+            row = cursor.fetchone()
+            if row:
+                return {
+                    "access_token": row[0],
+                    "user_id": row[1]  # Keep the key name consistent with usage
+                }
+    except Exception as e:
+        logger.exception(f"[❌] Failed to fetch IG credentials for {user_email}: {e}")
+    return None
 
 
 def log_post(user_email: str, video_path: str, caption: str, drive_url: str) -> None:
     """
     Log a successful Instagram post by the user.
-
-    Args:
-        user_email (str): user_email of the poster
-        video_path (str): Path to local video file
-        caption (str): Caption posted
-        drive_url (str): Instagram permalink
     """
-    data = _safe_read_json(HISTORY_FILE)
-
-    if user_email not in data:
-        data[user_email] = []
-
-    data[user_email].append({
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "video_path": video_path,
-        "caption": caption,
-        "permalink": drive_url
-    })
-
-    _safe_write_json(HISTORY_FILE, data)
-    logger.info(f"[📦] Logged post for {user_email}: {drive_url}")
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO reel_posts (user_email, video_path, caption, permalink, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                user_email,
+                video_path,
+                caption,
+                drive_url,
+                datetime.utcnow().isoformat() + "Z"
+            ))
+            conn.commit()
+        logger.info(f"[📦] Logged post for {user_email}: {drive_url}")
+    except Exception as e:
+        logger.exception(f"[❌] Failed to log post for {user_email}: {e}")

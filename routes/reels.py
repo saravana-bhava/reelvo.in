@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import uuid
+import glob
 from threading import Thread
 from flask import (
     Blueprint, request, render_template, session, redirect,
@@ -26,7 +27,6 @@ def create_reel():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    # 🔒 Prevent access if reel in progress
     if session.get("reel_in_progress"):
         return redirect(url_for("reels.reel_progress", task_id=session["reel_in_progress"]))
 
@@ -42,7 +42,7 @@ def create_reel():
 
     latest_script = ""
     with open(THEME_JSON_PATH, encoding="utf-8") as f:
-        themes = sorted(json.load(f).keys())
+        themes = sorted(json.load(f).keys())  # ✅ will migrate to SQLite later
 
     return render_template(
         "create_reel.html",
@@ -114,7 +114,8 @@ def create_reel_action():
     session["reel_in_progress"] = task_id
     start_progress(task_id)
 
-    Thread(target=generate_reel_background, args=(
+    # ✅ Launch reel generation in background thread
+    thread = Thread(target=generate_reel_background, args=(
         task_id,
         user_email,
         theme_name,
@@ -125,7 +126,9 @@ def create_reel_action():
         custom_voice_file,
         subtitles_enabled,
         watermark_enabled
-    )).start()
+    ))
+    thread.daemon = True
+    thread.start()
 
     return render_template("reel_progress.html", task_id=task_id)
 
@@ -171,7 +174,6 @@ def progress_status(task_id):
 def reel_progress(task_id):
     status = get_progress(task_id)
 
-    # If task not found or already complete, clear session and redirect
     if status.get("percent", -1) == -1 or status.get("percent", 0) >= 100:
         session.pop("reel_in_progress", None)
         return redirect(url_for("reels.create_reel"))
@@ -216,20 +218,14 @@ def list_reels():
     video_folder = os.path.join("output", user_email, "videos")
     os.makedirs(video_folder, exist_ok=True)
 
-    # Get video files with their modification times
     videos = [
         (f, os.path.getmtime(os.path.join(video_folder, f)))
         for f in os.listdir(video_folder)
         if f.endswith(".mp4")
     ]
-
-    # Sort videos by last modified time descending
     videos.sort(key=lambda x: x[1], reverse=True)
-
-    # Extract just filenames (without timestamps)
     sorted_video_files = [f for f, _ in videos]
 
-    # Load associated scripts
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}
     if os.path.exists(scripts_path):
@@ -262,9 +258,6 @@ def delete_reel(filename):
             "tts_raw": os.path.join(base_path, "tts", base_video.replace("_video", "_voice_raw") + ".mp3"),
         }
 
-        # --- Delete temp files using glob ---
-        import glob
-
         temp_dir = os.path.join(base_path, "temp")
         if os.path.exists(temp_dir):
             base_video_clean = base_video.replace("_video", "").rsplit(".", 1)[0]
@@ -277,7 +270,6 @@ def delete_reel(filename):
                     os.remove(f)
                     deleted_any = True
 
-        # --- Delete known target files ---
         for path in targets.values():
             if os.path.exists(path):
                 os.remove(path)

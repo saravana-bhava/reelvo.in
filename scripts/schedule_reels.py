@@ -2,22 +2,20 @@
 
 """
 Assigns posting times for unscheduled reels (1 per day at 4PM).
-Updates db/scheduled_posts.json (used by post_scheduled_reels.py).
+Updates schedules table in SQLite (used by post_scheduled_reels.py).
 Usage:
     python scripts/schedule_reels.py <user_email>
 """
 
 import os
-import json
 import sys
 import logging
+import sqlite3
 from datetime import datetime, timedelta
 
 # Constants
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_DIR = os.path.join(ROOT_DIR, "db")
-REEL_HISTORY_PATH = os.path.join(DB_DIR, "reel_history.json")
-SCHEDULE_PATH = os.path.join(DB_DIR, "scheduled_posts.json")
+DB_PATH = os.path.join(ROOT_DIR, "db", "app.db")  # Assuming SQLite DB is here
 DEFAULT_POST_HOUR = 16  # 4PM
 
 # Logging setup
@@ -32,82 +30,77 @@ logging.basicConfig(
 logger = logging.getLogger("schedule_reels")
 
 
-def load_json(path):
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"❌ Failed to load JSON from {path}: {e}")
-    return {}
+def connect_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
-def save_json(path, data):
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        logger.error(f"❌ Failed to save JSON to {path}: {e}")
+def get_user_reel_history(conn, user_email):
+    cursor = conn.execute(
+        "SELECT video, script FROM reel_history WHERE user_email = ?", (user_email,)
+    )
+    return {row["video"]: row["script"] for row in cursor.fetchall()}
+
+
+def get_user_schedule(conn, user_email):
+    cursor = conn.execute(
+        "SELECT video, scheduled_for FROM schedules WHERE user_email = ?", (user_email,)
+    )
+    return [dict(row) for row in cursor.fetchall()]
+
+
+def insert_schedule(conn, user_email, video, video_path, script, scheduled_for):
+    conn.execute("""
+        INSERT INTO schedules (user_email, video, video_path, script, scheduled_for, posted)
+        VALUES (?, ?, ?, ?, ?, 0)
+    """, (user_email, video, video_path, script, scheduled_for))
 
 
 def schedule_reels_for_user(user_email: str):
-    history = load_json(REEL_HISTORY_PATH)
-    scheduled = load_json(SCHEDULE_PATH)
+    with connect_db() as conn:
+        history = get_user_reel_history(conn, user_email)
+        user_schedule = get_user_schedule(conn, user_email)
 
-    user_history = history.get(user_email, {})
-    user_schedule = scheduled.get(user_email, [])
+        if not history:
+            logger.warning(f"[{user_email}] ⚠️ No reel history found.")
+            return
 
-    if not isinstance(user_history, dict):
-        logger.warning(f"[{user_email}] ⚠️ No valid reel history found.")
-        return
+        scheduled_video_names = {item["video"] for item in user_schedule}
 
-    scheduled_video_names = {
-        item.get("video") for item in user_schedule if isinstance(item, dict)
-    }
+        # Determine starting post date
+        start_date = datetime.now().replace(hour=DEFAULT_POST_HOUR, minute=0, second=0, microsecond=0)
+        valid_dates = []
 
-    # Determine starting post date
-    start_date = datetime.now().replace(hour=DEFAULT_POST_HOUR, minute=0, second=0, microsecond=0)
-    all_dates = [
-        item.get("scheduled_for") for item in user_schedule if isinstance(item, dict)
-    ]
+        for item in user_schedule:
+            try:
+                valid_dates.append(datetime.strptime(item["scheduled_for"], "%Y-%m-%d"))
+            except Exception:
+                logger.warning(f"[{user_email}] ⚠️ Skipping invalid date format: {item['scheduled_for']}")
 
-    valid_dates = []
-    for d in all_dates:
-        try:
-            valid_dates.append(datetime.strptime(d, "%Y-%m-%d"))
-        except Exception:
-            logger.warning(f"[{user_email}] ⚠️ Skipping invalid date format: {d}")
+        if valid_dates:
+            latest = max(valid_dates)
+            next_date = latest + timedelta(days=1)
+            start_date = max(start_date, next_date)
 
-    if valid_dates:
-        latest = max(valid_dates)
-        next_date = latest + timedelta(days=1)
-        start_date = max(start_date, next_date)
+        count = 0
+        for video, script in history.items():
+            if video in scheduled_video_names:
+                continue
 
-    count = 0
-    for video, script in user_history.items():
-        if video in scheduled_video_names:
-            continue
+            video_path = f"output/{user_email}/videos/{video}"
+            scheduled_for = start_date.strftime("%Y-%m-%d")
 
-        video_path = f"output/{user_email}/videos/{video}"
-        item = {
-            "video": video,
-            "video_path": video_path,
-            "script": script or "[No script found]",
-            "scheduled_for": start_date.strftime("%Y-%m-%d"),
-            "posted": False
-        }
-        user_schedule.append(item)
-        start_date += timedelta(days=1)
-        count += 1
+            insert_schedule(conn, user_email, video, video_path, script or "[No script found]", scheduled_for)
+            start_date += timedelta(days=1)
+            count += 1
 
-    scheduled[user_email] = user_schedule
-    save_json(SCHEDULE_PATH, scheduled)
+        conn.commit()
 
-    if count:
-        logger.info(f"[{user_email}] ✅ Scheduled {count} new reel(s).")
-    else:
-        logger.info(f"[{user_email}] ℹ️ No new reels to schedule.")
+        if count:
+            logger.info(f"[{user_email}] ✅ Scheduled {count} new reel(s).")
+        else:
+            logger.info(f"[{user_email}] ℹ️ No new reels to schedule.")
 
 
 if __name__ == "__main__":
