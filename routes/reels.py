@@ -27,7 +27,7 @@ def get_available_themes():
     try:
         conn = get_db_conn()
         cur = conn.cursor()
-        cur.execute("SELECT name FROM themes ORDER BY name ASC")
+        cur.execute("SELECT name FROM themes GROUP BY name ORDER BY name ASC")
         rows = cur.fetchall()
         return [row["name"] for row in rows]
     except Exception as e:
@@ -54,7 +54,6 @@ def create_reel():
 
     latest_script = ""
     themes = get_available_themes()
-
     return render_template(
         "create_reel.html",
         user=user_email,
