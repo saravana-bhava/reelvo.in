@@ -1,0 +1,28 @@
+# File: models/schedule.py
+
+from models.db import db
+from models.base import TimestampMixin
+
+class Schedule(db.Model, TimestampMixin):
+    __tablename__ = 'schedules'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    reel_id = db.Column(db.Integer, db.ForeignKey('reels.id'), nullable=False)
+
+    scheduled_for = db.Column(db.DateTime, nullable=False)
+    timezone = db.Column(db.String(50), default='Asia/Kolkata')
+
+    retry_count = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='pending')  # Values: pending/processing/posted/failed
+    error_log = db.Column(db.Text)
+
+    __table_args__ = (
+        db.CheckConstraint("status IN ('pending', 'processing', 'posted', 'failed')"),
+        db.Index('idx_schedule_time', 'scheduled_for'),
+        db.Index('idx_schedule_status', 'status'),
+        db.Index('idx_schedule_user', 'user_id'),
+    )
+
+    def __repr__(self):
+        return f"<Schedule(id={self.id}, status='{self.status}')>"
