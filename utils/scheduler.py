@@ -1,100 +1,99 @@
 # File: utils/scheduler.py
 
 """
-Background scheduler that checks for scheduled reels and auto-posts to Instagram.
+Background scheduler that checks the 'reels' SQLite table and auto-posts to Instagram.
 Runs in a loop, posting when the scheduled time is met.
-
-Data source: db/scheduled_posts.json
 """
 
 import os
-import json
 import time
 import logging
 from datetime import datetime
-from typing import Dict, Any
 from utils.instagram import post_to_instagram
 from utils.reel_history import add_reel_to_history
+from utils.user_db_sql import get_db_connection
 
-# Constants
-SCHEDULED_PATH = "db/scheduled_posts.json"
-logger = logging.getLogger("reelvo")
+# Logging
+logger = logging.getLogger("scheduler")
 logging.basicConfig(level=logging.INFO)
 
 
 def scheduler_runner() -> None:
     """
-    Continuously checks and posts reels scheduled for Instagram.
-    This function is meant to be run as a background thread or process.
+    Continuously checks and posts reels from the SQLite 'reels' table
+    where is_scheduled = 1 and status = 'scheduled'.
     """
-    logger.info("⏱️ Starting background scheduler...")
-    os.makedirs(os.path.dirname(SCHEDULED_PATH), exist_ok=True)
+    logger.info("⏱️ Starting background scheduler (SQLite)...")
 
     while True:
-        if not os.path.exists(SCHEDULED_PATH):
-            time.sleep(60)
-            continue
-
         try:
-            with open(SCHEDULED_PATH, "r", encoding="utf-8") as f:
-                all_jobs: Dict[str, Dict[str, Any]] = json.load(f)
+            conn = get_db_connection()
+            cursor = conn.cursor()
 
-            for user_email, jobs in all_jobs.items():
-                if not isinstance(jobs, dict):
-                    continue  # Defensive: skip malformed job list
+            # Fetch due reels
+            cursor.execute("""
+                SELECT * FROM reels
+                WHERE is_scheduled = 1
+                  AND status = 'scheduled'
+                  AND scheduled_at <= CURRENT_TIMESTAMP
+            """)
+            due_reels = cursor.fetchall()
 
-                for video_name, job in jobs.items():
-                    try:
-                        if job.get("posted"):
-                            continue  # Already posted
+            for reel in due_reels:
+                reel_id = reel["id"]
+                user_id = reel["user_id"]
+                title = reel["title"]
+                video_path = reel["video_path"]
+                caption = reel["caption"]
+                script = reel["script"]
+                scheduled_time = reel["scheduled_at"]
 
-                        scheduled_for = job.get("scheduled_for")
-                        if not scheduled_for:
-                            continue  # Missing scheduled time
+                try:
+                    logger.info(f"📤 Posting scheduled reel → ID={reel_id} | User={user_id} | Title={title}")
 
-                        # Check if scheduled time has arrived
-                        scheduled_time = datetime.fromisoformat(scheduled_for)
-                        now = datetime.now()
-                        if now >= scheduled_time:
-                            logger.info(f"📤 Posting scheduled reel for {user_email} → {video_name}")
+                    result = post_to_instagram(
+                        video_path=video_path,
+                        caption=caption,
+                        user_id=user_id
+                    )
 
-                            video_path = job.get("video_path") or f"output/final/{video_name}"
-                            caption = job.get("caption", "Scheduled post")
+                    permalink = result.get("permalink") if isinstance(result, dict) else None
 
-                            # Post to Instagram
-                            post_result = post_to_instagram(
-                                video_path=video_path,
-                                caption=caption,
-                                user_email=user_email
-                            )
+                    # Mark as posted
+                    cursor.execute("""
+                        UPDATE reels
+                        SET status = 'posted',
+                            posted_at = CURRENT_TIMESTAMP,
+                            error_log = NULL
+                        WHERE id = ?
+                    """, (reel_id,))
+                    conn.commit()
 
-                            # Update job state
-                            job["posted"] = True
-                            job["result"] = post_result
-                            logger.info(f"[✅] Posted successfully → {video_name}")
+                    # Log to history
+                    add_reel_to_history(
+                        user_id=user_id,
+                        filename=os.path.basename(video_path),
+                        script=script,
+                        caption=caption,
+                        permalink=permalink,
+                        timestamp=datetime.utcnow().isoformat() + "Z"
+                    )
 
-                            # Log to reel history
-                            script_text = job.get("script", "")
-                            permalink = post_result.get("permalink") if isinstance(post_result, dict) else None
-                            timestamp = datetime.utcnow().isoformat() + "Z"
-                            add_reel_to_history(
-                                user_email=user_email,
-                                filename=video_name,
-                                script=script_text,
-                                caption=caption,
-                                permalink=permalink,
-                                timestamp=timestamp
-                            )
+                    logger.info(f"[✅] Reel posted → ID={reel_id} | {os.path.basename(video_path)}")
 
-                    except Exception as e:
-                        job["error"] = str(e)
-                        logger.error(f"[❌] Error posting {video_name} for {user_email}: {e}")
+                except Exception as e:
+                    logger.error(f"[❌] Failed to post reel ID={reel_id}: {e}")
+                    cursor.execute("""
+                        UPDATE reels
+                        SET status = 'failed',
+                            error_log = ?
+                        WHERE id = ?
+                    """, (str(e), reel_id))
+                    conn.commit()
 
-            # Write updated job states back to file
-            with open(SCHEDULED_PATH, "w", encoding="utf-8") as f:
-                json.dump(all_jobs, f, indent=2, ensure_ascii=False)
+            conn.close()
 
         except Exception as e:
-            logger.warning(f"[⚠️] Failed to process scheduled jobs: {e}")
+            logger.warning(f"[⚠️] Scheduler loop error: {e}")
 
-        time.sleep(60)  # Wait 1 minute before checking again
+        time.sleep(60)  # Check every minute
