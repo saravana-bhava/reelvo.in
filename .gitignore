@@ -34,7 +34,7 @@ user_tokens/
 # ─────────────────────────────────────────────
 # GENERATED MEDIA & OUTPUT FILES
 # ─────────────────────────────────────────────
-output/
+output_/
 *.mp4
 *.mov
 *.avi
@@ -55,8 +55,8 @@ output/
 # ─────────────────────────────────────────────
 # DATABASE & LOG FILES
 # ─────────────────────────────────────────────
-db/
-db/reel_logs/
+db_/
+db_/reel_logs/
 *.log
 *.tmp
 *.bak
@@ -85,7 +85,7 @@ dist/
 # TESTS & FIXTURES
 # ─────────────────────────────────────────────
 __tests__/
-test/
+_test/
 tests/
 *.test.py
 
@@ -99,9 +99,9 @@ tests/
 # ─────────────────────────────────────────────
 # TEMPORARY / CACHED FILES
 # ─────────────────────────────────────────────
-cache/
+cache_/
 temp/
-docs/
+_docs/
 
 # ─────────────────────────────────────────────
 # FRONTEND (NODE, NEXT.JS, ETC.)
