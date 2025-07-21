@@ -9,7 +9,7 @@ import os
 import time
 import requests
 from urllib.parse import urlencode
-from utils.user_db_sql import get_instagram_credentials, log_post_to_db
+from utils.instagram_db import get_instagram_credentials, log_post_to_db
 from utils.google_drive import upload_to_google_drive
 
 # Constants
@@ -27,11 +27,12 @@ def post_to_instagram(
     caption: str,
     user_email: str,
     video_url: str = "",
-    task_id: str = None
+    task_id: str = None,
+    use_drive: bool = True
 ) -> str:
     """
     Uploads a Reel to Instagram using a hosted video URL.
-    If video_url is not provided, uploads to Google Drive.
+    If video_url is not provided, uploads to Google Drive (optional).
     Returns an HTML-safe result message.
     """
     update_progress(task_id, "📡 Connecting to Instagram...", 91)
@@ -46,12 +47,19 @@ def post_to_instagram(
     if not access_token or not user_id:
         return "❌ Instagram access token or user ID is missing."
 
-    # ✅ Upload to Google Drive if video_url is not provided
-    if not video_url or not video_url.startswith("http"):
-        update_progress(task_id, "☁️ Uploading video to Drive...", 92)
-        video_url, error = upload_to_google_drive(video_path, user_email, task_id=task_id)
-        if error:
-            return f"❌ {error}"
+    # ✅ Upload to Google Drive if needed
+    if use_drive:
+        if not video_url or not video_url.startswith("http"):
+            update_progress(task_id, "☁️ Uploading video to Drive...", 92)
+            video_url, error = upload_to_google_drive(video_path, user_email, task_id=task_id)
+            if error:
+                return f"❌ {error}"
+    else:
+        # Generate a direct site-hosted URL if not using Google Drive
+        if not video_url or not video_url.startswith("http"):
+            site_base_url = os.getenv("SITE_BASE_URL", "https://reelvo.in")
+            relative_path = video_path.replace("static/", "").lstrip("/")
+            video_url = f"{site_base_url}/{relative_path}"
 
     try:
         # Step 1: Create media container
