@@ -4,7 +4,7 @@ import json
 import os
 import sqlite3
 
-DB_PATH = os.path.join("db", "app.db")
+DB_PATH = os.path.join("db", "reelvo.db")
 
 def get_db_conn():
     conn = sqlite3.connect(DB_PATH)

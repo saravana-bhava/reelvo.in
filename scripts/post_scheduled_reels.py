@@ -22,7 +22,7 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 
-DB_PATH = os.path.join(ROOT_DIR, "db", "db.app.db")
+DB_PATH = os.path.join(ROOT_DIR, "db", "reelvo.db")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "post_scheduled.log")
 EMAIL_TEMPLATE = os.path.join(BASE_DIR, "templates", "email_alert_template.txt")

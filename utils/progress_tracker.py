@@ -5,7 +5,7 @@ import sqlite3
 from typing import Dict, Any, Optional
 
 # SQLite setup
-DB_PATH = "db/app.db"
+DB_PATH = "db/reelvo.db"
 
 PROGRESS_STAGES = [
     5,   # 0 - Setup

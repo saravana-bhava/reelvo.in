@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 # Constants
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_PATH = os.path.join(ROOT_DIR, "db", "app.db")
+DB_PATH = os.path.join(ROOT_DIR, "db", "reelvo.db")
 DEFAULT_POST_HOUR = 16  # 4PM
 
 # Logging setup

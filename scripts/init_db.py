@@ -3,7 +3,7 @@
 import sqlite3
 import os
 
-DB_PATH = "db/app.db"
+DB_PATH = "db/reelvo.db"
 
 def create_db_if_not_exists():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)

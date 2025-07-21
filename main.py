@@ -43,7 +43,7 @@ flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
 from db.models import db  # Import after dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(BASE_DIR, "db", "app.db")
+db_path = os.path.join(BASE_DIR, "db", "reelvo.db")
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
 flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
