@@ -3,7 +3,7 @@
 from datetime import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, current_app
 
-from db.models import Reel, User
+from models import Reel, User
 
 dashboard_bp = Blueprint("dashboard", __name__)
 

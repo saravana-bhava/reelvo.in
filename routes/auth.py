@@ -16,7 +16,7 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from db.models import db, User
+from models import db, User
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -25,9 +25,6 @@ auth_bp = Blueprint("auth", __name__)
 # ─────────────────────────────────────────────
 
 def generate_reset_token(email, secret_key, expires_in=3600):
-    """
-    Generate a secure reset token with an expiry timestamp.
-    """
     expires = int(time.time()) + expires_in
     token = secrets.token_urlsafe(16)
     data = f"{email}|{expires}"
@@ -35,9 +32,6 @@ def generate_reset_token(email, secret_key, expires_in=3600):
     return f"{email}|{expires}|{token}|{sig}"
 
 def verify_reset_token(token_str, secret_key):
-    """
-    Validate a reset token and return the associated email if valid.
-    """
     try:
         email, expires, token, sig = token_str.split("|")
         if int(expires) < time.time():
@@ -54,9 +48,6 @@ def verify_reset_token(token_str, secret_key):
 # ─────────────────────────────────────────────
 
 def send_email(to_email, subject, body):
-    """
-    Send a plaintext email using configured SMTP settings.
-    """
     config = current_app.config
     smtp_host = config.get("SMTP_HOST")
     smtp_port = int(config.get("SMTP_PORT", 587))
@@ -87,18 +78,12 @@ def send_email(to_email, subject, body):
 
 @auth_bp.route("/")
 def index():
-    """
-    Redirect to dashboard if logged in, else to login.
-    """
     if "user" in session:
         return redirect(url_for("dashboard.dashboard"))
     return redirect(url_for("auth.login"))
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    User login with fallback to master password.
-    """
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -124,9 +109,6 @@ def login():
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    """
-    User registration.
-    """
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -142,7 +124,7 @@ def register():
         new_user = User(
             email=email,
             password_hash=generate_password_hash(password),
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow().isoformat()
         )
         db.session.add(new_user)
         db.session.commit()
@@ -155,18 +137,12 @@ def register():
 
 @auth_bp.route("/logout")
 def logout():
-    """
-    Logout and clear session.
-    """
     session.pop("user", None)
     flash("You’ve been logged out.", "info")
     return redirect(url_for("auth.login"))
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
-    """
-    Password reset request.
-    """
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         user = User.query.filter_by(email=email).first()
@@ -193,9 +169,6 @@ If you didn't request this, please ignore it.
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password(token):
-    """
-    Password reset handler using secure token.
-    """
     email = verify_reset_token(token, current_app.secret_key)
     if not email:
         flash("Invalid or expired reset link.", "danger")
@@ -221,8 +194,5 @@ def reset_password(token):
 
 @auth_bp.route("/toggle-theme", methods=["POST"])
 def toggle_theme():
-    """
-    Toggle between light/dark mode.
-    """
     session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
     return redirect(request.referrer or url_for("profile.user_profile"))

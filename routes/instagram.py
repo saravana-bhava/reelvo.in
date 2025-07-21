@@ -1,11 +1,11 @@
 # File: routes/instagram.py
 
 from flask import Blueprint, request, redirect, session, flash, url_for, jsonify, current_app, send_from_directory
-from datetime import timedelta
+from datetime import timedelta, datetime
 import requests
 import os
 
-from utils.user_db_sql import update_instagram_tokens
+from utils.instagram_db import update_instagram_tokens, delete_instagram_token
 from utils.instagram import post_to_instagram
 
 instagram_bp = Blueprint("instagram", __name__)
@@ -102,7 +102,7 @@ def instagram_callback():
             return redirect(url_for("dashboard.dashboard"))
 
         long_token = long_data["access_token"]
-        expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)
+        expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)  # Default: 60 days
 
         pages_data = safe_get(f"{GRAPH_API_BASE}/me/accounts", params={"access_token": long_token})
         pages = pages_data.get("data", []) if pages_data else []
@@ -153,8 +153,8 @@ def instagram_callback():
                 else:
                     session["instagram_profile_picture"] = None
 
-            # ✅ Save to SQL-based DB
-            update_instagram_tokens(user_email, long_token, expires_in)
+            # ✅ Save to SQL DB via SQLAlchemy
+            update_instagram_tokens(user_email, long_token, ig_user_id, expires_in)
             session["connected"] = True
             flash("✅ Instagram connected successfully!", "success")
 
@@ -175,7 +175,7 @@ def disconnect_instagram():
         return redirect(url_for("auth.index"))
 
     try:
-        update_instagram_tokens(user_email, "", 0)
+        delete_instagram_token(user_email)
     except Exception as e:
         current_app.logger.error(f"[Disconnect] Token delete failed: {e}")
 

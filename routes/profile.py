@@ -1,7 +1,7 @@
 # File: routes/profile.py
 
 from flask import Blueprint, render_template, session, redirect, url_for, request
-from db.models import User  # ✅ use SQLAlchemy
+from models import User  # ✅ use SQLAlchemy
 import os
 
 profile_bp = Blueprint("profile", __name__)
