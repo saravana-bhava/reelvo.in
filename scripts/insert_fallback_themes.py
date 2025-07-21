@@ -15,7 +15,7 @@ def create_themes_table_if_not_exists(conn):
     conn.execute('''
         CREATE TABLE IF NOT EXISTS themes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key TEXT NOT NULL,
+            name TEXT NOT NULL,
             lang TEXT NOT NULL,
             content TEXT NOT NULL,
             UNIQUE(key, lang)

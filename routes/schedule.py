@@ -4,7 +4,9 @@ from flask import (
     Blueprint, render_template, request,
     redirect, session, url_for, flash, current_app
 )
-from db.schedule_db import get_user_schedules, reschedule_video, delete_schedule_if_pending
+from db.models import Schedule
+from db import db
+from datetime import datetime
 
 schedule_bp = Blueprint("schedule", __name__)
 
@@ -19,10 +21,11 @@ def list_scheduled_jobs_view():
         return redirect(url_for("auth.index"))
 
     user_email = session["user"]
-    scheduled = get_user_schedules(user_email)
+    schedules = Schedule.query.filter_by(user_email=user_email).order_by(Schedule.scheduled_at.asc()).all()
 
-    current_app.logger.debug(f"[Schedule] {user_email} loaded {len(scheduled)} scheduled items.")
-    return render_template("scheduled.html", user=user_email, scheduled=scheduled)
+    current_app.logger.debug(f"[Schedule] {user_email} loaded {len(schedules)} scheduled items.")
+    return render_template("scheduled.html", user=user_email, scheduled=schedules)
+
 
 # ------------------------
 # POST: /scheduled
@@ -35,16 +38,17 @@ def update_schedule_view():
         return redirect(url_for("auth.index"))
 
     user_email = session["user"]
-    scheduled = get_user_schedules(user_email)
+    schedules = Schedule.query.filter_by(user_email=user_email).all()
+
     updated_count = 0
     deleted_count = 0
 
-    for i, item in enumerate(scheduled):
-        if not isinstance(item, dict):
+    for i, item in enumerate(schedules):
+        if not isinstance(item, Schedule):
             current_app.logger.warning(f"[Schedule] Skipping malformed item at index {i}")
             continue
 
-        if item.get("posted"):
+        if item.posted:
             continue  # Skip already posted items
 
         video_key = f"video_{i}"
@@ -52,20 +56,24 @@ def update_schedule_view():
         delete_key = f"delete_{i}"
 
         if delete_key in request.form:
-            deleted = delete_schedule_if_pending(user_email, item.get("video"))
-            if deleted:
-                deleted_count += 1
-                current_app.logger.info(f"[Schedule] {user_email} deleted {item.get('video')}")
+            db.session.delete(item)
+            deleted_count += 1
+            current_app.logger.info(f"[Schedule] {user_email} deleted {item.video}")
             continue
 
         if video_key in request.form and date_key in request.form:
-            new_date = request.form.get(date_key)
+            new_date_str = request.form.get(date_key)
             video_name = request.form.get(video_key)
 
-            if video_name == item.get("video") and new_date:
-                reschedule_video(user_email, video_name, new_date)
-                updated_count += 1
-                current_app.logger.info(f"[Schedule] {user_email} rescheduled {video_name} → {new_date}")
+            if video_name == item.video and new_date_str:
+                try:
+                    new_date = datetime.strptime(new_date_str, "%Y-%m-%dT%H:%M")
+                    item.scheduled_at = new_date
+                    updated_count += 1
+                    current_app.logger.info(f"[Schedule] {user_email} rescheduled {item.video} → {new_date}")
+                except ValueError:
+                    current_app.logger.warning(f"[Schedule] Invalid date format for {item.video}: {new_date_str}")
 
+    db.session.commit()
     flash(f"✅ Schedule updated. {updated_count} rescheduled, {deleted_count} deleted.")
     return redirect(url_for("schedule.list_scheduled_jobs_view"))

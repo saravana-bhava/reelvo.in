@@ -9,7 +9,7 @@ import os
 import time
 import requests
 from urllib.parse import urlencode
-from utils.user_db import get_instagram_credentials, log_post
+from utils.user_db_sql import get_instagram_credentials, log_post_to_db
 from utils.google_drive import upload_to_google_drive
 
 # Constants
@@ -41,7 +41,7 @@ def post_to_instagram(
         return "❌ No Instagram credentials found for user."
 
     access_token = creds.get("access_token")
-    user_id = creds.get("user_id")
+    user_id = creds.get("ig_user_id")
 
     if not access_token or not user_id:
         return "❌ Instagram access token or user ID is missing."
@@ -94,8 +94,14 @@ def post_to_instagram(
             if r3.ok:
                 permalink = r3.json().get("permalink", permalink)
 
-        # Log it
-        log_post(user_email, video_path=video_path, caption=caption, drive_url=permalink)
+        # ✅ Log to SQL
+        log_post_to_db(
+            user_email=user_email,
+            video_path=video_path,
+            caption=caption,
+            platform="Instagram",
+            permalink=permalink
+        )
         update_progress(task_id, "✅ Instagram upload complete", 98)
 
         if permalink.startswith("http"):

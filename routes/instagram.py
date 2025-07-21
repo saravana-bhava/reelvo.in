@@ -5,12 +5,11 @@ from datetime import timedelta
 import requests
 import os
 
-from utils.user_db import save_user_tokens, get_instagram_credentials, log_post
+from utils.user_db_sql import update_instagram_tokens
 from utils.instagram import post_to_instagram
 
 instagram_bp = Blueprint("instagram", __name__)
 
-# Constants
 INSTAGRAM_APP_ID = os.getenv("FB_APP_ID", "")
 INSTAGRAM_APP_SECRET = os.getenv("FB_APP_SECRET", "")
 REDIRECT_URI = os.getenv(
@@ -19,13 +18,11 @@ REDIRECT_URI = os.getenv(
 )
 GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 
-
 # --------------------------
 # Helpers
 # --------------------------
 
 def safe_get(url, params=None, timeout=10):
-    """Perform a safe HTTP GET with logging and error handling."""
     try:
         response = requests.get(url, params=params, timeout=timeout)
         response.raise_for_status()
@@ -35,7 +32,6 @@ def safe_get(url, params=None, timeout=10):
         return None
 
 def download_and_save_image(url, save_path):
-    """Download an image from a URL and save it locally."""
     try:
         response = requests.get(url, stream=True, timeout=10)
         response.raise_for_status()
@@ -48,14 +44,12 @@ def download_and_save_image(url, save_path):
         current_app.logger.error(f"[Download Image] Failed to download {url}: {e}")
         return False
 
-
 # --------------------------
 # OAuth Connect
 # --------------------------
 
 @instagram_bp.route("/connect-instagram", methods=["GET"])
 def connect_instagram():
-    """Redirect user to Instagram OAuth flow via Facebook."""
     auth_url = (
         "https://www.facebook.com/v19.0/dialog/oauth"
         f"?client_id={INSTAGRAM_APP_ID}"
@@ -66,21 +60,18 @@ def connect_instagram():
     )
     return redirect(auth_url)
 
-
 # --------------------------
 # OAuth Callback
 # --------------------------
 
 @instagram_bp.route("/instagram/callback", methods=["GET"])
 def instagram_callback():
-    """Handle the OAuth callback from Instagram."""
     code = request.args.get("code")
     if not code:
         flash("❌ Authorization failed. No code received.", "error")
         return redirect(url_for("dashboard.dashboard"))
 
     try:
-        # Step 1: Get short-lived token
         token_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
@@ -97,7 +88,6 @@ def instagram_callback():
 
         short_token = token_data["access_token"]
 
-        # Step 2: Exchange for long-lived token
         long_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
@@ -114,7 +104,6 @@ def instagram_callback():
         long_token = long_data["access_token"]
         expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)
 
-        # Step 3: Get user's pages
         pages_data = safe_get(f"{GRAPH_API_BASE}/me/accounts", params={"access_token": long_token})
         pages = pages_data.get("data", []) if pages_data else []
 
@@ -138,7 +127,6 @@ def instagram_callback():
             flash("❌ Missing Page ID.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Step 4: Get Instagram Business Account
         ig_data = safe_get(
             f"{GRAPH_API_BASE}/{page_id}",
             params={"fields": "instagram_business_account", "access_token": long_token}
@@ -150,14 +138,12 @@ def instagram_callback():
             flash("❌ Instagram account not linked to Page.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Step 5: Fetch profile picture
         profile_data = safe_get(
             f"{GRAPH_API_BASE}/{ig_user_id}",
             params={"fields": "username,profile_picture_url", "access_token": long_token}
         )
         profile_picture_url = profile_data.get("profile_picture_url") if profile_data else None
 
-        # Step 6: Save token and optional profile picture
         user_email = session.get("user")
         if user_email:
             if profile_picture_url:
@@ -167,7 +153,8 @@ def instagram_callback():
                 else:
                     session["instagram_profile_picture"] = None
 
-            save_user_tokens(user_email, long_token, "", expires_in)
+            # ✅ Save to SQL-based DB
+            update_instagram_tokens(user_email, long_token, expires_in)
             session["connected"] = True
             flash("✅ Instagram connected successfully!", "success")
 
@@ -177,20 +164,18 @@ def instagram_callback():
 
     return redirect(url_for("dashboard.dashboard"))
 
-
 # --------------------------
 # Disconnect Instagram
 # --------------------------
 
 @instagram_bp.route("/disconnect-instagram", methods=["POST"])
 def disconnect_instagram():
-    """Disconnect user's Instagram and remove token from DB."""
     user_email = session.get("user")
     if not user_email:
         return redirect(url_for("auth.index"))
 
     try:
-        save_user_tokens(user_email, "", "", 0)  # Clear token
+        update_instagram_tokens(user_email, "", 0)
     except Exception as e:
         current_app.logger.error(f"[Disconnect] Token delete failed: {e}")
 
@@ -199,14 +184,12 @@ def disconnect_instagram():
     flash("ℹ️ Instagram disconnected.", "info")
     return redirect(url_for("dashboard.dashboard"))
 
-
 # --------------------------
 # API: Post Reel to Instagram
 # --------------------------
 
 @instagram_bp.route("/api/post-reel", methods=["POST"])
 def api_post_reel():
-    """Post a reel to Instagram via API."""
     data = request.get_json()
     video_path = data.get("video_path")
     caption = data.get("caption", "")
@@ -230,12 +213,10 @@ def api_post_reel():
         current_app.logger.exception("[Instagram] Reel post failed")
         return jsonify({"error": "Failed to post to Instagram"}), 500
 
-
 # --------------------------
 # Serve watermark image
 # --------------------------
 
 @instagram_bp.route("/watermark/<user_email>/logo.png")
 def serve_watermark(user_email):
-    """Serve Instagram profile picture as watermark."""
     return send_from_directory(os.path.join("output", user_email, "watermark"), "logo.png")

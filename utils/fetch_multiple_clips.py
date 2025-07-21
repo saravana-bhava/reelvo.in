@@ -105,7 +105,7 @@ def fetch_multiple_clips(
     language: str,
     script_text: str,
     target_duration: float,
-    task_id: str = None
+    task_id: Optional[str] = None
 ) -> List[str]:
     """Fetch themed vertical clips using APIs or fallback if necessary."""
 
@@ -132,7 +132,7 @@ def fetch_multiple_clips(
                 url = source(
                     search_query,
                     clip_path,
-                    used_video_ids=used_video_ids  # Passed internally to source function
+                    used_video_ids=used_video_ids
                 )
                 if url:
                     downloaded_clips.append(clip_path)
@@ -168,6 +168,7 @@ def fetch_multiple_clips(
 
     logger.info(f"[✅] Total clips fetched: {len(downloaded_clips)} / {count}")
     return downloaded_clips
+
 
 def concatenate_clips(
     temp_dir: str,

@@ -43,13 +43,20 @@ def create_reel():
         return redirect(url_for("reels.reel_progress", task_id=session["reel_in_progress"]))
 
     user_email = session["user"]
+    user_id = session.get("user_id")
+
     output_dir = os.path.join("output", user_email)
     videos_dir = os.path.join(output_dir, "videos")
     scripts_dir = os.path.join(output_dir, "scripts")
     os.makedirs(videos_dir, exist_ok=True)
     os.makedirs(scripts_dir, exist_ok=True)
 
-    videos = os.listdir(videos_dir)
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT filename FROM reels WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    rows = cur.fetchall()
+    videos = [row["filename"] for row in rows]
+
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
 
     latest_script = ""
@@ -75,6 +82,7 @@ def create_reel_action():
         return redirect(url_for("auth.index"))
 
     user_email = session["user"]
+    user_id = session.get("user_id")
     theme = request.form.get("theme", "").strip()
     custom_topic = request.form.get("custom_topic", "").strip()
     language = request.form.get("language", "en").strip()
@@ -148,7 +156,6 @@ def progress_status(task_id):
 
         if not status:
             session.pop("reel_in_progress", None)
-            session.pop("current_task", None)
             return jsonify({
                 "percent": -1,
                 "message": "❌ Task not found.",
@@ -224,16 +231,12 @@ def list_reels():
         return redirect(url_for("auth.index"))
 
     user_email = session["user"]
-    video_folder = os.path.join("output", user_email, "videos")
-    os.makedirs(video_folder, exist_ok=True)
-
-    videos = [
-        (f, os.path.getmtime(os.path.join(video_folder, f)))
-        for f in os.listdir(video_folder)
-        if f.endswith(".mp4")
-    ]
-    videos.sort(key=lambda x: x[1], reverse=True)
-    sorted_video_files = [f for f, _ in videos]
+    user_id = session.get("user_id")
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT filename FROM reels WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    rows = cur.fetchall()
+    videos = [row["filename"] for row in rows]
 
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}
@@ -243,7 +246,7 @@ def list_reels():
                 with open(os.path.join(scripts_path, f), encoding="utf-8") as file:
                     scripts[f.replace("_text.txt", "_video.mp4")] = file.read().strip()
 
-    return render_template("reels.html", user=user_email, videos=sorted_video_files, scripts=scripts)
+    return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
 
 @reels_bp.route("/reels/delete/<filename>", methods=["POST"])
 def delete_reel(filename):
@@ -251,11 +254,17 @@ def delete_reel(filename):
         return redirect(url_for("auth.index"))
 
     user_email = session["user"]
+    user_id = session.get("user_id")
     base_video = os.path.splitext(filename)[0]
     base_path = os.path.join("output", user_email)
 
     deleted_any = False
     try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM reels WHERE user_id = ? AND filename = ?", (user_id, filename))
+        conn.commit()
+
         targets = {
             "video": os.path.join(base_path, "videos", filename),
             "image": os.path.join(base_path, "images", base_video.replace("_video", "_text_image") + ".png"),

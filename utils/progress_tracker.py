@@ -1,11 +1,14 @@
-# File: progress_tracker.py
+# File: utils/progress_tracker.py
+
+"""
+Handles tracking of task progress using SQLAlchemy ORM.
+Each task has a task_id, status, percent, timestamps, and an optional download URL.
+"""
 
 import time
-import sqlite3
 from typing import Dict, Any, Optional
-
-# SQLite setup
-DB_PATH = "db/reelvo.db"
+from db import db
+from db.models import ProgressTask
 
 PROGRESS_STAGES = [
     5,   # 0 - Setup
@@ -20,110 +23,79 @@ PROGRESS_STAGES = [
 ]
 
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS progress (
-            task_id TEXT PRIMARY KEY,
-            status TEXT,
-            percent INTEGER,
-            start_time REAL,
-            elapsed INTEGER,
-            download_url TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
-
-
 def start_progress(task_id: str) -> None:
     now = time.time()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        INSERT OR REPLACE INTO progress (task_id, status, percent, start_time, elapsed)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (task_id, "🚀 Starting...", 0, now, 0))
-    conn.commit()
-    conn.close()
+    task = ProgressTask.query.filter_by(task_id=task_id).first()
+
+    if task:
+        task.status = "🚀 Starting..."
+        task.percent = 0
+        task.start_time = now
+        task.elapsed = 0
+    else:
+        task = ProgressTask(
+            task_id=task_id,
+            status="🚀 Starting...",
+            percent=0,
+            start_time=now,
+            elapsed=0
+        )
+        db.session.add(task)
+
+    db.session.commit()
 
 
 def update_progress(task_id: str, status: str, percent: int) -> None:
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('SELECT start_time, percent, status FROM progress WHERE task_id = ?', (task_id,))
-    row = c.fetchone()
+    task = ProgressTask.query.filter_by(task_id=task_id).first()
 
-    if not row:
-        conn.close()
+    if not task:
         return
 
-    start_time, current_percent, current_status = row
     now = time.time()
-    elapsed = int(now - start_time)
-    new_percent = min(max(int(percent), 0), 100)
+    elapsed = int(now - task.start_time)
+    percent = min(max(percent, 0), 100)
 
-    if new_percent < current_percent:
-        new_percent = current_percent
+    if percent < task.percent:
+        percent = task.percent
 
-    if new_percent == current_percent and status == current_status:
-        conn.close()
+    if percent == task.percent and status == task.status:
         return
 
-    c.execute('''
-        UPDATE progress
-        SET status = ?, percent = ?, elapsed = ?
-        WHERE task_id = ?
-    ''', (status, new_percent, elapsed, task_id))
-    conn.commit()
-    conn.close()
+    task.status = status
+    task.percent = percent
+    task.elapsed = elapsed
+    db.session.commit()
 
-    print(f"[Progress Status] Task {task_id} => {{'status': status, 'percent': {new_percent}, 'elapsed': {elapsed}}}")
+    print(f"[Progress Status] Task {task_id} => {{'status': '{status}', 'percent': {percent}, 'elapsed': {elapsed}}}")
 
 
 def finish_progress(task_id: str, status: str, percent: int = 100, download_url: Optional[str] = None) -> None:
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('SELECT start_time FROM progress WHERE task_id = ?', (task_id,))
-    row = c.fetchone()
+    task = ProgressTask.query.filter_by(task_id=task_id).first()
 
-    if not row:
-        conn.close()
+    if not task:
         return
 
-    start_time = row[0]
     now = time.time()
-    elapsed = int(now - start_time)
-    percent = min(max(int(percent), 0), 100)
-
+    elapsed = int(now - task.start_time)
+    percent = min(max(percent, 0), 100)
     status_with_time = f"{status}<br>⏱️ Took {elapsed:.1f} sec"
 
-    c.execute('''
-        UPDATE progress
-        SET status = ?, percent = ?, elapsed = ?, download_url = ?
-        WHERE task_id = ?
-    ''', (status_with_time, percent, elapsed, download_url, task_id))
-    conn.commit()
-    conn.close()
+    task.status = status_with_time
+    task.percent = percent
+    task.elapsed = elapsed
+    task.download_url = download_url or ""
+    db.session.commit()
 
 
 def get_progress(task_id: str) -> Dict[str, Any]:
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('SELECT status, percent, elapsed, download_url FROM progress WHERE task_id = ?', (task_id,))
-    row = c.fetchone()
-    conn.close()
+    task = ProgressTask.query.filter_by(task_id=task_id).first()
 
-    if row:
-        status, percent, elapsed, download_url = row
+    if task:
         return {
-            "status": status,
-            "percent": percent,
-            "elapsed": elapsed,
-            "download_url": download_url or ""
+            "status": task.status,
+            "percent": task.percent,
+            "elapsed": task.elapsed,
+            "download_url": task.download_url or ""
         }
 
     return {

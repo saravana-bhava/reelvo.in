@@ -6,17 +6,26 @@ import requests
 import string
 from typing import Optional
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 from utils.freesound_bgm import search_freesound
 from utils.translate_text import translate_to_english
 from utils.progress_tracker import update_progress
 
-# Setup
+# Load .env
+ROOT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(dotenv_path=ROOT_DIR / ".env")
+
+# Logger setup
 logger = logging.getLogger("bgm_fetcher")
 logging.basicConfig(level=logging.INFO)
 
-CACHE_DIR = Path("cache/bgm")
+# Directories
+CACHE_ROOT = Path(os.getenv("CACHE_DIR", "cache"))
+CACHE_DIR = CACHE_ROOT / "bgm"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 ASSETS_DIR = Path("assets/music")
 DEFAULT_BGM = ASSETS_DIR / "default.mp3"
 MAX_BGM_SIZE_MB = 20

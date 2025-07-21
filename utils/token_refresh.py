@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from threading import Thread
 from typing import List
 from dotenv import load_dotenv
-from utils.user_db import load_user_tokens, update_access_token
+from utils.user_db_sql import load_user_tokens, update_instagram_tokens
 
 # Load environment variables
 load_dotenv()
@@ -42,6 +42,8 @@ def refresh_token_if_needed(user_email: str) -> None:
     try:
         expires_at_str = tokens.get("expires_at")
         refresh_token = tokens.get("refresh_token")
+        user_id = tokens.get("user_id")
+
         if not expires_at_str or not refresh_token:
             logger.warning(f"[⚠️] Missing token data for {user_email}")
             return
@@ -67,9 +69,10 @@ def refresh_token_if_needed(user_email: str) -> None:
         data = response.json()
 
         if "access_token" in data:
-            update_access_token(
+            update_instagram_tokens(
                 user_email=user_email,
-                new_access_token=data["access_token"],
+                access_token=data["access_token"],
+                ig_account_id=user_id,  # Keep original ID
                 expires_in=data.get("expires_in", 3600)
             )
             logger.info(f"[✅] Token refreshed for {user_email}")
