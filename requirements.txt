@@ -64,6 +64,11 @@ google-auth-oauthlib>=1.0.0
 freesound-python
 
 # ------------------------
+# 🗄️ Database ORM
+# ------------------------
+SQLAlchemy>=2.0.0
+
+# ------------------------
 # 🧠 Optional: Torch (required by Whisper)
 # ------------------------
 
