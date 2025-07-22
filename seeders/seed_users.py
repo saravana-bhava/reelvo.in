@@ -19,7 +19,7 @@ def run():
             user = User(
                 email=admin_email,
                 password_hash=generate_password_hash("D3v3l0p3r1!"),
-                plan="Pro",
+                plan="Business",
                 is_admin=True,
                 email_verified=True
             )
