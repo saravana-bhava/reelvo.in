@@ -22,7 +22,7 @@ PROGRESS_STAGES = [
 ]
 
 
-def start_progress(task_id: str) -> None:
+def start_progress(task_id: str, user_id: int) -> None:
     now = time.time()
     task = ProgressTask.query.filter_by(task_id=task_id).first()
 
@@ -32,9 +32,11 @@ def start_progress(task_id: str) -> None:
         task.start_time = now
         task.elapsed = 0
         task.download_url = ""
+        task.user_id = user_id
     else:
         task = ProgressTask(
             task_id=task_id,
+            user_id=user_id,
             status="🚀 Starting...",
             percent=0,
             start_time=now,
