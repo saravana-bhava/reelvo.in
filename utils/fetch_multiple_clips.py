@@ -6,6 +6,7 @@ import logging
 import subprocess
 from typing import List, Set, Optional
 from dotenv import load_dotenv
+
 from utils.pixabay_video import fetch_pixabay_video
 from utils.pexels_video import fetch_pexels_video
 from utils.progress_tracker import get_stage_percent, update_progress
@@ -90,7 +91,7 @@ def download_video(
         if task_id:
             return run_ffmpeg_with_progress(
                 cmd, max_duration, task_id,
-                f"📥 Fallback clip {index+1}/{total}", 5
+                f"📥 Fallback clip {index + 1}/{total}", 5
             )
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
@@ -108,8 +109,8 @@ def fetch_multiple_clips(
     task_id: Optional[str] = None
 ) -> List[str]:
     """Fetch themed vertical clips using APIs or fallback if necessary."""
-
     logger.info("🎞️ Fetching video clips...")
+
     count = int(target_duration / CLIP_DURATION) + 1
     downloaded_clips = []
     used_video_ids: Set[int] = set()
@@ -124,43 +125,33 @@ def fetch_multiple_clips(
     os.makedirs(temp_dir, exist_ok=True)
 
     for i in range(count):
-        clip_path = os.path.join(temp_dir, f"{theme_name}_{language}_clip{i+1}.mp4")
+        clip_path = os.path.join(temp_dir, f"{theme_name}_{language}_clip{i + 1}.mp4")
         found = False
 
         for source in sources:
             try:
-                url = source(
-                    search_query,
-                    clip_path,
-                    used_video_ids=used_video_ids
-                )
+                url = source(search_query, clip_path, used_video_ids=used_video_ids)
                 if url:
                     downloaded_clips.append(clip_path)
                     found = True
                     break
             except Exception as e:
-                logger.warning(f"[⚠️] {source.__name__} failed for clip {i+1}: {e}")
+                logger.warning(f"[⚠️] {source.__name__} failed for clip {i + 1}: {e}")
 
         if not found:
             fallback_index = (i % FALLBACK_COUNT) + 1
             fallback_file = os.path.join("assets", "clips", f"fallback{fallback_index}.mp4")
             if os.path.exists(fallback_file):
-                success = download_video(
-                    fallback_file,
-                    clip_path,
-                    task_id=task_id,
-                    index=i,
-                    total=count
-                )
+                success = download_video(fallback_file, clip_path, task_id, index=i, total=count)
                 if success:
-                    logger.info(f"[📼] Used fallback clip for {i+1}/{count}")
+                    logger.info(f"[📼] Used fallback clip {i + 1}/{count}")
                     downloaded_clips.append(clip_path)
                     found = True
             else:
                 logger.warning(f"[⚠️] Missing fallback clip: {fallback_file}")
 
         if not found:
-            logger.warning(f"[❌] Could not fetch clip {i+1}/{count}")
+            logger.warning(f"[❌] Could not fetch clip {i + 1}/{count}")
 
         if task_id and found:
             progress = get_stage_percent(5, (i + 1) / count)
@@ -184,7 +175,7 @@ def concatenate_clips(
     total = len(clips)
 
     for i, clip in enumerate(clips):
-        fixed = os.path.join(temp_dir, f"{theme_name}_{language}_fixed_clip{i+1}.mp4")
+        fixed = os.path.join(temp_dir, f"{theme_name}_{language}_fixed_clip{i + 1}.mp4")
         cmd = [
             "ffmpeg", "-y", "-ss", "0", "-t", str(CLIP_DURATION), "-i", clip,
             "-vf", "scale=1080:1920,fps=30",
@@ -195,14 +186,12 @@ def concatenate_clips(
         ]
         try:
             if task_id:
-                sub_offset = i / total
-                sub_scale = 1.0 / total
                 success = run_ffmpeg_with_progress(
                     cmd, CLIP_DURATION, task_id,
-                    f"🔧 Re-encoding clip {i+1}/{total}",
+                    f"🔧 Re-encoding clip {i + 1}/{total}",
                     stage_index=6,
-                    substage_offset=sub_offset,
-                    substage_scale=sub_scale
+                    substage_offset=i / total,
+                    substage_scale=1.0 / total
                 )
             else:
                 subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -210,8 +199,8 @@ def concatenate_clips(
 
             if success:
                 reencoded_clips.append(fixed)
-        except Exception:
-            logger.exception(f"[❌] Failed to re-encode {clip}")
+        except Exception as e:
+            logger.exception(f"[❌] Failed to re-encode clip {i + 1}: {e}")
 
     if not reencoded_clips:
         raise RuntimeError("[❌] No clips to concatenate.")

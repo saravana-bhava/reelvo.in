@@ -7,6 +7,7 @@ import string
 from urllib.parse import quote
 from typing import Optional
 from dotenv import load_dotenv
+from time import sleep
 
 # Configure logging before anything else
 logging.basicConfig(level=logging.INFO)
@@ -17,15 +18,30 @@ load_dotenv()
 
 FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY")
 FREESOUND_API_URL = "https://freesound.org/apiv2/search/text/"
-
-HEADERS = {
-    "Authorization": f"Token {FREESOUND_API_KEY}"
-}
+HEADERS = {"Authorization": f"Token {FREESOUND_API_KEY}"}
 
 
 def sanitize_filename(name: str) -> str:
     """Remove unsafe characters from file names."""
     return ''.join(c for c in name if c in string.ascii_letters + string.digits + "_").lower()
+
+
+def safe_download(url: str, dest_path: str, retries: int = 2) -> bool:
+    """Download a file with retries and save to destination path."""
+    for attempt in range(retries + 1):
+        try:
+            with requests.get(url, stream=True, timeout=15) as r:
+                r.raise_for_status()
+                with open(dest_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            return True
+        except Exception as e:
+            logger.warning(f"[⚠️] Download attempt {attempt + 1} failed: {e}")
+            if attempt < retries:
+                sleep(2)
+    return False
 
 
 def search_freesound(query: str, language: str = "en") -> Optional[str]:
@@ -48,7 +64,7 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
     search_url = (
         f"{FREESOUND_API_URL}?query={encoded_query}"
         f"&filter=duration:[5 TO 30]"
-        f"&fields=name,previews,license,duration,download"
+        f"&fields=name,previews,license,duration"
         f"&sort=score+desc&page_size=5"
     )
 
@@ -57,20 +73,15 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
     try:
         response = requests.get(search_url, headers=HEADERS, timeout=10)
         response.raise_for_status()
-
         results = response.json().get("results", [])
+
         if not results:
             logger.warning(f"[❌] No Freesound results for: '{query}'")
             return None
 
         top_result = results[0]
-        previews = top_result.get("previews", {})
-
-        preview_url = (
-            previews.get("preview-hq-mp3") or
-            previews.get("preview-lq-mp3") or
-            None
-        )
+        preview_url = top_result.get("previews", {}).get("preview-hq-mp3") or \
+                      top_result.get("previews", {}).get("preview-lq-mp3")
 
         if not preview_url:
             logger.warning("[⚠️] No MP3 preview available in top result.")
@@ -86,14 +97,12 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
             return dest_path
 
         logger.info(f"[⬇️] Downloading BGM → {dest_path}")
-        with requests.get(preview_url, stream=True, timeout=15) as r:
-            r.raise_for_status()
-            with open(dest_path, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
-        logger.info(f"[✅] Downloaded BGM saved: {dest_path}")
-        return dest_path
+        if safe_download(preview_url, dest_path):
+            logger.info(f"[✅] BGM downloaded: {dest_path}")
+            return dest_path
+        else:
+            logger.error(f"[❌] Failed to download BGM after retries: {preview_url}")
+            return None
 
     except requests.RequestException as e:
         logger.warning(f"[❌] Freesound API error: {e}")

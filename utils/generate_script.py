@@ -47,7 +47,7 @@ except ImportError:
 
 def generate_script_via_api(prompt: str) -> Optional[str]:
     """
-    Generates text using OpenAI-compatible APIs (OpenAI or OpenRouter).
+    Generates a script using OpenAI-compatible API.
     Returns None if generation fails.
     """
     if not API_KEY:
@@ -83,9 +83,10 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
 
         script = response_data["choices"][0]["message"]["content"].strip()
 
-        # Remove leading/trailing quotes if present
+        # Strip quotes if wrapped
         if (script.startswith('"') and script.endswith('"')) or (script.startswith("“") and script.endswith("”")):
             script = script[1:-1].strip()
+
         return script
 
     except httpx.HTTPStatusError as e:
@@ -125,7 +126,6 @@ def generate_script(prompt: str, language: str = "en") -> str:
             logger.info(f"[✅] Script generated for '{prompt}' ({language})")
             return script
 
-    # Fallback
     logger.info(f"[⚠️] Using fallback script for '{prompt}' ({language})")
     return fallback_script()
 
@@ -138,9 +138,9 @@ def generate_script_for_user(
     prompt: str = ""
 ) -> str:
     """
-    Wrapper to generate and store script for a user.
+    Wrapper to generate and store a script for a user.
     """
-    logger.info(f"[📝] Generating script for User: '{user_email}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
+    logger.info(f"[📝] Generating script → User: '{user_email}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
 
     update_progress(folder_name, "generating_script", 25)
 
@@ -172,11 +172,12 @@ if __name__ == "__main__":
     language = sys.argv[4]
     prompt = sys.argv[5]
 
-    script_path = generate_script_for_user(
+    result_path = generate_script_for_user(
         user_email=user_email,
         folder_name=folder_name,
         theme_name=theme_name,
         language=language,
         prompt=prompt
     )
-    print(f"✅ Saved: {script_path}")
+
+    print(f"✅ Saved: {result_path}")

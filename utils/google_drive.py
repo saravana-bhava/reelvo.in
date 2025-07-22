@@ -21,9 +21,13 @@ from dotenv import load_dotenv
 # Load .env
 load_dotenv()
 
-# Logging
+# Logger setup
 logger = logging.getLogger("google_drive")
-logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.handlers = [handler]
 
 # Configuration
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -38,7 +42,7 @@ USE_SHARED_DRIVE = os.getenv("GOOGLE_USE_SHARED_DRIVE", "false").lower() == "tru
 if not PARENT_SHARED_FOLDER_ID:
     raise EnvironmentError("Missing GOOGLE_DRIVE_PARENT_FOLDER_ID in .env.")
 
-# Optional: UI progress tracker
+# Optional UI progress tracker
 try:
     from utils.progress_tracker import update_progress
 except ImportError:
@@ -53,7 +57,7 @@ def get_drive_service():
         creds = ServiceAccountCredentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, scopes=SCOPES
         )
-        logger.info("[🔐] Using service account for Google Drive.")
+        logger.info("🔐 Using service account for Google Drive.")
     else:
         creds = None
         if os.path.exists(TOKEN_PATH):
@@ -64,16 +68,18 @@ def get_drive_service():
             creds = flow.run_local_server(port=0)
             with open(TOKEN_PATH, "w") as token:
                 token.write(creds.to_json())
-                logger.info("[✅] Saved new OAuth token.")
+            logger.info("✅ Saved new OAuth token.")
 
-        logger.info("[🔐] Using OAuth for Google Drive.")
+        logger.info("🔐 Using OAuth for Google Drive.")
 
     return build("drive", "v3", credentials=creds)
 
 
 def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) -> str:
     """Return folder ID for given name under parent, or create if missing."""
-    query = f"name = '{name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    query = (
+        f"name = '{name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    )
     if parent_id:
         query += f" and '{parent_id}' in parents"
 
@@ -84,7 +90,7 @@ def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) ->
         supportsAllDrives=True,
         includeItemsFromAllDrives=True,
         driveId=PARENT_SHARED_FOLDER_ID if USE_SHARED_DRIVE else None,
-        corpora="drive" if USE_SHARED_DRIVE else "user"
+        corpora="drive" if USE_SHARED_DRIVE else "user",
     ).execute()
 
     folders = result.get("files", [])
@@ -93,7 +99,7 @@ def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) ->
 
     metadata = {
         "name": name,
-        "mimeType": "application/vnd.google-apps.folder"
+        "mimeType": "application/vnd.google-apps.folder",
     }
     if parent_id:
         metadata["parents"] = [parent_id]
@@ -103,17 +109,17 @@ def get_or_create_folder(service, name: str, parent_id: Optional[str] = None) ->
     folder = service.files().create(
         body=metadata,
         fields="id",
-        supportsAllDrives=True
+        supportsAllDrives=True,
     ).execute()
 
-    logger.info(f"[📁] Created folder '{name}' under parent ID {parent_id}")
+    logger.info(f"📁 Created folder '{name}' under parent ID {parent_id}")
     return folder["id"]
 
 
 def upload_to_google_drive(
     local_path: str,
     user_name: str,
-    task_id: Optional[str] = None
+    task_id: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     Uploads a video to the user's folder under 'reels' in Google Drive.
@@ -140,33 +146,33 @@ def upload_to_google_drive(
         media = MediaFileUpload(local_path, mimetype=mime_type, resumable=True)
 
         update_progress(task_id, f"⏫ Uploading {filename}...", 86)
-        logger.info(f"[📤] Uploading file: {filename}")
+        logger.info(f"📤 Uploading file: {filename}")
 
         uploaded = service.files().create(
             body={
                 "name": filename,
-                "parents": [user_folder_id]
+                "parents": [user_folder_id],
             },
             media_body=media,
             fields="id",
-            supportsAllDrives=True
+            supportsAllDrives=True,
         ).execute()
 
         file_id = uploaded.get("id")
         if not file_id:
             return None, "[❌] Upload succeeded but no file ID returned."
 
-        logger.info("[🔓] Making file public...")
+        logger.info("🔓 Making file public...")
         service.permissions().create(
             fileId=file_id,
             body={"type": "anyone", "role": "reader"},
             fields="id",
-            supportsAllDrives=True
+            supportsAllDrives=True,
         ).execute()
 
         public_url = f"https://drive.google.com/uc?export=download&id={file_id}"
         update_progress(task_id, "✅ Upload complete", 95)
-        logger.info(f"[✅] File URL: {public_url}")
+        logger.info(f"✅ File URL: {public_url}")
         return public_url, None
 
     except Exception as e:
@@ -188,5 +194,6 @@ if __name__ == "__main__":
     url, error = upload_to_google_drive(path, user)
     if error:
         print(error, file=sys.stderr)
+        sys.exit(1)
     else:
         print(f"✅ {url}")

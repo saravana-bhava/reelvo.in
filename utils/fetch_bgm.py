@@ -1,12 +1,12 @@
 # File: utils/fetch_bgm.py
 
+import os
 import re
 import logging
-import requests
 import string
-from typing import Optional
+import requests
 from pathlib import Path
-import os
+from typing import Optional
 from dotenv import load_dotenv
 
 from utils.freesound_bgm import search_freesound
@@ -19,7 +19,8 @@ load_dotenv(dotenv_path=ROOT_DIR / ".env")
 
 # Logger setup
 logger = logging.getLogger("bgm_fetcher")
-logging.basicConfig(level=logging.INFO)
+if not logger.hasHandlers():
+    logging.basicConfig(level=logging.INFO)
 
 # Directories
 CACHE_ROOT = Path(os.getenv("CACHE_DIR", "cache"))
@@ -32,12 +33,16 @@ MAX_BGM_SIZE_MB = 20
 
 
 def sanitize_filename(name: str) -> str:
-    """Sanitize a string to a safe lowercase filename."""
+    """
+    Sanitize a string to a lowercase alphanumeric-safe filename.
+    """
     return ''.join(c for c in name if c in string.ascii_letters + string.digits + "_").lower()
 
 
 def download_bgm_from_url(url: str, dest_path: Path, task_id: Optional[str] = None) -> Optional[str]:
-    """Download an audio file from a URL and save it locally."""
+    """
+    Download audio from a given URL and save it to the destination path.
+    """
     try:
         logger.info(f"[🌐] Downloading BGM from: {url}")
         if task_id:
@@ -75,7 +80,15 @@ def fetch_bgm(
     force_download: bool = False,
     task_id: Optional[str] = None
 ) -> Optional[str]:
-    """Fetch background music matching the script content."""
+    """
+    Fetch a background music track relevant to the script content.
+
+    Attempts in order:
+    1. Cached version.
+    2. Download via freesound.
+    3. Category fallback.
+    4. Generic fallback.
+    """
     original_text = script_text
 
     if task_id:

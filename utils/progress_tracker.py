@@ -31,13 +31,15 @@ def start_progress(task_id: str) -> None:
         task.percent = 0
         task.start_time = now
         task.elapsed = 0
+        task.download_url = ""
     else:
         task = ProgressTask(
             task_id=task_id,
             status="🚀 Starting...",
             percent=0,
             start_time=now,
-            elapsed=0
+            elapsed=0,
+            download_url=""
         )
         db.session.add(task)
 
@@ -100,14 +102,15 @@ def get_progress(task_id: str) -> Dict[str, Any]:
     return {
         "status": "❌ Task not found.",
         "percent": -1,
-        "elapsed": 0
+        "elapsed": 0,
+        "download_url": ""
     }
 
 
 def get_stage_percent(stage_index: int, sub_progress: float = 0.0) -> int:
     sub_progress = max(0.0, min(sub_progress, 1.0))
-    base = sum(PROGRESS_STAGES[:stage_index])
-    weight = PROGRESS_STAGES[stage_index] if stage_index < len(PROGRESS_STAGES) else 0
+    base = sum(PROGRESS_STAGES[:stage_index]) if stage_index < len(PROGRESS_STAGES) else sum(PROGRESS_STAGES)
+    weight = PROGRESS_STAGES[stage_index] if 0 <= stage_index < len(PROGRESS_STAGES) else 0
     return int(base + sub_progress * weight)
 
 

@@ -47,7 +47,7 @@ def post_to_instagram(
     if not access_token or not user_id:
         return "❌ Instagram access token or user ID is missing."
 
-    # ✅ Upload to Google Drive if needed
+    # Upload to Google Drive if needed
     if use_drive:
         if not video_url or not video_url.startswith("http"):
             update_progress(task_id, "☁️ Uploading video to Drive...", 92)
@@ -102,7 +102,7 @@ def post_to_instagram(
             if r3.ok:
                 permalink = r3.json().get("permalink", permalink)
 
-        # ✅ Log to SQL
+        # Log to SQL
         log_post_to_db(
             user_email=user_email,
             video_path=video_path,

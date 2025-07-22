@@ -11,7 +11,7 @@ import requests
 import hashlib
 import shutil
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -42,7 +42,8 @@ def get_video_duration(filepath: str) -> Optional[float]:
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True
+            universal_newlines=True,
+            check=True
         )
         return float(result.stdout.strip())
     except Exception as e:
@@ -78,9 +79,21 @@ def download_video(
     min_duration: int = 5,
     max_duration: int = 6,
     return_url: bool = False
-) -> str | Tuple[Optional[str], Optional[str]]:
+) -> Union[Optional[str], Tuple[Optional[str], Optional[str]]]:
     """
     Download video from URL, validate duration, optionally trim and cache.
+
+    Args:
+        url (str): Video URL to download.
+        output_path (str): Filepath to save the video.
+        min_duration (int): Minimum acceptable duration in seconds.
+        max_duration (int): Maximum duration to trim to, if longer.
+        return_url (bool): If True, return a tuple (output_path, url).
+
+    Returns:
+        str or (str, str) or None:
+            If return_url=False: returns output_path or None on failure.
+            If return_url=True: returns (output_path, url) or (None, None) on failure.
     """
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -89,7 +102,7 @@ def download_video(
         cached_path = os.path.join(CACHE_DIR, f"{hashed}.mp4")
         temp_path = output_path + ".tmp"
 
-        # Use cache if available
+        # Use cache if available and valid
         if not DISABLE_CACHE and os.path.exists(cached_path):
             logger.info(f"[📦] Using cached version for: {url}")
             duration = get_video_duration(cached_path)
@@ -99,7 +112,7 @@ def download_video(
             logger.warning("[⚠️] Cached video too short or invalid. Removing...")
             os.remove(cached_path)
 
-        # Download
+        # Download video
         logger.info(f"[⬇️] Downloading from: {url}")
         with requests.get(url, stream=True, timeout=15) as r:
             r.raise_for_status()

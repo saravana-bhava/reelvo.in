@@ -6,13 +6,18 @@ Supports both English and Hindi script for Instagram Reels.
 """
 
 import os
+import sys
 import logging
 from typing import Optional
 from PIL import Image, ImageDraw, ImageFont
 
 # Logger setup
 logger = logging.getLogger("text_overlay")
-logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.handlers = [handler]
 
 # Constants
 CANVAS_WIDTH = 1080
@@ -34,23 +39,26 @@ def generate_text_overlay(
         language (str): Language hint ('en' or 'hi') to auto-select fallback font.
         script_text (str): Text content to render.
     """
-    logger.info(f"[🖋️] Rendering text overlay → {text_image_path}")
+    logger.info(f"🖋️ Rendering text overlay → {text_image_path}")
 
     if not script_text.strip():
-        raise ValueError("[❌] Cannot render empty script text.")
+        raise ValueError("Cannot render empty script text.")
 
     # Font resolution
     font_path = None
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    font_dir = os.path.join(base_dir, "assets", "fonts")
+
     if language == "hi":
         possible_fonts = [
-            "assets/fonts/NotoSansDevanagari-Regular.ttf",
+            os.path.join(font_dir, "NotoSansDevanagari-Regular.ttf"),
             "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
             "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf",
             "/usr/share/fonts/opentype/noto/NotoSansDevanagari-Regular.otf"
         ]
     else:
         possible_fonts = [
-            "assets/fonts/DejaVuSans-Bold.ttf",
+            os.path.join(font_dir, "DejaVuSans-Bold.ttf"),
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
             "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"
@@ -62,10 +70,14 @@ def generate_text_overlay(
             break
 
     if not font_path:
-        logger.error(f"[❌] No suitable font found. Tried:\n" + "\n".join(possible_fonts))
+        logger.error("No suitable font found. Tried:\n" + "\n".join(possible_fonts))
         raise FileNotFoundError("No suitable font found. Please install or provide one manually.")
 
-    font = ImageFont.truetype(font_path, FONT_SIZE)
+    try:
+        font = ImageFont.truetype(font_path, FONT_SIZE)
+    except Exception as e:
+        logger.error(f"Failed to load font: {e}")
+        raise
 
     # Create transparent RGBA canvas
     image = Image.new("RGBA", (CANVAS_WIDTH, CANVAS_HEIGHT), (0, 0, 0, 0))
@@ -100,18 +112,22 @@ def generate_text_overlay(
         draw.text((x, y), line, font=font, fill="white")
         y += line_height
 
-    # Ensure folder exists
-    os.makedirs(os.path.dirname(text_image_path), exist_ok=True)
+    try:
+        os.makedirs(os.path.dirname(text_image_path), exist_ok=True)
+    except Exception as e:
+        logger.error(f"Failed to create directory: {e}")
+        raise
 
-    # Save as RGB
-    image.convert("RGB").save(text_image_path)
-    logger.info(f"[✅] Overlay image saved → {text_image_path}")
+    try:
+        image.convert("RGB").save(text_image_path)
+        logger.info(f"✅ Overlay image saved → {text_image_path}")
+    except Exception as e:
+        logger.error(f"Failed to save image: {e}")
+        raise
 
 
 # CLI usage
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) < 4:
         print("Usage: python utils/generate_text_overlay.py <text_image_path> <language> <script_text>")
         sys.exit(1)
@@ -124,5 +140,5 @@ if __name__ == "__main__":
         generate_text_overlay(text_image_path, language, script_text)
         print(f"✅ Saved: {text_image_path}")
     except Exception as e:
-        logger.error(f"[❌] Error generating text overlay: {e}")
+        logger.error(f"Error generating text overlay: {e}")
         sys.exit(1)

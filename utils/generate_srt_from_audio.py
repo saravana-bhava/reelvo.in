@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 # Suppress FP16 warning on CPU
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
-# Load Whisper model (once)
+# Load Whisper model once
 try:
     MODEL = whisper.load_model("small")
 except Exception as e:
@@ -54,6 +54,9 @@ def generate_srt_from_audio(
     if not MODEL:
         raise RuntimeError("[❌] Whisper model not loaded. Cannot generate subtitles.")
 
+    if not os.path.isfile(audio_path):
+        raise FileNotFoundError(f"[❌] Audio file not found: {audio_path}")
+
     logger.info(f"[🧠] Transcribing audio → {audio_path}")
 
     try:
@@ -75,10 +78,9 @@ def generate_srt_from_audio(
     min_gap = 0.1
     last_end_time = 0.5
 
-    i = 0
     total_chunks = (len(words) + words_per_line - 1) // words_per_line
 
-    while i < len(words):
+    for i in range(0, len(words), words_per_line):
         chunk = words[i:i + words_per_line]
         if not chunk:
             break
@@ -97,12 +99,11 @@ def generate_srt_from_audio(
             index=index,
             start=timedelta(seconds=start),
             end=timedelta(seconds=end),
-            content=text
+            content=text.strip()
         ))
 
         last_end_time = end
         index += 1
-        i += words_per_line
 
         percent = int(((index - 1) / total_chunks) * 100)
         update_progress("Subtitles", f"Processing voice {index - 1}/{total_chunks}", percent)
@@ -113,7 +114,7 @@ def generate_srt_from_audio(
 
     logger.info(f"[✅] SRT saved → {srt_path}")
 
-    # Detect Hindi (Devanagari Unicode block) and convert to ASS
+    # Check for Hindi script (Devanagari Unicode block)
     combined_text = " ".join(sub.content for sub in subtitles)
     if any('\u0900' <= c <= '\u097F' for c in combined_text):
         ass_path = os.path.splitext(srt_path)[0] + ".ass"

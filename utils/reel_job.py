@@ -32,6 +32,7 @@ HOST = os.getenv("HOST", "reelvo.in")
 ORIGINAL_STDOUT = sys.stdout
 ORIGINAL_STDERR = sys.stderr
 
+
 class StreamToLogger:
     def __init__(self, logger, level):
         self.logger = logger
@@ -46,9 +47,11 @@ class StreamToLogger:
     def flush(self):
         pass
 
+
 class SuppressProgressLogs(logging.Filter):
     def filter(self, record):
         return "/progress/" not in record.getMessage()
+
 
 def setup_user_logger(user_email):
     log_dir = os.path.join("output", user_email, "logs")
@@ -81,8 +84,10 @@ def setup_user_logger(user_email):
 
     return log_path
 
+
 logger = logging.getLogger("reel_job")
 logger.setLevel(logging.DEBUG)
+
 
 def process_reel_job(
     task_id,
@@ -145,13 +150,14 @@ def process_reel_job(
                     audio_path
                 ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
                 audio_duration = float(result.stdout.strip())
-                logger.info(result.stdout.strip())
+                logger.info(f"Audio duration: {audio_duration}s")
                 if result.stderr:
                     logger.error(result.stderr.strip())
             except subprocess.CalledProcessError as e:
                 logger.error("Error extracting audio duration with ffprobe")
                 logger.error(e.stderr)
-                raise
+                finish_progress(task_id, "❌ Error extracting audio duration.", 0)
+                return
 
         if audio_duration < 2.0:
             finish_progress(task_id, "❌ Audio too short.", 0)
