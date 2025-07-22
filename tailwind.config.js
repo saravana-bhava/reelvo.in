@@ -20,6 +20,9 @@ module.exports = {
     'dark:bg-gray-800',
     'dark:bg-gray-900',
     'dark:border-gray-700',
+    'hidden',
+    'block',
+    'flex',
   ],
 
   theme: {

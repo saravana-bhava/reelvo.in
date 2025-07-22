@@ -15,7 +15,8 @@ def run():
     app = create_app()
     with app.app_context():
         admin_email = "developer@sazm.in"
-        if not User.query.filter_by(email=admin_email).first():
+        existing_user = User.query.filter_by(email=admin_email).first()
+        if not existing_user:
             user = User(
                 email=admin_email,
                 password_hash=generate_password_hash("D3v3l0p3r1!"),

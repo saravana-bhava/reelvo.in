@@ -36,12 +36,11 @@ def seed_themes():
     with app.app_context():
         count_new = 0
         for name, lang, content in themes:
-            existing = Theme.query.filter_by(name=name, lang=lang).first()
-            if not existing:
+            if not Theme.query.filter_by(name=name, lang=lang).first():
                 db.session.add(Theme(name=name, lang=lang, content=content))
                 count_new += 1
         db.session.commit()
-        print(f"✅ Seeded {count_new} new themes.")
+        print(f"✅ Seeded {count_new} new themes." if count_new else "⚠️ No new themes added — already up to date.")
 
 if __name__ == "__main__":
     seed_themes()

@@ -7,6 +7,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
+models/__pycache__/
+__pypackages__/
+.mypy_cache/
 
 # ─────────────────────────────────────────────
 # PYTHON VIRTUAL ENVIRONMENTS
@@ -22,6 +25,8 @@ env/
 *.env
 secure/
 user_tokens/
+*.pem
+*.key
 
 # ─────────────────────────────────────────────
 # IDE / EDITOR SETTINGS
@@ -94,6 +99,7 @@ tests/
 # ─────────────────────────────────────────────
 .pytest_cache/
 .coverage
+.coverage/
 .tox/
 
 # ─────────────────────────────────────────────
@@ -117,3 +123,5 @@ yarn-error.log*
 # MISCELLANEOUS
 # ─────────────────────────────────────────────
 *.orig
+.DS_Store
+Thumbs.db

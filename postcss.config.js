@@ -4,8 +4,8 @@
 module.exports = {
   plugins: {
     tailwindcss: {
-      config: './tailwind.config.js', // Ensures consistent config resolution
+      config: './tailwind.config.js', // Ensures Tailwind uses the correct config file
     },
-    autoprefixer: {},
+    autoprefixer: {}, // Adds vendor prefixes for broader browser compatibility
   },
 };

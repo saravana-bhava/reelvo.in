@@ -14,7 +14,7 @@ def seed_plans():
     app = create_app()
     with app.app_context():
         if Plan.query.count() > 0:
-            print("Plans already seeded.")
+            print("⚠️ Plans already seeded.")
             return
 
         plans = [
@@ -27,7 +27,7 @@ def seed_plans():
 
         db.session.bulk_save_objects(plans)
         db.session.commit()
-        print("✅ Plans seeded.")
+        print("✅ Plans seeded successfully.")
 
 if __name__ == "__main__":
     seed_plans()

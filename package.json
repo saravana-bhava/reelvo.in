@@ -5,7 +5,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "build:css": "tailwindcss -c tailwind.config.js -i assets_/css/input.css -o static_/css/style.css --content 'templates_/**/*.html' 'routes_/**/*.py' 'assets_/css/**/*.css' 'static_/css/safelist.css'"
+    "build:css": "tailwindcss -c tailwind.config.js -i assets/css/input.css -o static/css/style.css --content 'templates/**/*.html' 'routes/**/*.py' 'assets/css/**/*.css' 'static/css/safelist.css'"
   },
   "directories": {
     "doc": "docs_",
@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/sabajobs/reelvo#readme",
   "keywords": [],
-  "author": "",
+  "author": "SazM",
   "license": "ISC",
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "^0.4.2",

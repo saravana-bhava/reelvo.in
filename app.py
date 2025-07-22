@@ -50,8 +50,9 @@ def create_app():
     flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(flask_app)
 
-    with flask_app.app_context():
-        db.create_all()
+    if dev_mode:
+        with flask_app.app_context():
+            db.create_all()
 
     # ─────────────────────────────
     # SMTP CONFIGURATION
@@ -77,9 +78,9 @@ def create_app():
     from routes.reels import reels_bp
     from routes.reels.progress import progress_bp
     from routes.instagram import instagram_bp
-#     from routes.schedule import schedule_bp
+    # from routes.schedule import schedule_bp
     from routes.coming_soon import coming_bp
-#
+
     blueprints = [
         home_bp,
         auth_bp,
@@ -88,7 +89,7 @@ def create_app():
         reels_bp,
         progress_bp,
         instagram_bp,
-#         schedule_bp,
+        # schedule_bp,
         coming_bp,
     ]
 
@@ -128,7 +129,7 @@ dev_mode = os.getenv("FLASK_ENV", "production").lower() == "development"
 def run():
     """Main entry point for running the Flask app."""
     os.makedirs("output", exist_ok=True)
-#     start_background_tasks()
+#    start_background_tasks()
 
     port = int(os.getenv("PORT", 5000))
     host = "0.0.0.0"

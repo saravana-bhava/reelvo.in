@@ -7,22 +7,21 @@
 # ------------------------
 flask>=2.2
 waitress>=2.1  # WSGI server for production (Windows-compatible)
-# Optional: For async frameworks like FastAPI
+# For async frameworks (if used in future)
 # uvicorn[standard]>=0.23.0
-# gunicorn>=21.2.0
 
 # ------------------------
 # 🤖 AI Integration
 # ------------------------
 openai>=1.0.0
-# Whisper (subtitle alignment)
+# Whisper for subtitle alignment (installed via Git)
 git+https://github.com/openai/whisper.git
 
 # ------------------------
 # 🌐 HTTP Clients
 # ------------------------
 requests>=2.28
-httpx<0.26  # Avoids breaking async changes
+httpx<0.26  # Avoids breaking changes from 0.26+
 
 # ------------------------
 # 🔊 Text-to-Speech (TTS)
@@ -34,7 +33,7 @@ gTTS>=2.3.2
 # 🎥 Audio / Video Processing
 # ------------------------
 ffmpeg-python>=0.2.0
-moviepy==1.0.3  # Avoid issues with >1.0.3
+moviepy==1.0.3  # Later versions may have bugs
 opencv-python>=4.7.0
 pydub>=0.25.1
 Pillow>=9.0.0
@@ -44,13 +43,13 @@ numpy>=1.23
 # 📝 Subtitles
 # ------------------------
 srt>=3.5.0
-deep_translator  # Optional but useful for multi-language reels
+deep_translator  # Optional, useful for multilingual support
 
 # ------------------------
 # 🧰 Utilities
 # ------------------------
 tqdm>=4.64
-python-dotenv>=1.0.0  # Load from .env
+python-dotenv>=1.0.0
 
 # ------------------------
 # ☁️ Google API
@@ -65,11 +64,13 @@ google-auth-oauthlib>=1.0.0
 freesound-python
 
 # ------------------------
-# 🧠 Optional: Torch (needed by Whisper)
+# 🧠 Optional: Torch (required by Whisper)
 # ------------------------
 
-# If Whisper fails due to missing torch, uncomment one:
+# If Whisper fails due to missing torch, install one of the following manually:
+
 # CPU-only:
 # torch==2.2.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
-# GPU:
+
+# GPU (CUDA-enabled):
 # torch==2.2.1
