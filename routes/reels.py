@@ -130,12 +130,12 @@ def create_reel_action():
     if len(raw_theme) > 100:
         return redirect_with_form_data("Topic name too long.")
 
-    theme_name = secure_filename(raw_theme)
+    theme_name = secure_filename(raw_theme.strip().replace(" ", "_"))
     audio_path = None
     if custom_voice_file:
         user_audio_dir = os.path.join("output", user_email, "tts")
         os.makedirs(user_audio_dir, exist_ok=True)
-        tts_filename = f"{theme_name}_{language}_voice.mp3"
+        tts_filename = f"{theme_name}_{language}_voice.mp3".replace(" ", "_")
         audio_path = os.path.join(user_audio_dir, tts_filename)
         custom_voice_file.save(audio_path)
 
@@ -267,18 +267,20 @@ def list_reels():
 
     reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
 
-    # Prepare data: list of videos, scripts, and video → date map
     videos = []
     scripts = {}
     vid_date_map = {}
     title_map = {}
+    file_map = {}
 
     for r in reels:
+        reel_id = r.id
         filename = os.path.basename(r.video_path)
-        videos.append(filename)
-        scripts[filename] = r.script.strip() if r.script else ""
-        vid_date_map[filename] = r.created_at.strftime("%Y-%m-%d %H:%M")
-        title_map[filename] = r.title or filename
+        videos.append(reel_id)
+        scripts[reel_id] = r.script.strip() if r.script else ""
+        vid_date_map[reel_id] = r.created_at.strftime("%Y-%m-%d %H:%M")
+        title_map[reel_id] = r.title or (r.theme_name.replace("_", " ").strip().title() if r.theme_name else filename)
+        file_map[reel_id] = filename
 
     return render_template(
         "reels.html",
@@ -286,27 +288,35 @@ def list_reels():
         videos=videos,
         scripts=scripts,
         vid_date_map=vid_date_map,
-        title_map=title_map
+        title_map=title_map,
+        file_map=file_map
     )
 
-@reels_bp.route("/reels/delete/<filename>", methods=["POST"])
+@reels_bp.route("/reels/delete/<int:reel_id>", methods=["POST"])
 @login_required
-def delete_reel(filename):
+def delete_reel(reel_id):
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
     user_email = get_user_email()
     user_id = get_user_id()
-    base_video = os.path.splitext(filename)[0]
-    base_path = os.path.join("output", user_email)
 
     deleted_any = False
     try:
-        reel = Reel.query.filter_by(user_id=user_id, filename=filename).first()
-        if reel:
-            db.session.delete(reel)
-            db.session.commit()
+        reel = Reel.query.filter_by(user_id=user_id, id=reel_id).first()
+        if not reel:
+            flash("⚠️ Reel not found or already deleted.", "warning")
+            return redirect(url_for("reels.list_reels"))
 
+        filename = os.path.basename(reel.video_path)
+        base_video = os.path.splitext(filename)[0]
+        base_path = os.path.join("output", user_email)
+
+        # Delete DB record
+        db.session.delete(reel)
+        db.session.commit()
+
+        # Define file targets to delete
         targets = {
             "video": os.path.join(base_path, "videos", filename),
             "image": os.path.join(base_path, "images", base_video.replace("_video", "_text_image") + ".png"),
@@ -318,6 +328,7 @@ def delete_reel(filename):
             "tts_raw": os.path.join(base_path, "tts", base_video.replace("_video", "_voice_raw") + ".mp3"),
         }
 
+        # Delete temp files
         temp_dir = os.path.join(base_path, "temp")
         if os.path.exists(temp_dir):
             base_video_clean = base_video.replace("_video", "").rsplit(".", 1)[0]
@@ -330,14 +341,15 @@ def delete_reel(filename):
                     os.remove(f)
                     deleted_any = True
 
+        # Delete all target files
         for path in targets.values():
             if os.path.exists(path):
                 os.remove(path)
                 deleted_any = True
 
-        flash(f"🗑️ Deleted reel: {filename}", "info" if deleted_any else "warning")
+        flash(f"🗑️ Deleted reel: {reel.title or filename}", "info" if deleted_any else "warning")
     except Exception as e:
-        logger.error(f"[Delete Reel] Error deleting {filename}: {e}")
+        logger.error(f"[Delete Reel] Error deleting reel ID {reel_id}: {e}")
         flash("❌ Error while deleting reel.", "error")
 
     return redirect(url_for("reels.list_reels"))

@@ -1,6 +1,6 @@
 # File: routes/dashboard.py
 
-from datetime import datetime
+import os
 from flask import Blueprint, render_template, session, redirect, url_for, current_app
 
 from models import Reel
@@ -28,13 +28,21 @@ def dashboard():
         .all()
     )
 
-    videos = []
-    vid_date_map = {}
+    reels_data = []
 
     for reel in reels:
-        filename = reel.video_path or f"{reel.id}.mp4"
-        videos.append(filename)
-        vid_date_map[filename] = reel.created_at.strftime("%b %d")
+        filename = os.path.basename(reel.video_path)
+
+        title = reel.title.strip() or (reel.theme_name.replace("_", " ").strip().title() if reel.theme_name else filename)
+
+        video_url = f"/videos/{user_email}/{filename}"
+
+        reels_data.append({
+            "id": reel.id,
+            "title": title,
+            "video_url": video_url,
+            "created_at": reel.created_at.strftime("%b %d, %Y"),
+        })
 
     connected = session.get("connected", False)
 
@@ -42,14 +50,13 @@ def dashboard():
         "[Dashboard] Access by: %s | IG Connected: %s | Reels found: %d",
         user_email,
         connected,
-        len(videos)
+        len(reels_data)
     )
 
     return render_template(
         "dashboard.html",
         user_email=user_email,
         connected=connected,
-        videos=videos,
-        vid_date_map=vid_date_map,
-        total_reels=len(videos),
+        reels=reels_data,
+        total_reels=len(reels_data),
     )

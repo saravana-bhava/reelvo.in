@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | Reelvo{% endblock %}
+
 {% block heading %}
 <div class="flex items-center justify-between">
   <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
@@ -38,17 +39,19 @@
     <div role="region" aria-label="Recent Reels">
       <h3 class="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">📽️ Recent Reels</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {% for vid in videos[:3] %}
+        {% for reel in reels[:3] %}
           <div class="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm transition hover:shadow-md">
             <!-- Video Player -->
             <video controls muted
                    class="w-full aspect-video bg-black"
-                   aria-label="Reel video for {{ vid }}">
-              <source src="{{ url_for('reels.serve_video', user_email=user_email, filename=vid) }}" type="video/mp4">
+                   aria-label="Reel video for {{ reel.title }}">
+              <source src="{{ reel.video_url }}" type="video/mp4">
               Your browser does not support the video tag.
             </video>
+            <!-- Footer: Title + Date -->
             <div class="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs text-center py-1 backdrop-blur-sm">
-              {{ vid_date_map[vid] if vid_date_map and vid in vid_date_map else 'No date available' }}
+              <div class="truncate px-1 font-semibold">{{ reel.title }}</div>
+              <div class="text-[10px]">{{ reel.created_at }}</div>
             </div>
           </div>
         {% else %}
@@ -66,7 +69,6 @@
   </section>
 
   <!-- Steps -->
-
   <aside class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-4 animate__animated animate__fadeInUp" role="complementary" aria-label="Reel Creation Steps">
     <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">🎥 Creation Steps</h3>
     <ul class="list-disc list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">

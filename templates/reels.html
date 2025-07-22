@@ -19,8 +19,8 @@
         <div class="relative">
           <video controls
                  class="w-full aspect-video bg-black rounded-t-2xl"
-                 aria-label="Reel video for {{ vid }}">
-            <source src="{{ url_for('reels.serve_video', user_email=user, filename=vid) }}" type="video/mp4">
+                 aria-label="Reel video {{ title_map[vid] }}">
+            <source src="{{ url_for('reels.serve_video', user_email=user, filename=file_map[vid]) }}" type="video/mp4">
             Your browser does not support the video tag.
           </video>
         </div>
@@ -31,8 +31,8 @@
           <!-- Header -->
           <div>
             <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title="{{ title_map[vid] if title_map and vid in title_map else vid }}">
-                  🎞️ {{ title_map[vid] if title_map and vid in title_map else vid }}
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title="{{ title_map[vid] }}">
+                🎞️ {{ title_map[vid] }}
               </h3>
               {% if vid_date_map and vid in vid_date_map %}
                 <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -65,11 +65,11 @@
 
           <!-- Actions -->
           <form method="post"
-                action="{{ url_for('reels.delete_reel', filename=vid) }}"
+                action="{{ url_for('reels.delete_reel', reel_id=vid) }}"
                 onsubmit="return confirm('Are you sure you want to delete this reel?');">
             <button type="submit"
                     class="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-red-500"
-                    aria-label="Delete Reel {{ vid }}">
+                    aria-label="Delete Reel {{ title_map[vid] }}">
               🗑️ Delete Reel
             </button>
           </form>
@@ -83,14 +83,14 @@
   </p>
 {% endif %}
 
-  <!-- Back to Dashboard -->
-  <div class="mt-12 text-center">
-    <a href="{{ url_for('dashboard.dashboard') }}"
-       class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition"
-       aria-label="Back to Dashboard">
-      ⬅️ Back to Dashboard
-    </a>
-  </div>
+<!-- Back to Dashboard -->
+<div class="mt-12 text-center">
+  <a href="{{ url_for('dashboard.dashboard') }}"
+     class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition"
+     aria-label="Back to Dashboard">
+    ⬅️ Back to Dashboard
+  </a>
+</div>
 
 <style>
 @keyframes fade-in {
