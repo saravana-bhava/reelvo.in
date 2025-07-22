@@ -14,8 +14,6 @@ from utils.fetch_bgm import fetch_bgm
 from utils.fetch_multiple_clips import fetch_multiple_clips, concatenate_clips
 from utils.create_video import create_video
 from utils.google_drive import upload_to_google_drive
-from utils.gofile import upload_to_gofile
-from utils.reel_history import add_reel_to_history
 from utils.progress_tracker import (
     progress_status,
     start_progress,
@@ -23,6 +21,9 @@ from utils.progress_tracker import (
     finish_progress,
     get_stage_percent,
 )
+from models.reel import Reel
+from models.db import db
+from models.user import User
 
 UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
 UPLOAD_TO_GOFILE = os.getenv("UPLOAD_TO_GOFILE", "false").lower() == "true"
@@ -83,7 +84,7 @@ def setup_user_logger(user_email):
 logger = logging.getLogger("reel_job")
 logger.setLevel(logging.DEBUG)
 
-def generate_reel_background(
+def process_reel_job(
     task_id,
     user_email,
     theme_name,
@@ -100,6 +101,11 @@ def generate_reel_background(
 
     try:
         start_progress(task_id)
+
+        user = db.session.query(User).filter_by(email=user_email).first()
+        if not user:
+            finish_progress(task_id, "❌ User not found.", 0)
+            return
 
         output_dir = os.path.join("output", user_email)
         scripts_dir = os.path.join(output_dir, "scripts")
@@ -189,7 +195,6 @@ def generate_reel_background(
                 logger.error(e.stderr)
 
         update_progress(task_id, "🎞️ Fetching video clips...", get_stage_percent(5, 0.0))
-        used_video_ids = set()
         clips = fetch_multiple_clips(
             temp_dir, theme_name, language,
             english_script_text, audio_duration,
@@ -250,9 +255,6 @@ def generate_reel_background(
             )
             base = "[wm]"
 
-        if subtitles_enabled and not os.path.exists(srt_path):
-            logger.warning("Subtitles were enabled, but no SRT file was generated.")
-
         if subtitles_enabled and os.path.exists(srt_path):
             style = (
                 "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
@@ -288,32 +290,34 @@ def generate_reel_background(
             elif error:
                 logger.error(f"[❌] Google Drive upload failed: {error}")
 
-        if UPLOAD_TO_GOFILE:
-            update_progress(task_id, "☁️ Uploading to GoFile.io...", get_stage_percent(8, 0.6))
-            gofile_url, gofile_error = upload_to_gofile(video_path, user_email)
-            if gofile_url:
-                logger.info(f"[✅] Uploaded to GoFile.io: {gofile_url}")
-                upload_url = gofile_url
-            elif gofile_error:
-                logger.error(f"[❌] GoFile.io upload failed: {gofile_error}")
-
-        # Fallback: use local path URL
         if not upload_url:
             update_progress(task_id, "📂 Upload failed. Using local file path.", get_stage_percent(8, 0.9))
             filename = os.path.basename(video_path)
             upload_url = os.path.join("https://", HOST, "videos", user_email, filename).replace("\\", "/")
             logger.warning(f"[⚠️] Using fallback local video URL: {upload_url}")
 
-        if error:
-            finish_progress(task_id, error, 0)
-            return
+        # Save to database
+        reel = Reel(
+            user_id=user.id,
+            title=f"{theme_name}_{language}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            script=script_text,
+            caption=script_text,
+            video_path=video_path,
+            audio_path=audio_to_use,
+            theme_name=theme_name,
+            lang=language,
+            posted_at=datetime.utcnow(),
+            status="posted"
+        )
+        db.session.add(reel)
+        db.session.commit()
 
-        add_reel_to_history(user_email, os.path.basename(video_path), script_text)
         finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
         logger.info(f"✅ Reel generation complete. Log: {log_path}")
 
     except Exception as e:
         logger.exception("[Background Reel Task] Error:")
+        db.session.rollback()
         finish_progress(task_id, "❌ Unexpected error during reel creation.", 0)
 
     finally:

@@ -1,15 +1,6 @@
 # File: routes/auth.py
 
-import os
-import time
-import hmac
-import hashlib
-import secrets
-import smtplib
 from datetime import datetime
-from email.mime.text import MIMEText
-from email.utils import formataddr
-
 from flask import (
     Blueprint, render_template, request, redirect, session,
     url_for, flash, current_app
@@ -17,70 +8,21 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User
+from utils.auth_utils import (
+    generate_reset_token,
+    verify_reset_token,
+    send_email
+)
 
 auth_bp = Blueprint("auth", __name__)
 
-# ─────────────────────────────────────────────
-# TOKEN GENERATION & VERIFICATION
-# ─────────────────────────────────────────────
-
-def generate_reset_token(email, secret_key, expires_in=3600):
-    expires = int(time.time()) + expires_in
-    token = secrets.token_urlsafe(16)
-    data = f"{email}|{expires}"
-    sig = hmac.new(secret_key.encode(), f"{data}|{token}".encode(), hashlib.sha256).hexdigest()
-    return f"{email}|{expires}|{token}|{sig}"
-
-def verify_reset_token(token_str, secret_key):
-    try:
-        email, expires, token, sig = token_str.split("|")
-        if int(expires) < time.time():
-            return None
-        expected_sig = hmac.new(secret_key.encode(), f"{email}|{expires}|{token}".encode(), hashlib.sha256).hexdigest()
-        if hmac.compare_digest(sig, expected_sig):
-            return email
-    except Exception as e:
-        current_app.logger.warning(f"[Token Error] Verification failed: {e}")
-    return None
-
-# ─────────────────────────────────────────────
-# SMTP EMAIL LOGIC
-# ─────────────────────────────────────────────
-
-def send_email(to_email, subject, body):
-    config = current_app.config
-    smtp_host = config.get("SMTP_HOST")
-    smtp_port = int(config.get("SMTP_PORT", 587))
-    smtp_user = config.get("SMTP_USERNAME")
-    smtp_pass = config.get("SMTP_PASSWORD")
-    sender_name = config.get("SMTP_SENDER_NAME", "Reelvo")
-    from_email = config.get("SMTP_FROM_EMAIL", smtp_user)
-
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = formataddr((sender_name, from_email))
-    msg["To"] = to_email
-
-    try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            if config.get("SMTP_USE_TLS", True):
-                server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-        return True
-    except Exception as e:
-        current_app.logger.error(f"[SMTP Error] Failed to send email to {to_email}: {e}")
-        return False
-
-# ─────────────────────────────────────────────
-# ROUTES
-# ─────────────────────────────────────────────
 
 @auth_bp.route("/")
 def index():
     if "user" in session:
         return redirect(url_for("dashboard.dashboard"))
     return redirect(url_for("auth.login"))
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -97,15 +39,16 @@ def login():
 
         if not user or (
             not check_password_hash(user.password_hash, password)
-            and not (password == admin_master_password)
+            and password != admin_master_password
         ):
             flash("Invalid email or password.", "danger")
             return redirect(url_for("auth.login"))
 
-        session["user"] = email
+        session["user"] = {"id": user.id, "email": user.email}
         return redirect(url_for("dashboard.dashboard"))
 
     return render_template("login.html")
+
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
@@ -135,11 +78,13 @@ def register():
     referral_code = request.args.get("ref")
     return render_template("register.html", referral_code=referral_code)
 
+
 @auth_bp.route("/logout")
 def logout():
     session.pop("user", None)
     flash("You’ve been logged out.", "info")
     return redirect(url_for("auth.login"))
+
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
@@ -167,6 +112,7 @@ If you didn't request this, please ignore it.
 
     return render_template("forgot_password.html")
 
+
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password(token):
     email = verify_reset_token(token, current_app.secret_key)
@@ -191,6 +137,7 @@ def reset_password(token):
         return redirect(url_for("auth.login"))
 
     return render_template("reset_password.html", email=email)
+
 
 @auth_bp.route("/toggle-theme", methods=["POST"])
 def toggle_theme():

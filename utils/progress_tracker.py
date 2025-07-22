@@ -7,8 +7,7 @@ Each task has a task_id, status, percent, timestamps, and an optional download U
 
 import time
 from typing import Dict, Any, Optional
-from db import db
-from db.models import ProgressTask
+from models import db, ProgressTask
 
 PROGRESS_STAGES = [
     5,   # 0 - Setup

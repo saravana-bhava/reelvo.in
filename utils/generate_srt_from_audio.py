@@ -54,7 +54,7 @@ def generate_srt_from_audio(
     if not MODEL:
         raise RuntimeError("[❌] Whisper model not loaded. Cannot generate subtitles.")
 
-    logger.info(f"[🧠] Transcribing audio with Whisper → {audio_path}")
+    logger.info(f"[🧠] Transcribing audio → {audio_path}")
 
     try:
         result = MODEL.transcribe(audio_path, word_timestamps=True, language=language)
@@ -76,13 +76,14 @@ def generate_srt_from_audio(
     last_end_time = 0.5
 
     i = 0
-    total_chunks = len(words) // words_per_line + (1 if len(words) % words_per_line else 0)
+    total_chunks = (len(words) + words_per_line - 1) // words_per_line
+
     while i < len(words):
         chunk = words[i:i + words_per_line]
         if not chunk:
             break
 
-        text = " ".join(w["word"].strip() for w in chunk)
+        text = " ".join(w["word"].strip() for w in chunk).replace("  ", " ")
         start = max(chunk[0]["start"], last_end_time + min_gap)
         end = chunk[-1]["end"]
         duration = end - start
@@ -103,22 +104,21 @@ def generate_srt_from_audio(
         index += 1
         i += words_per_line
 
-        current_chunk = index - 1
-        percent = int((current_chunk / total_chunks) * 100)
-        update_progress("Subtitles", f"Processing voice {current_chunk}/{total_chunks}", percent)
+        percent = int(((index - 1) / total_chunks) * 100)
+        update_progress("Subtitles", f"Processing voice {index - 1}/{total_chunks}", percent)
 
     os.makedirs(os.path.dirname(srt_path), exist_ok=True)
     with open(srt_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subtitles))
 
-    logger.info(f"[✅] SRT saved: {srt_path}")
+    logger.info(f"[✅] SRT saved → {srt_path}")
 
     # Detect Hindi (Devanagari Unicode block) and convert to ASS
     combined_text = " ".join(sub.content for sub in subtitles)
     if any('\u0900' <= c <= '\u097F' for c in combined_text):
-        ass_path = srt_path.replace(".srt", ".ass")
+        ass_path = os.path.splitext(srt_path)[0] + ".ass"
         convert_srt_to_ass(srt_path, ass_path, font="Noto Sans Devanagari")
-        logger.info(f"[🈶] ASS generated for Hindi: {ass_path}")
+        logger.info(f"[🈶] ASS generated for Hindi → {ass_path}")
 
 
 def convert_srt_to_ass(

@@ -6,3 +6,4 @@ from .plan import Plan
 from .theme import Theme
 from .token import UserToken
 from .schedule import Schedule
+from .progress import ProgressTask

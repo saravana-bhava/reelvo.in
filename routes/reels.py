@@ -1,301 +1,132 @@
 # File: routes/reels.py
 
 import os
-import json
-import logging
 import uuid
-import glob
-import sqlite3
-from threading import Thread
-from flask import (
-    Blueprint, request, render_template, session, redirect,
-    url_for, flash, jsonify, send_from_directory
-)
+import traceback
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from utils.generate_script import generate_script_for_user
-from utils.reel_job import generate_reel_background
-from utils.progress_tracker import start_progress, get_progress
-from db.conn import get_db_conn
+from utils.reel_job import process_reel_job
+from utils.auth_decorator import login_required
+from utils.auth_utils import get_user_id, get_user_email
+from models import db, Reel, Theme, User
+from dotenv import load_dotenv
+
+load_dotenv()
 
 reels_bp = Blueprint("reels", __name__)
-logger = logging.getLogger("create_reel")
-logging.basicConfig(level=logging.INFO)
+ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv"}
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-def get_available_themes():
-    try:
-        conn = get_db_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT name FROM themes GROUP BY name ORDER BY name ASC")
-        rows = cur.fetchall()
-        return [row["name"] for row in rows]
-    except Exception as e:
-        logger.error(f"Error loading themes from DB: {e}")
-        return []
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@reels_bp.route("/create-reel", methods=["GET"])
+
+@reels_bp.route("/reels", methods=["GET", "POST"])
+@login_required
 def create_reel():
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
+    user_id = get_user_id()
+    error = None
+    success = None
 
-    if session.get("reel_in_progress"):
-        return redirect(url_for("reels.reel_progress", task_id=session["reel_in_progress"]))
+    if request.method == "POST":
+        topic = request.form.get("topic", "").strip()
+        voice = request.form.get("tts_voice", "")
+        theme = request.form.get("theme", "")
+        uploaded_file = request.files.get("video")
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
+        if not topic:
+            error = "Please enter a topic."
+        elif uploaded_file and not allowed_file(uploaded_file.filename):
+            error = "Invalid file type. Only mp4, mov, avi, mkv are allowed."
+        else:
+            try:
+                uploaded_path = None
+                if uploaded_file and uploaded_file.filename:
+                    filename = secure_filename(uploaded_file.filename)
+                    unique_filename = f"{uuid.uuid4().hex}_{filename}"
+                    upload_folder = os.path.join("input", "clips")
+                    os.makedirs(upload_folder, exist_ok=True)
+                    uploaded_path = os.path.join(upload_folder, unique_filename)
+                    uploaded_file.save(uploaded_path)
 
-    output_dir = os.path.join("output", user_email)
-    videos_dir = os.path.join(output_dir, "videos")
-    scripts_dir = os.path.join(output_dir, "scripts")
-    os.makedirs(videos_dir, exist_ok=True)
-    os.makedirs(scripts_dir, exist_ok=True)
+                job_id = uuid.uuid4().hex
+                process_reel_job(
+                    task_id=job_id,
+                    topic=topic,
+                    voice=voice,
+                    theme=theme,
+                    user_id=user_id,
+                    uploaded_path=uploaded_path
+                )
 
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT filename FROM reels WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
-    rows = cur.fetchall()
-    videos = [row["filename"] for row in rows]
+                return redirect(url_for("reels.reel_status", job_id=job_id))
 
-    scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
+            except Exception as e:
+                error = f"An error occurred: {str(e)}"
+                traceback.print_exc()
 
-    latest_script = ""
-    themes = get_available_themes()
+    themes = db.session.query(Theme.name).distinct().order_by(Theme.name.asc()).all()
+    theme_names = [t.name for t in themes]
+
     return render_template(
         "create_reel.html",
-        user=user_email,
-        videos=videos,
-        themes=themes,
-        selected_theme=request.args.get("theme", ""),
-        custom_topic=request.args.get("custom_topic", ""),
-        language=request.args.get("language", "en"),
-        voice_option=request.args.get("voice_option", "tts"),
-        voice_artist=request.args.get("voice_artist", ""),
-        script_text=request.args.get("script", latest_script),
-        subtitles_checked="subtitles" in request.args,
-        watermark_checked="watermark" in request.args
+        error=error,
+        success=success,
+        themes=theme_names,
+        form=request.form
     )
 
-@reels_bp.route("/create", methods=["POST"])
-def create_reel_action():
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
-    theme = request.form.get("theme", "").strip()
-    custom_topic = request.form.get("custom_topic", "").strip()
-    language = request.form.get("language", "en").strip()
-    script_text = request.form.get("script", "").strip()
-    use_tts = request.form.get("voice_option") == "tts"
-    voice = request.form.get("voice_artist", "").strip()
-    custom_voice_file = request.files.get("custom_voice")
-    subtitles_enabled = "subtitles" in request.form
-    watermark_enabled = "watermark" in request.form
+@reels_bp.route("/reels/status/<job_id>")
+@login_required
+def reel_status(job_id):
+    return render_template("reel_status.html", job_id=job_id)
 
-    def redirect_with_form_data(msg):
-        flash(msg, "error")
-        return redirect(url_for("reels.create_reel",
-            theme=theme,
-            custom_topic=custom_topic,
-            language=language,
-            voice_option="tts" if use_tts else "upload",
-            voice_artist=voice,
-            script=script_text,
-            subtitles="1" if subtitles_enabled else "",
-            watermark="1" if watermark_enabled else ""
-        ))
-
-    if not (theme or custom_topic):
-        return redirect_with_form_data("You must select a theme or enter a custom topic.")
-    if not script_text:
-        return redirect_with_form_data("Script is required.")
-    if use_tts and not voice:
-        return redirect_with_form_data("Please select a voice for TTS.")
-    if not use_tts and not custom_voice_file:
-        return redirect_with_form_data("You must upload a voice file or choose TTS.")
-
-    raw_theme = custom_topic or theme or "default"
-    if len(raw_theme) > 100:
-        return redirect_with_form_data("Topic name too long.")
-
-    theme_name = secure_filename(raw_theme)
-    audio_path = None
-    if custom_voice_file:
-        user_audio_dir = os.path.join("output", user_email, "tts")
-        os.makedirs(user_audio_dir, exist_ok=True)
-        tts_filename = f"{theme_name}_{language}_voice.mp3"
-        audio_path = os.path.join(user_audio_dir, tts_filename)
-        custom_voice_file.save(audio_path)
-
-    task_id = str(uuid.uuid4())
-    session["reel_in_progress"] = task_id
-    start_progress(task_id)
-
-    thread = Thread(target=generate_reel_background, args=(
-        task_id,
-        user_email,
-        theme_name,
-        language,
-        script_text,
-        use_tts,
-        voice,
-        custom_voice_file,
-        subtitles_enabled,
-        watermark_enabled
-    ))
-    thread.daemon = True
-    thread.start()
-
-    return render_template("reel_progress.html", task_id=task_id)
-
-@reels_bp.route("/progress/<task_id>")
-def progress_status(task_id):
-    try:
-        status = get_progress(task_id)
-
-        if not status:
-            session.pop("reel_in_progress", None)
-            return jsonify({
-                "percent": -1,
-                "message": "❌ Task not found.",
-                "done": True,
-                "elapsed": 0
-            }), 404
-
-        percent = status.get("percent", 0)
-        message = status.get("status", "Working...")
-        elapsed = status.get("elapsed", 0)
-        done = percent >= 100
-
-        if done:
-            session.pop("reel_in_progress", None)
-
-        return jsonify({
-            "percent": percent,
-            "message": message,
-            "elapsed": elapsed,
-            "done": done,
-            "download_url": status.get("download_url", "")
-        })
-    except Exception as e:
-        logger.error(f"[Progress Status] Error fetching progress for {task_id}: {e}")
-        return jsonify({
-            "percent": -1,
-            "message": "❌ Internal error while checking progress.",
-            "done": True
-        }), 500
-
-@reels_bp.route("/reel_progress/<task_id>")
-def reel_progress(task_id):
-    status = get_progress(task_id)
-
-    if status.get("percent", -1) == -1 or status.get("percent", 0) >= 100:
-        session.pop("reel_in_progress", None)
-        return redirect(url_for("reels.create_reel"))
-
-    return render_template("reel_progress.html", task_id=task_id)
-
-@reels_bp.route("/generate-script", methods=["POST"])
-def generate_script_ajax():
-    try:
-        data = request.get_json()
-        user_email = session["user"]
-        topic = data.get("custom_topic", "").strip()
-        theme = data.get("theme")
-        language = data.get("language", "en")
-
-        if not theme and not topic:
-            return jsonify({"error": "Please provide a theme or custom topic."}), 400
-
-        script_path = generate_script_for_user(
-            user_email=user_email,
-            folder_name="scripts",
-            theme_name=topic or theme,
-            language=language,
-            prompt=topic or theme
-        )
-        with open(script_path, encoding="utf-8") as f:
-            return jsonify({"script_text": f.read().strip()})
-    except Exception as e:
-        logger.exception("Script generation failed")
-        return jsonify({"error": str(e)}), 500
-
-@reels_bp.route("/videos/<user_email>/<filename>")
-def serve_video(user_email, filename):
-    return send_from_directory(os.path.join("output", user_email, "videos"), filename)
-
-@reels_bp.route("/reel-history", methods=["GET"])
-def list_reels():
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
-
-    user_email = session["user"]
-    user_id = session.get("user_id")
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT filename FROM reels WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
-    rows = cur.fetchall()
-    videos = [row["filename"] for row in rows]
-
-    scripts_path = os.path.join("output", user_email, "scripts")
-    scripts = {}
-    if os.path.exists(scripts_path):
-        for f in os.listdir(scripts_path):
-            if f.endswith(".txt"):
-                with open(os.path.join(scripts_path, f), encoding="utf-8") as file:
-                    scripts[f.replace("_text.txt", "_video.mp4")] = file.read().strip()
-
-    return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
 
 @reels_bp.route("/reels/delete/<filename>", methods=["POST"])
+@login_required
 def delete_reel(filename):
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
+    user_id = get_user_id()
+    reel = db.session.query(Reel).filter_by(user_id=user_id, filename=filename).first()
+    if reel:
+        db.session.delete(reel)
+        db.session.commit()
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
-    base_video = os.path.splitext(filename)[0]
-    base_path = os.path.join("output", user_email)
+    output_path = os.path.join("output", "reels", filename)
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
-    deleted_any = False
-    try:
-        conn = get_db_conn()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM reels WHERE user_id = ? AND filename = ?", (user_id, filename))
-        conn.commit()
+    return redirect(url_for("reels.create_reel"))
 
-        targets = {
-            "video": os.path.join(base_path, "videos", filename),
-            "image": os.path.join(base_path, "images", base_video.replace("_video", "_text_image") + ".png"),
-            "script": os.path.join(base_path, "scripts", base_video.replace("_video", "_text") + ".txt"),
-            "ass": os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".ass"),
-            "srt": os.path.join(base_path, "srt", base_video.replace("_video", "_srt") + ".srt"),
-            "temp_concat_list": os.path.join(base_path, "temp", "concat_list.txt"),
-            "tts": os.path.join(base_path, "tts", base_video.replace("_video", "_voice") + ".mp3"),
-            "tts_raw": os.path.join(base_path, "tts", base_video.replace("_video", "_voice_raw") + ".mp3"),
-        }
 
-        temp_dir = os.path.join(base_path, "temp")
-        if os.path.exists(temp_dir):
-            base_video_clean = base_video.replace("_video", "").rsplit(".", 1)[0]
-            temp_patterns = [
-                os.path.join(temp_dir, f"{base_video_clean}*.mp4"),
-                os.path.join(temp_dir, f"{base_video_clean}*.m4a"),
-            ]
-            for pattern in temp_patterns:
-                for f in glob.glob(pattern):
-                    os.remove(f)
-                    deleted_any = True
+@reels_bp.route('/reels/list')
+@login_required
+def list_reels():
+    user_email = get_user_email()
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        return redirect(url_for('auth.login'))
 
-        for path in targets.values():
-            if os.path.exists(path):
-                os.remove(path)
-                deleted_any = True
+    reels = Reel.query.filter_by(user_id=user.id).order_by(Reel.created_at.desc()).all()
 
-        flash(f"🗑️ Deleted reel: {filename}", "info" if deleted_any else "warning")
-    except Exception as e:
-        logger.error(f"[Delete Reel] Error deleting {filename}: {e}")
-        flash("❌ Error while deleting reel.", "error")
+    return render_template(
+        'reels.html',
+        user=user.email,
+        videos=[r.video_path for r in reels],
+        vid_date_map={r.video_path: r.created_at.strftime('%Y-%m-%d %H:%M') for r in reels},
+        scripts={r.video_path: r.script for r in reels}
+    )
 
-    return redirect(url_for("reels.list_reels"))
+
+@reels_bp.route('/reels/<user_email>/<path:filename>')
+@login_required
+def serve_video(user_email, filename):
+    video_dir = os.path.join('static', 'reels', user_email)
+    return send_from_directory(video_dir, filename)
+
+
+@reels_bp.route("/reels/progress/<job_id>")
+@login_required
+def reel_progress(job_id):
+    from utils.progress_tracker import get_progress
+    return jsonify(get_progress(job_id))
