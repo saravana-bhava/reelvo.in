@@ -29,5 +29,21 @@ def run():
         else:
             print("⚠️ Admin user already exists.")
 
+        admin_email = "shivamkumr132@gmail.com"
+        existing_user = User.query.filter_by(email=admin_email).first()
+        if not existing_user:
+            user = User(
+                email=admin_email,
+                password_hash=generate_password_hash("ramjiramji1A@"),
+                plan="Business",
+                is_admin=True,
+                email_verified=True
+            )
+            db.session.add(user)
+            db.session.commit()
+            print("✅ Admin user seeded.")
+        else:
+            print("⚠️ Admin user already exists.")
+
 if __name__ == "__main__":
     run()
