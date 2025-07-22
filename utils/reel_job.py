@@ -92,6 +92,7 @@ logger.setLevel(logging.DEBUG)
 
 def process_reel_job(
     task_id,
+    user_id,
     user_email,
     theme_name,
     language,
@@ -109,7 +110,7 @@ def process_reel_job(
         logger.info(f"🎬 Starting reel generation for {user_email} | Task ID: {task_id}")
 
         try:
-            start_progress(task_id)
+            start_progress(task_id, user_id)
 
             user = db.session.query(User).filter_by(email=user_email).first()
             if not user:

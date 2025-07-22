@@ -128,12 +128,13 @@ def create_reel_action():
 
     task_id = str(uuid.uuid4())
     session["reel_in_progress"] = task_id
-    start_progress(task_id, get_user_id())
+    start_progress(task_id, user_id)
 
     def run_job_in_context(app, task_id):
         with app.app_context():
             process_reel_job(
                 task_id,
+                user_id,
                 user_email,
                 theme_name,
                 language,
