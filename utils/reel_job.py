@@ -112,7 +112,7 @@ def process_reel_job(
         try:
             start_progress(task_id, user_id)
 
-            user = db.session.query(User).filter_by(email=user_email).first()
+            user = db.session.query(User).filter_by(id=int(user_id)).first()
             if not user:
                 finish_progress(task_id, "❌ User not found.", 0)
                 return
