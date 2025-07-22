@@ -10,7 +10,7 @@ class Schedule(db.Model, TimestampMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     reel_id = db.Column(db.Integer, db.ForeignKey('reels.id'), nullable=False)
 
-    scheduled_for = db.Column(db.DateTime, nullable=False)
+    scheduled_for = db.Column(db.DateTime, nullable=True)
     timezone = db.Column(db.String(50), default='Asia/Kolkata', nullable=False)
 
     retry_count = db.Column(db.Integer, default=0, nullable=False)

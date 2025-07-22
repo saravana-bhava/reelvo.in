@@ -90,6 +90,19 @@ logger = logging.getLogger("reel_job")
 logger.setLevel(logging.DEBUG)
 
 
+def schedule_reel(user_id: int, reel: Reel):
+    from models.schedule import Schedule
+
+    schedule_entry = Schedule(
+        user_id=user_id,
+        reel_id=reel.id,
+        scheduled_for=None,
+        timezone='Asia/Kolkata',
+        status='pending'
+    )
+    db.session.add(schedule_entry)
+
+
 def process_reel_job(
     task_id,
     user_id,
@@ -322,10 +335,17 @@ def process_reel_job(
                 status="draft"
             )
             db.session.add(reel)
-            db.session.commit()
+            db.session.flush()
 
-            finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
-            logger.info(f"✅ Reel generation complete. Log: {log_path}")
+            try:
+                schedule_reel(user_id=user.id, reel=reel)
+                db.session.commit()
+                finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
+                logger.info(f"✅ Reel generation complete and marked for scheduling. Log: {log_path}")
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Failed to schedule reel {reel.id if reel.id else '[unknown]'}: {e}")
+                finish_progress(task_id, "✅ Reel created but scheduling failed.", 100, download_url=upload_url)
 
         except Exception as e:
             logger.exception("[Background Reel Task] Error:")

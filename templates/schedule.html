@@ -1,3 +1,5 @@
+<!-- File: templates/scheduled.html -->
+
 {% extends "base.html" %}
 {% block title %}Scheduled Posts | Reelvo{% endblock %}
 
@@ -41,9 +43,17 @@
 
             <!-- Status -->
             <td class="px-4 py-3 text-center">
-              {% if item.posted %}
+              {% if item.status == 'posted' %}
                 <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
                   ✅ Posted
+                </span>
+              {% elif item.status == 'failed' %}
+                <span class="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                  ❌ Failed
+                </span>
+              {% elif item.status == 'processing' %}
+                <span class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                  🔄 Processing
                 </span>
               {% else %}
                 <span class="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium">
@@ -54,7 +64,7 @@
 
             <!-- Reschedule -->
             <td class="px-4 py-3 text-center">
-              {% if not item.posted %}
+              {% if item.status != 'posted' %}
               <label for="reschedule_{{ loop.index0 }}" class="sr-only">Reschedule {{ item.video }}</label>
               <input type="date"
                      id="reschedule_{{ loop.index0 }}"
@@ -70,7 +80,7 @@
 
             <!-- Delete -->
             <td class="px-4 py-3 text-center">
-              {% if not item.posted %}
+              {% if item.status != 'posted' %}
               <input type="checkbox"
                      id="delete_{{ loop.index0 }}"
                      name="delete_{{ loop.index0 }}"
