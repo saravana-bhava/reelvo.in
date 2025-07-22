@@ -11,9 +11,7 @@ from flask import (
     url_for, flash, jsonify, send_from_directory
 )
 from werkzeug.utils import secure_filename
-from models import db
-from models.reel import Reel
-from models.theme import Theme
+from models import db, Reel
 from utils.auth_decorator import login_required
 from utils.auth_utils import get_user_id, get_user_email
 from utils.generate_script import generate_script_for_user
@@ -28,6 +26,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def get_available_themes():
     try:
+        from models.theme import Theme
         themes = Theme.query.with_entities(Theme.name).distinct().order_by(Theme.name.asc()).all()
         return [t.name for t in themes]
     except Exception as e:
@@ -131,7 +130,7 @@ def create_reel_action():
     session["reel_in_progress"] = task_id
     start_progress(task_id)
 
-    thread = Thread(target=generate_reel_background, args=(
+    thread = Thread(target=process_reel_job, args=(
         task_id,
         user_email,
         theme_name,

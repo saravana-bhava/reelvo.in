@@ -1,13 +1,12 @@
 # File: utils/generate_script.py
 
 """
-Generates short Instagram reel scripts using OpenAI or fallback.
+Generates short Instagram reel scripts using OpenAI or fallback from DB.
 Saves output to: output/{user_email}/scripts/{theme_name}_{language}_text.txt
 Supports: English and Hindi
 """
 
 import os
-import json
 import logging
 from textwrap import dedent
 from dotenv import load_dotenv
@@ -27,16 +26,6 @@ PROVIDER = os.getenv("PROVIDER", "openai").lower()
 API_KEY = os.getenv("OPENAI_API_KEY")
 BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-THEME_JSON_PATH = os.path.join(ROOT_DIR, "theme.json")
-
-# Load fallback theme scripts
-try:
-    with open(THEME_JSON_PATH, "r", encoding="utf-8") as f:
-        THEMES = json.load(f)
-    logger.info("[🗂️] Theme scripts loaded.")
-except FileNotFoundError:
-    logger.warning("[⚠️] Theme scripts file not found.")
-    THEMES = {}
 
 # Optional progress UI support
 try:
@@ -46,10 +35,7 @@ except ImportError:
 
 
 def generate_script_via_api(prompt: str) -> Optional[str]:
-    """
-    Generates a script using OpenAI-compatible API.
-    Returns None if generation fails.
-    """
+    """Generates a script using OpenAI-compatible API."""
     if not API_KEY:
         logger.error("[🔑] No API key provided for OpenAI/OpenRouter.")
         return None
@@ -98,18 +84,20 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
 
 def generate_script(prompt: str, language: str = "en") -> str:
     """
-    Generate a 30-second Instagram script using OpenAI or fallback.
+    Generate a 30-second Instagram script using OpenAI or DB fallback.
     """
     prompt_norm = prompt.strip().lower()
     language_norm = language.strip().lower()
 
     def fallback_script() -> str:
-        fallback = THEMES.get(prompt_norm, {}).get(language_norm)
-        if fallback:
-            return dedent(fallback).strip()
+        from models.theme import Theme
+        theme = Theme.query.filter_by(name=prompt_norm, lang=language_norm).first()
+        if theme:
+            return dedent(theme.content).strip()
         else:
-            available_langs = list(THEMES.get(prompt_norm, {}).keys())
-            logger.warning(f"[⚠️] No fallback for '{prompt_norm}' in '{language_norm}'. Available: {available_langs}")
+            available = Theme.query.filter_by(name=prompt_norm).all()
+            langs = list(set(t.lang for t in available))
+            logger.warning(f"[⚠️] No fallback for '{prompt_norm}' in '{language_norm}'. Available: {langs}")
             return f"[Theme script for '{prompt_norm}' in '{language_norm}']"
 
     chat_prompt = (
