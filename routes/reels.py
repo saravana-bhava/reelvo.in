@@ -3,7 +3,16 @@
 import os
 import uuid
 import traceback
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify, send_from_directory
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    jsonify,
+    send_from_directory,
+    current_app,
+)
 from werkzeug.utils import secure_filename
 from utils.reel_job import process_reel_job
 from utils.auth_decorator import login_required
@@ -30,8 +39,8 @@ def create_reel():
 
     if request.method == "POST":
         topic = request.form.get("topic", "").strip()
-        voice = request.form.get("tts_voice", "")
-        theme = request.form.get("theme", "")
+        voice = request.form.get("tts_voice", "").strip()
+        theme = request.form.get("theme", "").strip()
         uploaded_file = request.files.get("video")
 
         if not topic:
@@ -48,6 +57,7 @@ def create_reel():
                     os.makedirs(upload_folder, exist_ok=True)
                     uploaded_path = os.path.join(upload_folder, unique_filename)
                     uploaded_file.save(uploaded_path)
+                    current_app.logger.info(f"[Upload] Saved video to {uploaded_path}")
 
                 job_id = uuid.uuid4().hex
                 process_reel_job(
@@ -58,22 +68,26 @@ def create_reel():
                     user_id=user_id,
                     uploaded_path=uploaded_path
                 )
-
+                current_app.logger.info(f"[Job] Submitted reel job {job_id} for user {user_id}")
                 return redirect(url_for("reels.reel_status", job_id=job_id))
 
             except Exception as e:
+                current_app.logger.exception(f"[Reel Creation] Error: {str(e)}")
                 error = f"An error occurred: {str(e)}"
-                traceback.print_exc()
 
-    themes = db.session.query(Theme.name).distinct().order_by(Theme.name.asc()).all()
-    theme_names = [t.name for t in themes]
+    try:
+        themes = db.session.query(Theme.name).distinct().order_by(Theme.name.asc()).all()
+        theme_names = [t.name for t in themes]
+    except Exception as e:
+        current_app.logger.warning(f"[Themes] Failed to load themes: {e}")
+        theme_names = []
 
     return render_template(
         "create_reel.html",
         error=error,
         success=success,
         themes=theme_names,
-        form=request.form
+        form=request.form,
     )
 
 
@@ -91,10 +105,14 @@ def delete_reel(filename):
     if reel:
         db.session.delete(reel)
         db.session.commit()
+        current_app.logger.info(f"[Delete] Reel DB record deleted for {filename}")
 
     output_path = os.path.join("output", "reels", filename)
     if os.path.exists(output_path):
         os.remove(output_path)
+        current_app.logger.info(f"[Delete] File deleted from disk: {output_path}")
+    else:
+        current_app.logger.warning(f"[Delete] File not found: {output_path}")
 
     return redirect(url_for("reels.create_reel"))
 
@@ -108,7 +126,6 @@ def list_reels():
         return redirect(url_for('auth.login'))
 
     reels = Reel.query.filter_by(user_id=user.id).order_by(Reel.created_at.desc()).all()
-
     return render_template(
         'reels.html',
         user=user.email,

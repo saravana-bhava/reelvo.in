@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, current_app
 
 from models import Reel
-from utils.auth_utils import get_user_email, get_user_id, get_logged_in_user
+from utils.auth_utils import get_user_email, get_user_id
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -34,12 +34,15 @@ def dashboard():
     for reel in reels:
         filename = reel.filename or f"{reel.id}.mp4"
         videos.append(filename)
-        formatted_date = reel.created_at.strftime("%b %d")
-        vid_date_map[filename] = formatted_date
+        vid_date_map[filename] = reel.created_at.strftime("%b %d")
 
     connected = session.get("connected", False)
+
     current_app.logger.debug(
-        f"[Dashboard] Access by: {user_email} | IG Connected: {connected} | Reels found: {len(videos)}"
+        "[Dashboard] Access by: %s | IG Connected: %s | Reels found: %d",
+        user_email,
+        connected,
+        len(videos)
     )
 
     return render_template(

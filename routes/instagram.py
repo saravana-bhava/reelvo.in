@@ -7,7 +7,6 @@ from flask import (
     Blueprint, request, redirect, session, flash,
     url_for, jsonify, current_app, send_from_directory
 )
-
 from utils.instagram_db import update_instagram_tokens, delete_instagram_token
 from utils.instagram import post_to_instagram
 from utils.auth_utils import get_user_email
@@ -29,16 +28,18 @@ GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 # --------------------------
 
 def safe_get(url, params=None, timeout=10):
+    """Wrapper for GET requests with error handling and logging."""
     try:
         response = requests.get(url, params=params, timeout=timeout)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        current_app.logger.error(f"[HTTP GET] {url} failed: {e}")
+        current_app.logger.error(f"[HTTP GET] Failed: {url} - {e}")
         return None
 
 
 def download_and_save_image(url, save_path):
+    """Downloads an image from URL and saves to given path."""
     try:
         response = requests.get(url, stream=True, timeout=10)
         response.raise_for_status()
@@ -117,7 +118,7 @@ def instagram_callback():
         pages_data = safe_get(f"{GRAPH_API_BASE}/me/accounts", params={"access_token": long_token})
         pages = pages_data.get("data", []) if pages_data else []
 
-        # Fallback: check business-owned pages
+        # Fallback to business-owned pages
         if not pages:
             biz_data = safe_get(f"{GRAPH_API_BASE}/me/businesses", params={"access_token": long_token})
             for biz in (biz_data.get("data", []) if biz_data else []):

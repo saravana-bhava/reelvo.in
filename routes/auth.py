@@ -19,6 +19,7 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/")
 def index():
+    """Redirects to dashboard if logged in, else to login page."""
     if "user" in session:
         return redirect(url_for("dashboard.dashboard"))
     return redirect(url_for("auth.login"))
@@ -26,6 +27,7 @@ def index():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    """Handles user login with password or optional master password."""
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -52,6 +54,7 @@ def login():
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
+    """Handles new user registration."""
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -81,6 +84,7 @@ def register():
 
 @auth_bp.route("/logout")
 def logout():
+    """Logs the user out by clearing session."""
     session.pop("user", None)
     flash("You’ve been logged out.", "info")
     return redirect(url_for("auth.login"))
@@ -88,6 +92,7 @@ def logout():
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
+    """Handles password reset request by sending email with token."""
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         user = User.query.filter_by(email=email).first()
@@ -115,6 +120,7 @@ If you didn't request this, please ignore it.
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password(token):
+    """Handles password reset using secure token."""
     email = verify_reset_token(token, current_app.secret_key)
     if not email:
         flash("Invalid or expired reset link.", "danger")
@@ -141,5 +147,6 @@ def reset_password(token):
 
 @auth_bp.route("/toggle-theme", methods=["POST"])
 def toggle_theme():
+    """Toggles theme between light and dark in session."""
     session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
     return redirect(request.referrer or url_for("profile.user_profile"))
