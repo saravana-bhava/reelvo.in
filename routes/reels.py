@@ -8,7 +8,7 @@ import glob
 from threading import Thread
 from flask import (
     Blueprint, request, render_template, session, redirect,
-    url_for, flash, jsonify, send_from_directory
+    url_for, flash, jsonify, send_from_directory, current_app
 )
 from werkzeug.utils import secure_filename
 from models import db, Reel
@@ -130,18 +130,22 @@ def create_reel_action():
     session["reel_in_progress"] = task_id
     start_progress(task_id)
 
-    thread = Thread(target=process_reel_job, args=(
-        task_id,
-        user_email,
-        theme_name,
-        language,
-        script_text,
-        use_tts,
-        voice,
-        custom_voice_file,
-        subtitles_enabled,
-        watermark_enabled
-    ))
+    def run_job_in_context():
+        with current_app.app_context():
+            process_reel_job(
+                task_id,
+                user_email,
+                theme_name,
+                language,
+                script_text,
+                use_tts,
+                voice,
+                custom_voice_file,
+                subtitles_enabled,
+                watermark_enabled
+            )
+
+    thread = Thread(target=run_job_in_context)
     thread.daemon = True
     thread.start()
 

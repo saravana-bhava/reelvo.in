@@ -5,6 +5,7 @@ import subprocess
 import logging
 import sys
 import time
+from flask import current_app
 from datetime import datetime
 from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_audio
@@ -101,231 +102,234 @@ def process_reel_job(
     subtitles_enabled,
     watermark_enabled
 ):
-    log_path = setup_user_logger(user_email)
-    logger.info(f"🎬 Starting reel generation for {user_email} | Task ID: {task_id}")
+    from app import app
 
-    try:
-        start_progress(task_id)
+    with app.app_context():
+        log_path = setup_user_logger(user_email)
+        logger.info(f"🎬 Starting reel generation for {user_email} | Task ID: {task_id}")
 
-        user = db.session.query(User).filter_by(email=user_email).first()
-        if not user:
-            finish_progress(task_id, "❌ User not found.", 0)
-            return
+        try:
+            start_progress(task_id)
 
-        output_dir = os.path.join("output", user_email)
-        scripts_dir = os.path.join(output_dir, "scripts")
-        images_dir = os.path.join(output_dir, "images")
-        tts_dir = os.path.join(output_dir, "tts")
-        os.makedirs(scripts_dir, exist_ok=True)
-        os.makedirs(images_dir, exist_ok=True)
-        os.makedirs(tts_dir, exist_ok=True)
-
-        update_progress(task_id, "📜 Saving script...", get_stage_percent(0))
-        script_filename = f"{theme_name}_{language}_text.txt"
-        script_path = os.path.join(scripts_dir, script_filename)
-        with open(script_path, "w", encoding="utf-8") as f:
-            f.write(script_text)
-
-        update_progress(task_id, "🖼️ Generating overlay...", get_stage_percent(1))
-        text_image_path = os.path.join(images_dir, f"{theme_name}_{language}_text_image.png")
-        generate_text_overlay(text_image_path, language, script_text)
-
-        update_progress(task_id, "🔊 Processing voice...", get_stage_percent(2, 0.0))
-        tts_filename = f"{theme_name}_{language}_voice.mp3"
-        audio_path = os.path.join(tts_dir, tts_filename)
-
-        if use_tts:
-            audio_path, audio_duration = generate_tts_audio(
-                tts_path=audio_path,
-                language=language,
-                script_text=script_text,
-                tts_voice=voice,
-                cache=True
-            )
-        else:
-            try:
-                result = subprocess.run([
-                    "ffprobe", "-v", "error", "-show_entries",
-                    "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
-                    audio_path
-                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-                audio_duration = float(result.stdout.strip())
-                logger.info(f"Audio duration: {audio_duration}s")
-                if result.stderr:
-                    logger.error(result.stderr.strip())
-            except subprocess.CalledProcessError as e:
-                logger.error("Error extracting audio duration with ffprobe")
-                logger.error(e.stderr)
-                finish_progress(task_id, "❌ Error extracting audio duration.", 0)
+            user = db.session.query(User).filter_by(email=user_email).first()
+            if not user:
+                finish_progress(task_id, "❌ User not found.", 0)
                 return
 
-        if audio_duration < 2.0:
-            finish_progress(task_id, "❌ Audio too short.", 0)
-            return
+            output_dir = os.path.join("output", user_email)
+            scripts_dir = os.path.join(output_dir, "scripts")
+            images_dir = os.path.join(output_dir, "images")
+            tts_dir = os.path.join(output_dir, "tts")
+            os.makedirs(scripts_dir, exist_ok=True)
+            os.makedirs(images_dir, exist_ok=True)
+            os.makedirs(tts_dir, exist_ok=True)
 
-        srt_path = ""
-        if subtitles_enabled:
-            update_progress(task_id, "📃 Generating subtitles...", get_stage_percent(3))
-            srt_dir = os.path.join(output_dir, "srt")
-            os.makedirs(srt_dir, exist_ok=True)
-            srt_filename = f"{theme_name}_{language}_srt.srt"
-            srt_path = os.path.join(srt_dir, srt_filename)
-            generate_srt_from_audio(srt_path, language, audio_path, 6)
+            update_progress(task_id, "📜 Saving script...", get_stage_percent(0))
+            script_filename = f"{theme_name}_{language}_text.txt"
+            script_path = os.path.join(scripts_dir, script_filename)
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(script_text)
 
-        update_progress(task_id, "🎶 Mixing background music...", get_stage_percent(4, 0.1))
-        update_progress(task_id, "🎼 Translating script to English...", get_stage_percent(4, 0.2))
-        english_script_text = translate_to_english(script_text)
-        temp_dir = os.path.join(output_dir, "temp")
-        os.makedirs(temp_dir, exist_ok=True)
+            update_progress(task_id, "🖼️ Generating overlay...", get_stage_percent(1))
+            text_image_path = os.path.join(images_dir, f"{theme_name}_{language}_text_image.png")
+            generate_text_overlay(text_image_path, language, script_text)
 
-        update_progress(task_id, "🎹 Fetching BGM...", get_stage_percent(4, 0.5))
-        bgm_path = fetch_bgm(english_script_text, "en", "default") or "assets/music/default.mp3"
+            update_progress(task_id, "🔊 Processing voice...", get_stage_percent(2, 0.0))
+            tts_filename = f"{theme_name}_{language}_voice.mp3"
+            audio_path = os.path.join(tts_dir, tts_filename)
 
-        update_progress(task_id, "🎧 Mixing BGM with voice...", get_stage_percent(4, 0.9))
-        mixed_audio_path = os.path.join(temp_dir, f"{theme_name}_{language}_mixed.m4a")
-        audio_to_use = audio_path
+            if use_tts:
+                audio_path, audio_duration = generate_tts_audio(
+                    tts_path=audio_path,
+                    language=language,
+                    script_text=script_text,
+                    tts_voice=voice,
+                    cache=True
+                )
+            else:
+                try:
+                    result = subprocess.run([
+                        "ffprobe", "-v", "error", "-show_entries",
+                        "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
+                        audio_path
+                    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                    audio_duration = float(result.stdout.strip())
+                    logger.info(f"Audio duration: {audio_duration}s")
+                    if result.stderr:
+                        logger.error(result.stderr.strip())
+                except subprocess.CalledProcessError as e:
+                    logger.error("Error extracting audio duration with ffprobe")
+                    logger.error(e.stderr)
+                    finish_progress(task_id, "❌ Error extracting audio duration.", 0)
+                    return
 
-        if os.path.exists(bgm_path):
-            try:
-                result = subprocess.run([
-                    "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
-                    "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
-                    "-c:a", "aac", "-b:a", "192k", mixed_audio_path
-                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-                logger.info(result.stdout)
-                if result.stderr:
-                    logger.error(result.stderr.strip())
-                audio_to_use = mixed_audio_path
-            except subprocess.CalledProcessError as e:
-                logger.error("Error mixing audio:")
-                logger.error(e.stderr)
+            if audio_duration < 2.0:
+                finish_progress(task_id, "❌ Audio too short.", 0)
+                return
 
-        update_progress(task_id, "🎞️ Fetching video clips...", get_stage_percent(5, 0.0))
-        clips = fetch_multiple_clips(
-            temp_dir, theme_name, language,
-            english_script_text, audio_duration,
-            task_id=task_id
-        )
+            srt_path = ""
+            if subtitles_enabled:
+                update_progress(task_id, "📃 Generating subtitles...", get_stage_percent(3))
+                srt_dir = os.path.join(output_dir, "srt")
+                os.makedirs(srt_dir, exist_ok=True)
+                srt_filename = f"{theme_name}_{language}_srt.srt"
+                srt_path = os.path.join(srt_dir, srt_filename)
+                generate_srt_from_audio(srt_path, language, audio_path, 6)
 
-        if not clips:
-            fallback_clips_dir = os.path.join("assets", "clips")
-            clips = sorted([
-                os.path.join(fallback_clips_dir, f)
-                for f in os.listdir(fallback_clips_dir)
-                if f.lower().endswith((".mp4", ".mov", ".webm"))
-            ])[:5]
+            update_progress(task_id, "🎶 Mixing background music...", get_stage_percent(4, 0.1))
+            update_progress(task_id, "🎼 Translating script to English...", get_stage_percent(4, 0.2))
+            english_script_text = translate_to_english(script_text)
+            temp_dir = os.path.join(output_dir, "temp")
+            os.makedirs(temp_dir, exist_ok=True)
 
-        update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", get_stage_percent(5, 1.0))
+            update_progress(task_id, "🎹 Fetching BGM...", get_stage_percent(4, 0.5))
+            bgm_path = fetch_bgm(english_script_text, "en", "default") or "assets/music/default.mp3"
 
-        for idx, clip_path in enumerate(clips):
-            update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", get_stage_percent(5, (idx + 1) / len(clips)))
-            time.sleep(0.5)
+            update_progress(task_id, "🎧 Mixing BGM with voice...", get_stage_percent(4, 0.9))
+            mixed_audio_path = os.path.join(temp_dir, f"{theme_name}_{language}_mixed.m4a")
+            audio_to_use = audio_path
 
-        update_progress(task_id, "🎛️ Merging all clips...", get_stage_percent(6, 0.0))
-        combined_video_path = concatenate_clips(
-            temp_dir, theme_name, language, clips,
-            task_id=task_id
-        )
+            if os.path.exists(bgm_path):
+                try:
+                    result = subprocess.run([
+                        "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
+                        "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
+                        "-c:a", "aac", "-b:a", "192k", mixed_audio_path
+                    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                    logger.info(result.stdout)
+                    if result.stderr:
+                        logger.error(result.stderr.strip())
+                    audio_to_use = mixed_audio_path
+                except subprocess.CalledProcessError as e:
+                    logger.error("Error mixing audio:")
+                    logger.error(e.stderr)
 
-        if not combined_video_path:
-            finish_progress(task_id, "❌ Video clips could not be combined.", 0)
-            return
-
-        update_progress(task_id, "🎬 Preparing final rendering filters...", get_stage_percent(7, 0.0))
-        inputs = ["-i", combined_video_path, "-i", audio_to_use]
-        input_index = 2
-        logo_index = None
-
-        if watermark_enabled:
-            watermark_dir = os.path.join(output_dir, "watermark")
-            os.makedirs(watermark_dir, exist_ok=True)
-            watermark_path = os.path.join(watermark_dir, "logo.png")
-            if not os.path.exists(watermark_path):
-                logger.warning("Custom logo not found, using default logo.")
-                watermark_path = os.path.join("assets", "logo", "default.png")
-            inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
-            logo_index = input_index
-            input_index += 1
-
-        filters = [
-            f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
-            f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
-            f"fade=t=in:st=0:d=1,fade=t=out:st={max(audio_duration - 1, 1)}:d=1[bg]"
-        ]
-        base = "[bg]"
-
-        if logo_index is not None:
-            filters.append(
-                f"[2:v][bg]scale2ref=w=iw/8:h=ow/mdar[logo][base_scaled];"
-                f"[base_scaled][logo]overlay=W-w-30:H-h-30[wm]"
+            update_progress(task_id, "🎞️ Fetching video clips...", get_stage_percent(5, 0.0))
+            clips = fetch_multiple_clips(
+                temp_dir, theme_name, language,
+                english_script_text, audio_duration,
+                task_id=task_id
             )
-            base = "[wm]"
 
-        if subtitles_enabled and os.path.exists(srt_path):
-            style = (
-                "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
-                "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
-                "BorderStyle=3,Outline=2,MarginV=25"
+            if not clips:
+                fallback_clips_dir = os.path.join("assets", "clips")
+                clips = sorted([
+                    os.path.join(fallback_clips_dir, f)
+                    for f in os.listdir(fallback_clips_dir)
+                    if f.lower().endswith((".mp4", ".mov", ".webm"))
+                ])[:5]
+
+            update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", get_stage_percent(5, 1.0))
+
+            for idx, clip_path in enumerate(clips):
+                update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", get_stage_percent(5, (idx + 1) / len(clips)))
+                time.sleep(0.5)
+
+            update_progress(task_id, "🎛️ Merging all clips...", get_stage_percent(6, 0.0))
+            combined_video_path = concatenate_clips(
+                temp_dir, theme_name, language, clips,
+                task_id=task_id
             )
-            escaped_srt = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
-            filters.append(f"{base}subtitles='{escaped_srt}':force_style='{style}'[outv]")
-            map_video = "[outv]"
-        else:
-            map_video = base
 
-        videos_dir = os.path.join(output_dir, "videos")
-        os.makedirs(videos_dir, exist_ok=True)
-        video_path = os.path.join(videos_dir, f"{theme_name}_{language}_video.mp4")
+            if not combined_video_path:
+                finish_progress(task_id, "❌ Video clips could not be combined.", 0)
+                return
 
-        update_progress(task_id, "🎬 Generating final video...", get_stage_percent(7, 0.5))
-        video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
-        if not video_path:
-            finish_progress(task_id, "❌ Video could not be generated.", 0)
-            return
+            update_progress(task_id, "🎬 Preparing final rendering filters...", get_stage_percent(7, 0.0))
+            inputs = ["-i", combined_video_path, "-i", audio_to_use]
+            input_index = 2
+            logo_index = None
 
-        update_progress(task_id, "✅ Rendering complete!", get_stage_percent(7, 1.0))
+            if watermark_enabled:
+                watermark_dir = os.path.join(output_dir, "watermark")
+                os.makedirs(watermark_dir, exist_ok=True)
+                watermark_path = os.path.join(watermark_dir, "logo.png")
+                if not os.path.exists(watermark_path):
+                    logger.warning("Custom logo not found, using default logo.")
+                    watermark_path = os.path.join("assets", "logo", "default.png")
+                inputs += ["-loop", "1", "-t", str(audio_duration), "-i", watermark_path]
+                logo_index = input_index
+                input_index += 1
 
-        upload_url = None
-        error = None
+            filters = [
+                f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
+                f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
+                f"fade=t=in:st=0:d=1,fade=t=out:st={max(audio_duration - 1, 1)}:d=1[bg]"
+            ]
+            base = "[bg]"
 
-        if UPLOAD_TO_DRIVE:
-            update_progress(task_id, "☁️ Uploading to Google Drive...", get_stage_percent(8, 0.5))
-            upload_url, error = upload_to_google_drive(video_path, user_email)
-            if upload_url:
-                logger.info(f"[✅] Uploaded to Google Drive: {upload_url}")
-            elif error:
-                logger.error(f"[❌] Google Drive upload failed: {error}")
+            if logo_index is not None:
+                filters.append(
+                    f"[2:v][bg]scale2ref=w=iw/8:h=ow/mdar[logo][base_scaled];"
+                    f"[base_scaled][logo]overlay=W-w-30:H-h-30[wm]"
+                )
+                base = "[wm]"
 
-        if not upload_url:
-            update_progress(task_id, "📂 Upload failed. Using local file path.", get_stage_percent(8, 0.9))
-            filename = os.path.basename(video_path)
-            upload_url = os.path.join("https://", HOST, "videos", user_email, filename).replace("\\", "/")
-            logger.warning(f"[⚠️] Using fallback local video URL: {upload_url}")
+            if subtitles_enabled and os.path.exists(srt_path):
+                style = (
+                    "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
+                    "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
+                    "BorderStyle=3,Outline=2,MarginV=25"
+                )
+                escaped_srt = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+                filters.append(f"{base}subtitles='{escaped_srt}':force_style='{style}'[outv]")
+                map_video = "[outv]"
+            else:
+                map_video = base
 
-        # Save to database
-        reel = Reel(
-            user_id=user.id,
-            title=f"{theme_name}_{language}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            script=script_text,
-            caption=script_text,
-            video_path=video_path,
-            audio_path=audio_to_use,
-            theme_name=theme_name,
-            lang=language,
-            posted_at=datetime.utcnow(),
-            status="posted"
-        )
-        db.session.add(reel)
-        db.session.commit()
+            videos_dir = os.path.join(output_dir, "videos")
+            os.makedirs(videos_dir, exist_ok=True)
+            video_path = os.path.join(videos_dir, f"{theme_name}_{language}_video.mp4")
 
-        finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
-        logger.info(f"✅ Reel generation complete. Log: {log_path}")
+            update_progress(task_id, "🎬 Generating final video...", get_stage_percent(7, 0.5))
+            video_path = create_video(video_path, inputs, audio_duration, filters, map_video)
+            if not video_path:
+                finish_progress(task_id, "❌ Video could not be generated.", 0)
+                return
 
-    except Exception as e:
-        logger.exception("[Background Reel Task] Error:")
-        db.session.rollback()
-        finish_progress(task_id, "❌ Unexpected error during reel creation.", 0)
+            update_progress(task_id, "✅ Rendering complete!", get_stage_percent(7, 1.0))
 
-    finally:
-        sys.stdout = ORIGINAL_STDOUT
-        sys.stderr = ORIGINAL_STDERR
+            upload_url = None
+            error = None
+
+            if UPLOAD_TO_DRIVE:
+                update_progress(task_id, "☁️ Uploading to Google Drive...", get_stage_percent(8, 0.5))
+                upload_url, error = upload_to_google_drive(video_path, user_email)
+                if upload_url:
+                    logger.info(f"[✅] Uploaded to Google Drive: {upload_url}")
+                elif error:
+                    logger.error(f"[❌] Google Drive upload failed: {error}")
+
+            if not upload_url:
+                update_progress(task_id, "📂 Upload failed. Using local file path.", get_stage_percent(8, 0.9))
+                filename = os.path.basename(video_path)
+                upload_url = os.path.join("https://", HOST, "videos", user_email, filename).replace("\\", "/")
+                logger.warning(f"[⚠️] Using fallback local video URL: {upload_url}")
+
+            # Save to database
+            reel = Reel(
+                user_id=user.id,
+                title=f"{theme_name}_{language}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                script=script_text,
+                caption=script_text,
+                video_path=video_path,
+                audio_path=audio_to_use,
+                theme_name=theme_name,
+                lang=language,
+                posted_at=datetime.utcnow(),
+                status="posted"
+            )
+            db.session.add(reel)
+            db.session.commit()
+
+            finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
+            logger.info(f"✅ Reel generation complete. Log: {log_path}")
+
+        except Exception as e:
+            logger.exception("[Background Reel Task] Error:")
+            db.session.rollback()
+            finish_progress(task_id, "❌ Unexpected error during reel creation.", 0)
+
+        finally:
+            sys.stdout = ORIGINAL_STDOUT
+            sys.stderr = ORIGINAL_STDERR
