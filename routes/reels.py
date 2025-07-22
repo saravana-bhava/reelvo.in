@@ -5,17 +5,18 @@ import json
 import logging
 import uuid
 import glob
-import sqlite3
 from threading import Thread
 from flask import (
     Blueprint, request, render_template, session, redirect,
     url_for, flash, jsonify, send_from_directory
 )
 from werkzeug.utils import secure_filename
+from models import db
+from models.reel import Reel
+from models.theme import Theme
 from utils.generate_script import generate_script_for_user
-from utils.reel_job import generate_reel_background
+from utils.reel_job import process_reel_job
 from utils.progress_tracker import start_progress, get_progress
-from db.conn import get_db_conn
 
 reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
@@ -25,11 +26,8 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def get_available_themes():
     try:
-        conn = get_db_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT name FROM themes GROUP BY name ORDER BY name ASC")
-        rows = cur.fetchall()
-        return [row["name"] for row in rows]
+        themes = Theme.query.with_entities(Theme.name).distinct().order_by(Theme.name.asc()).all()
+        return [t.name for t in themes]
     except Exception as e:
         logger.error(f"Error loading themes from DB: {e}")
         return []
@@ -51,11 +49,8 @@ def create_reel():
     os.makedirs(videos_dir, exist_ok=True)
     os.makedirs(scripts_dir, exist_ok=True)
 
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT filename FROM reels WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
-    rows = cur.fetchall()
-    videos = [row["filename"] for row in rows]
+    reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
+    videos = [r.filename for r in reels]
 
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
 
@@ -232,11 +227,9 @@ def list_reels():
 
     user_email = session["user"]
     user_id = session.get("user_id")
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT filename FROM reels WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
-    rows = cur.fetchall()
-    videos = [row["filename"] for row in rows]
+
+    reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
+    videos = [r.filename for r in reels]
 
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}
@@ -260,10 +253,10 @@ def delete_reel(filename):
 
     deleted_any = False
     try:
-        conn = get_db_conn()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM reels WHERE user_id = ? AND filename = ?", (user_id, filename))
-        conn.commit()
+        reel = Reel.query.filter_by(user_id=user_id, filename=filename).first()
+        if reel:
+            db.session.delete(reel)
+            db.session.commit()
 
         targets = {
             "video": os.path.join(base_path, "videos", filename),
