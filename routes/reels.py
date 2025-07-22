@@ -81,6 +81,18 @@ def create_reel_action():
 
     user_email = get_user_email()
     user_id = get_user_id()
+
+    if not user_email or not user_id:
+        logger.error("❌ Session missing email or user_id.")
+        flash("Your session has expired. Please log in again.", "error")
+        return redirect(url_for("auth.index"))
+
+    from models.user import User
+    user = db.session.query(User).filter_by(id=user_id).first()
+    if not user:
+        flash("Invalid user. Please log in again.", "error")
+        return redirect(url_for("auth.index"))
+
     theme = request.form.get("theme", "").strip()
     custom_topic = request.form.get("custom_topic", "").strip()
     language = request.form.get("language", "en").strip()

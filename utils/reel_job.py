@@ -110,6 +110,7 @@ def process_reel_job(
         logger.info(f"🎬 Starting reel generation for {user_email} | Task ID: {task_id}")
 
         try:
+            logger.info(f"[Reel Job] User ID: {user_id}, Email: {user_email}, Theme: {theme_name}")
             start_progress(task_id, user_id)
 
             user = db.session.query(User).filter_by(id=int(user_id)).first()
