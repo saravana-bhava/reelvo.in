@@ -14,6 +14,8 @@ from werkzeug.utils import secure_filename
 from models import db
 from models.reel import Reel
 from models.theme import Theme
+from utils.auth_decorator import login_required
+from utils.auth_utils import get_user_id, get_user_email
 from utils.generate_script import generate_script_for_user
 from utils.reel_job import process_reel_job
 from utils.progress_tracker import start_progress, get_progress
@@ -33,6 +35,7 @@ def get_available_themes():
         return []
 
 @reels_bp.route("/create-reel", methods=["GET"])
+@login_required
 def create_reel():
     if "user" not in session:
         return redirect(url_for("auth.index"))
@@ -40,8 +43,8 @@ def create_reel():
     if session.get("reel_in_progress"):
         return redirect(url_for("reels.reel_progress", task_id=session["reel_in_progress"]))
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
+    user_email = get_user_email()
+    user_id = get_user_id()
 
     output_dir = os.path.join("output", user_email)
     videos_dir = os.path.join(output_dir, "videos")
@@ -72,12 +75,13 @@ def create_reel():
     )
 
 @reels_bp.route("/create", methods=["POST"])
+@login_required
 def create_reel_action():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
+    user_email = get_user_email()
+    user_id = get_user_id()
     theme = request.form.get("theme", "").strip()
     custom_topic = request.form.get("custom_topic", "").strip()
     language = request.form.get("language", "en").strip()
@@ -145,6 +149,7 @@ def create_reel_action():
     return render_template("reel_progress.html", task_id=task_id)
 
 @reels_bp.route("/progress/<task_id>")
+@login_required
 def progress_status(task_id):
     try:
         status = get_progress(task_id)
@@ -182,6 +187,7 @@ def progress_status(task_id):
         }), 500
 
 @reels_bp.route("/reel_progress/<task_id>")
+@login_required
 def reel_progress(task_id):
     status = get_progress(task_id)
 
@@ -192,10 +198,11 @@ def reel_progress(task_id):
     return render_template("reel_progress.html", task_id=task_id)
 
 @reels_bp.route("/generate-script", methods=["POST"])
+@login_required
 def generate_script_ajax():
     try:
         data = request.get_json()
-        user_email = session["user"]
+        user_email = get_user_email()
         topic = data.get("custom_topic", "").strip()
         theme = data.get("theme")
         language = data.get("language", "en")
@@ -217,16 +224,18 @@ def generate_script_ajax():
         return jsonify({"error": str(e)}), 500
 
 @reels_bp.route("/videos/<user_email>/<filename>")
+@login_required
 def serve_video(user_email, filename):
     return send_from_directory(os.path.join("output", user_email, "videos"), filename)
 
 @reels_bp.route("/reel-history", methods=["GET"])
+@login_required
 def list_reels():
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
+    user_email = get_user_email()
+    user_id = get_user_id()
 
     reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
     videos = [r.filename for r in reels]
@@ -242,12 +251,13 @@ def list_reels():
     return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
 
 @reels_bp.route("/reels/delete/<filename>", methods=["POST"])
+@login_required
 def delete_reel(filename):
     if "user" not in session:
         return redirect(url_for("auth.index"))
 
-    user_email = session["user"]
-    user_id = session.get("user_id")
+    user_email = get_user_email()
+    user_id = get_user_id()
     base_video = os.path.splitext(filename)[0]
     base_path = os.path.join("output", user_email)
 
