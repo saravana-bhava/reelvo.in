@@ -52,7 +52,7 @@ def create_reel():
     os.makedirs(scripts_dir, exist_ok=True)
 
     reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
-    videos = [r.filename for r in reels]
+    videos = [r.video_path for r in reels]
 
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
 
@@ -130,8 +130,8 @@ def create_reel_action():
     session["reel_in_progress"] = task_id
     start_progress(task_id)
 
-    def run_job_in_context():
-        with current_app.app_context():
+    def run_job_in_context(app, task_id):
+        with app.app_context():
             process_reel_job(
                 task_id,
                 user_email,
@@ -145,7 +145,8 @@ def create_reel_action():
                 watermark_enabled
             )
 
-    thread = Thread(target=run_job_in_context)
+    app = current_app._get_current_object()
+    thread = Thread(target=run_job_in_context, args=(app, task_id))
     thread.daemon = True
     thread.start()
 
@@ -241,7 +242,7 @@ def list_reels():
     user_id = get_user_id()
 
     reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
-    videos = [r.filename for r in reels]
+    videos = [r.video_path for r in reels]
 
     scripts_path = os.path.join("output", user_email, "scripts")
     scripts = {}

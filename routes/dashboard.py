@@ -32,7 +32,7 @@ def dashboard():
     vid_date_map = {}
 
     for reel in reels:
-        filename = reel.filename or f"{reel.id}.mp4"
+        filename = reel.video_path or f"{reel.id}.mp4"
         videos.append(filename)
         vid_date_map[filename] = reel.created_at.strftime("%b %d")
 
