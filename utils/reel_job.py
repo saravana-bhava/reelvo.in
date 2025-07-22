@@ -311,15 +311,15 @@ def process_reel_job(
             # Save to database
             reel = Reel(
                 user_id=user.id,
-                title=f"{theme_name}_{language}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                title=theme_name.replace("_", " ").title(),
                 script=script_text,
                 caption=script_text,
                 video_path=video_path,
                 audio_path=audio_to_use,
+                thumbnail_path=text_image_path,
                 theme_name=theme_name,
                 lang=language,
-                posted_at=datetime.utcnow(),
-                status="posted"
+                status="draft"
             )
             db.session.add(reel)
             db.session.commit()
