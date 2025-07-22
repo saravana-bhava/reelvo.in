@@ -32,7 +32,7 @@
           <div>
             <div class="flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title="{{ vid }}">
-                🎞️ {{ vid }}
+                  🎞️ {{ title_map[vid] if title_map and vid in title_map else vid }}
               </h3>
               {% if vid_date_map and vid in vid_date_map %}
                 <span class="text-xs text-gray-500 dark:text-gray-400">

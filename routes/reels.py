@@ -17,6 +17,7 @@ from utils.auth_utils import get_user_id, get_user_email
 from utils.generate_script import generate_script_for_user
 from utils.reel_job import process_reel_job
 from utils.progress_tracker import start_progress, get_progress
+from pydub.utils import mediainfo
 
 reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
@@ -138,6 +139,16 @@ def create_reel_action():
         audio_path = os.path.join(user_audio_dir, tts_filename)
         custom_voice_file.save(audio_path)
 
+        try:
+            info = mediainfo(audio_path)
+            duration_seconds = float(info["duration"])
+            if duration_seconds > 30:
+                os.remove(audio_path)
+                return redirect_with_form_data("Uploaded voice file must be 30 seconds or less.")
+        except Exception as e:
+            logger.error(f"Error checking audio duration: {e}")
+            return redirect_with_form_data("Could not validate voice file duration.")
+
     task_id = str(uuid.uuid4())
     session["reel_in_progress"] = task_id
     start_progress(task_id, user_id)
@@ -255,17 +266,28 @@ def list_reels():
     user_id = get_user_id()
 
     reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
-    videos = [r.video_path for r in reels]
 
-    scripts_path = os.path.join("output", user_email, "scripts")
+    # Prepare data: list of videos, scripts, and video → date map
+    videos = []
     scripts = {}
-    if os.path.exists(scripts_path):
-        for f in os.listdir(scripts_path):
-            if f.endswith(".txt"):
-                with open(os.path.join(scripts_path, f), encoding="utf-8") as file:
-                    scripts[f.replace("_text.txt", "_video.mp4")] = file.read().strip()
+    vid_date_map = {}
+    title_map = {}
 
-    return render_template("reels.html", user=user_email, videos=videos, scripts=scripts)
+    for r in reels:
+        filename = os.path.basename(r.video_path)
+        videos.append(filename)
+        scripts[filename] = r.script.strip() if r.script else ""
+        vid_date_map[filename] = r.created_at.strftime("%Y-%m-%d %H:%M")
+        title_map[filename] = r.title or filename
+
+    return render_template(
+        "reels.html",
+        user=user_email,
+        videos=videos,
+        scripts=scripts,
+        vid_date_map=vid_date_map,
+        title_map=title_map
+    )
 
 @reels_bp.route("/reels/delete/<filename>", methods=["POST"])
 @login_required
