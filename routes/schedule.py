@@ -4,8 +4,7 @@ from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, current_app
 )
-from db.models import Schedule
-from db import db
+from models import db, Schedule
 from datetime import datetime
 from utils.auth_utils import get_user_email
 

@@ -22,7 +22,7 @@ from utils.progress_tracker import (
     get_stage_percent,
 )
 from models.reel import Reel
-from models.db import db
+from models import db
 from models.user import User
 
 UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"

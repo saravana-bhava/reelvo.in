@@ -6,8 +6,7 @@ import sys
 # Add the project root to sys.path to enable imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from models import Plan
-from models.db import db
+from models import db, Plan
 from app import create_app
 
 def seed_plans():

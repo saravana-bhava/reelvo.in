@@ -40,7 +40,7 @@ def create_app():
     # ─────────────────────────────
     # SQLITE CONFIGURATION
     # ─────────────────────────────
-    from models.db import db
+    from models import db
 
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(BASE_DIR, "db", "reelvo.db")
@@ -76,7 +76,7 @@ def create_app():
     from routes.dashboard import dashboard_bp
     from routes.profile import profile_bp
     from routes.reels import reels_bp
-    from routes.reels.progress import progress_bp
+    #from routes.reels.progress import progress_bp
     from routes.instagram import instagram_bp
     from routes.schedule import schedule_bp
     from routes.coming_soon import coming_bp
@@ -87,7 +87,7 @@ def create_app():
         dashboard_bp,
         profile_bp,
         reels_bp,
-        progress_bp,
+        #progress_bp,
         instagram_bp,
         schedule_bp,
         coming_bp,

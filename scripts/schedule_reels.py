@@ -10,7 +10,7 @@ import sys
 import logging
 from datetime import datetime, timedelta
 
-from models.db import db, init_db
+from models import db, init_db
 from models.user import User
 from models.reel import Reel
 from models.schedule import Schedule

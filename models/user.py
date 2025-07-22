@@ -1,6 +1,6 @@
 # File: models/user.py
 
-from models.db import db
+from models import db
 from models.base import TimestampMixin
 
 class User(db.Model, TimestampMixin):

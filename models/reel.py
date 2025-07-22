@@ -1,6 +1,6 @@
 # File: models/reel.py
 
-from models.db import db
+from models import db
 from models.base import TimestampMixin
 
 class Reel(db.Model, TimestampMixin):

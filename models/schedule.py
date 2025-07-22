@@ -1,6 +1,6 @@
 # File: models/schedule.py
 
-from models.db import db
+from models import db
 from models.base import TimestampMixin
 
 class Schedule(db.Model, TimestampMixin):

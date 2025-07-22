@@ -13,7 +13,7 @@ from logging.handlers import RotatingFileHandler
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
-from models.db import db, init_db
+from models import db, init_db
 from models.user import User
 from models.reel import Reel
 from models.schedule import Schedule

@@ -1,6 +1,6 @@
 # File: models/progress.py
 
-from models.db import db
+from models import db
 from datetime import datetime
 
 

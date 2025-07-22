@@ -1,6 +1,6 @@
 # File: models/plan.py
 
-from models.db import db
+from models import db
 from models.base import TimestampMixin
 
 class Plan(db.Model, TimestampMixin):

@@ -7,7 +7,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from models.theme import Theme
-from models.db import db
+from models import db
 from app import create_app
 
 themes = [

@@ -1,6 +1,6 @@
 # File: models/theme.py
 
-from models.db import db
+from models import db
 
 class Theme(db.Model):
     __tablename__ = 'themes'

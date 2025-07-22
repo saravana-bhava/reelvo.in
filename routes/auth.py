@@ -70,7 +70,8 @@ def register():
         new_user = User(
             email=email,
             password_hash=generate_password_hash(password),
-            created_at=datetime.utcnow().isoformat()
+            plan="Free",
+            created_at=datetime.utcnow()
         )
         db.session.add(new_user)
         db.session.commit()

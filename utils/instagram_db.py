@@ -1,10 +1,10 @@
 # File: utils/instagram_db.py
 
 from datetime import datetime, timedelta
+from models import db
 from models.user import User
 from models.token import UserToken
 from models.reel import Reel
-from models.db import db
 
 
 def get_instagram_credentials(user_email):

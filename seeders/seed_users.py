@@ -6,9 +6,8 @@ import sys
 # Add project root to sys.path so 'models' can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from models import User
+from models import db, User
 from werkzeug.security import generate_password_hash
-from models.db import db
 from app import create_app
 
 def run():
