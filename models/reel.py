@@ -18,14 +18,14 @@ class Reel(db.Model, TimestampMixin):
     thumbnail_path = db.Column(db.Text)
 
     theme_name = db.Column(db.String(100))
-    lang = db.Column(db.String(10), default='en')
+    lang = db.Column(db.String(10), default='en', nullable=False)
 
-    is_scheduled = db.Column(db.Boolean, default=False)
+    is_scheduled = db.Column(db.Boolean, default=False, nullable=False)
     scheduled_at = db.Column(db.DateTime)
     posted_at = db.Column(db.DateTime)
 
-    platform = db.Column(db.String(20), default='instagram')
-    status = db.Column(db.String(20), default='draft')  # Values: draft/scheduled/posted/failed
+    platform = db.Column(db.String(20), default='instagram', nullable=False)
+    status = db.Column(db.String(20), default='draft', nullable=False)  # Values: draft/scheduled/posted/failed
 
     error_log = db.Column(db.Text)
 

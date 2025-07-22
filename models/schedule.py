@@ -11,10 +11,10 @@ class Schedule(db.Model, TimestampMixin):
     reel_id = db.Column(db.Integer, db.ForeignKey('reels.id'), nullable=False)
 
     scheduled_for = db.Column(db.DateTime, nullable=False)
-    timezone = db.Column(db.String(50), default='Asia/Kolkata')
+    timezone = db.Column(db.String(50), default='Asia/Kolkata', nullable=False)
 
-    retry_count = db.Column(db.Integer, default=0)
-    status = db.Column(db.String(20), default='pending')  # Values: pending/processing/posted/failed
+    retry_count = db.Column(db.Integer, default=0, nullable=False)
+    status = db.Column(db.String(20), default='pending', nullable=False)  # Values: pending/processing/posted/failed
     error_log = db.Column(db.Text)
 
     __table_args__ = (
