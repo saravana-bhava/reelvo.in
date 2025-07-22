@@ -1,16 +1,24 @@
 # File: scripts/post_scheduled_reels.py
 
+"""
+Posts scheduled reels using Instagram API, marks them posted,
+logs success/failure, and sends email alerts on failures.
+"""
+
 import os
 import logging
 import smtplib
-import sqlite3
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
-from utils.instagram_posting import post_to_instagram
-from utils.user_db import get_user_token_data
+from models.db import db, init_db
+from models.user import User
+from models.reel import Reel
+from models.schedule import Schedule
+from utils.instagram import post_to_instagram
+from utils.instagram_db import get_instagram_credentials  # Changed here to ORM-based token fetch
 
 # Load .env
 load_dotenv()
@@ -21,8 +29,6 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-
-DB_PATH = os.path.join(ROOT_DIR, "db", "reelvo.db")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
 LOG_FILE = os.path.join(BASE_DIR, "logs", "post_scheduled.log")
 EMAIL_TEMPLATE = os.path.join(BASE_DIR, "templates", "email_alert_template.txt")
@@ -63,58 +69,45 @@ def send_email_alert(subject, message):
         logger.error(f"❌ Failed to send email alert: {e}")
 
 # ---------------------
-# SQLite Helpers
-# ---------------------
-
-def fetch_scheduled_reels(conn):
-    """Return all unposted reels scheduled for today or earlier."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    query = """
-        SELECT id, user_email, video, scheduled_for, script
-        FROM scheduled_posts
-        WHERE posted = 0 AND date(scheduled_for) <= date(?)
-    """
-    return conn.execute(query, (today,)).fetchall()
-
-def mark_reel_posted(conn, post_id):
-    conn.execute("""
-        UPDATE scheduled_posts
-        SET posted = 1, posted_at = ?
-        WHERE id = ?
-    """, (datetime.now().isoformat(), post_id))
-    conn.commit()
-
-def fetch_reel_history_caption(conn, user_email, video_name):
-    result = conn.execute("""
-        SELECT caption FROM reel_history
-        WHERE user_email = ? AND video = ?
-    """, (user_email, video_name)).fetchone()
-    return result[0] if result else ""
-
-# ---------------------
-# Main Logic
+# Main Posting Logic
 # ---------------------
 
 def post_due_reels():
     logger.info("📤 Starting scheduled reel poster...")
+
+    init_db()  # Initialize DB and create session
+
     failures = []
 
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        posts = fetch_scheduled_reels(conn)
+    try:
+        # Query all schedules where status is 'pending' and scheduled_for <= now
+        due_schedules = (
+            db.session.query(Schedule)
+            .filter(Schedule.status == 'pending')
+            .filter(Schedule.scheduled_for <= datetime.now())
+            .all()
+        )
 
-        logger.info(f"📋 Found {len(posts)} due scheduled reels.")
+        logger.info(f"📋 Found {len(due_schedules)} due scheduled reels.")
 
-        for row in posts:
-            post_id = row["id"]
-            user_email = row["user_email"]
-            video = row["video"]
-            scheduled_date = row["scheduled_for"]
-            caption = row["script"] or fetch_reel_history_caption(conn, user_email, video)
+        for schedule in due_schedules:
+            user = db.session.query(User).filter_by(id=schedule.user_id).first()
+            reel = db.session.query(Reel).filter_by(id=schedule.reel_id).first()
 
-            token_data = get_user_token_data(user_email)
+            if not user or not reel:
+                logger.warning(f"Schedule ID {schedule.id} references missing User or Reel.")
+                failures.append(f"Schedule ID {schedule.id} missing user or reel")
+                continue
+
+            user_email = user.email
+            video = os.path.basename(reel.video_path)
+            caption = reel.caption or ""
+
+            # Using ORM-based token fetch
+            token_data = get_instagram_credentials(user_email)
             if not token_data or "access_token" not in token_data:
                 logger.warning(f"[{user_email}] 🚫 No valid Instagram token.")
+                failures.append(f"[{user_email}] No valid Instagram token.")
                 continue
 
             video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
@@ -124,22 +117,44 @@ def post_due_reels():
                 continue
 
             logger.info(f"[{user_email}] 📲 Posting scheduled reel: {video}")
+
             try:
                 success = post_to_instagram(user_email, video_path, caption)
                 if success:
-                    mark_reel_posted(conn, post_id)
+                    # Mark schedule and reel as posted
+                    schedule.status = 'posted'
+                    schedule.error_log = None
+                    schedule.retry_count = 0
+                    schedule.posted_at = datetime.now()
+
+                    reel.status = 'posted'
+                    reel.posted_at = datetime.now()
+
+                    db.session.commit()
                     logger.info(f"[{user_email}] ✅ Successfully posted: {video}")
                 else:
                     logger.error(f"[{user_email}] ❌ Post API failed: {video}")
+                    schedule.status = 'failed'
+                    schedule.error_log = "Post API failure"
+                    db.session.commit()
                     failures.append(f"[{user_email}] Failed API post: {video}")
+
             except Exception as e:
                 logger.exception(f"[{user_email}] ❌ Exception during post: {video}")
+                schedule.status = 'failed'
+                schedule.error_log = str(e)
+                db.session.commit()
                 failures.append(f"[{user_email}] Exception: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Unexpected error in post_due_reels: {e}")
+        failures.append(f"Unexpected error: {str(e)}")
 
     logger.info("✅ Finished scheduled posting.")
 
     if failures:
         send_email_alert("[Alert] Reel Posting Failures", "\n".join(failures))
+
 
 # ---------------------
 # Entry Point

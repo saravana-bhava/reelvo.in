@@ -1,5 +1,5 @@
 <!-- File: templates/includes/sidebar.html -->
-{% set user_email = session.get('user') or '' %}
+{% set user_email = session.get('user.email') or '' %}
 {% set has_profile_pic = session.get('connected') and session.get('instagram_profile_picture') %}
 {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
 
@@ -26,8 +26,8 @@
     {% set nav_links = [
       ('🏠', 'Dashboard', 'dashboard.dashboard', None),
       ('🎬', 'Create Reel', 'reels.create_reel', None),
-      ('🗓️', 'Scheduled Reels', 'schedule.list_scheduled_jobs_view', None),
       ('📂', 'Reel History', 'reels.list_reels', None),
+      ('🗓️', 'Scheduled Reels', 'schedule.list_scheduled_jobs_view', None),
       ('📊', 'Analytics', 'coming_soon.show_coming', 'analytics'),
       ('🤝', 'Refer & Earn', 'coming_soon.show_coming', 'refer'),
       ('💳', 'Upgrade Plan', 'coming_soon.show_coming', 'upgrade')

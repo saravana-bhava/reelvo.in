@@ -1,8 +1,6 @@
-# File: scripts/schedule_reels.py
-
 """
 Assigns posting times for unscheduled reels (1 per day at 4PM).
-Updates `scheduled_reels` table in SQLite (used by post_scheduled_reels.py).
+Schedules reels by creating entries in `schedules` table using SQLAlchemy ORM.
 Usage:
     python scripts/schedule_reels.py <user_email>
 """
@@ -10,15 +8,18 @@ Usage:
 import os
 import sys
 import logging
-import sqlite3
 from datetime import datetime, timedelta
+
+from models.db import db, init_db
+from models.user import User
+from models.reel import Reel
+from models.schedule import Schedule
 
 # Constants
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_PATH = os.path.join(ROOT_DIR, "db", "reelvo.db")
 DEFAULT_POST_HOUR = 16  # 4PM
 
-# Logging setup
+# Setup logging
 LOG_PATH = os.path.join(ROOT_DIR, "scheduler", "logs", "schedule_reels.log")
 os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
 logging.basicConfig(
@@ -29,78 +30,69 @@ logging.basicConfig(
 )
 logger = logging.getLogger("schedule_reels")
 
-
-def connect_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def get_user_reel_history(conn, user_email):
-    cursor = conn.execute(
-        "SELECT video_path, script_path FROM reel_history WHERE email = ?", (user_email,)
-    )
-    return {os.path.basename(row["video_path"]): row["script_path"] for row in cursor.fetchall()}
-
-
-def get_user_schedule(conn, user_email):
-    cursor = conn.execute(
-        "SELECT video, scheduled_at FROM scheduled_reels WHERE email = ?", (user_email,)
-    )
-    return [dict(row) for row in cursor.fetchall()]
-
-
-def insert_schedule(conn, user_email, video, video_path, scheduled_for):
-    conn.execute("""
-        INSERT INTO scheduled_reels (email, video, scheduled_at, posted, created_at)
-        VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP)
-    """, (user_email, video_path, scheduled_for))
-
-
 def schedule_reels_for_user(user_email: str):
-    with connect_db() as conn:
-        history = get_user_reel_history(conn, user_email)
-        user_schedule = get_user_schedule(conn, user_email)
+    # Initialize DB if needed (depends on your app setup)
+    init_db()
 
-        if not history:
-            logger.warning(f"[{user_email}] ⚠️ No reel history found.")
+    with db.session.no_autoflush:
+        user = db.session.query(User).filter(User.email == user_email).first()
+        if not user:
+            logger.warning(f"[{user_email}] ⚠️ User not found.")
             return
 
-        scheduled_video_names = {os.path.basename(item["video"]) for item in user_schedule}
+        # Get reels for user that are NOT already scheduled
+        # We consider reels with status='draft' or 'posted' but NOT scheduled in schedules table
+        scheduled_reel_ids = {s.reel_id for s in db.session.query(Schedule).filter(Schedule.user_id == user.id).all()}
+        unscheduled_reels = (
+            db.session.query(Reel)
+            .filter(Reel.user_id == user.id)
+            .filter(~Reel.id.in_(scheduled_reel_ids))
+            .order_by(Reel.created_at.asc())
+            .all()
+        )
 
-        # Determine starting post date
+        if not unscheduled_reels:
+            logger.info(f"[{user_email}] ℹ️ No new reels to schedule.")
+            return
+
+        # Determine starting scheduled date (4 PM today or next day after last scheduled)
+        last_schedule = (
+            db.session.query(Schedule)
+            .filter(Schedule.user_id == user.id)
+            .order_by(Schedule.scheduled_for.desc())
+            .first()
+        )
+
         start_date = datetime.now().replace(hour=DEFAULT_POST_HOUR, minute=0, second=0, microsecond=0)
-        valid_dates = []
-
-        for item in user_schedule:
-            try:
-                valid_dates.append(datetime.strptime(item["scheduled_at"], "%Y-%m-%d %H:%M:%S"))
-            except Exception:
-                logger.warning(f"[{user_email}] ⚠️ Skipping invalid date format: {item['scheduled_at']}")
-
-        if valid_dates:
-            latest = max(valid_dates)
-            next_date = latest + timedelta(days=1)
-            start_date = max(start_date, next_date)
+        if last_schedule and last_schedule.scheduled_for:
+            next_date = last_schedule.scheduled_for + timedelta(days=1)
+            if next_date > start_date:
+                start_date = next_date
 
         count = 0
-        for video, script_path in history.items():
-            if video in scheduled_video_names:
-                continue
+        for reel in unscheduled_reels:
+            scheduled_for = start_date
 
-            video_path = f"output/{user_email}/videos/{video}"
-            scheduled_for = start_date.strftime("%Y-%m-%d %H:%M:%S")
+            schedule_entry = Schedule(
+                user_id=user.id,
+                reel_id=reel.id,
+                scheduled_for=scheduled_for,
+                timezone='Asia/Kolkata',
+                status='pending'
+            )
+            db.session.add(schedule_entry)
 
-            insert_schedule(conn, user_email, video, video_path, scheduled_for)
+            # Mark reel as scheduled (optional, if you want to mark in reels table)
+            reel.is_scheduled = True
+            reel.scheduled_at = scheduled_for
+            reel.status = 'scheduled'
+
             start_date += timedelta(days=1)
             count += 1
 
-        conn.commit()
+        db.session.commit()
 
-        if count:
-            logger.info(f"[{user_email}] ✅ Scheduled {count} new reel(s).")
-        else:
-            logger.info(f"[{user_email}] ℹ️ No new reels to schedule.")
+        logger.info(f"[{user_email}] ✅ Scheduled {count} new reel(s).")
 
 
 if __name__ == "__main__":
