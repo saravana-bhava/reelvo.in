@@ -10,7 +10,7 @@ class ProgressTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.String(128), unique=True, nullable=False)
 
-    user_email = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     status = db.Column(db.Text, nullable=False, default="Starting...")
     percent = db.Column(db.Integer, nullable=False, default=0)
@@ -32,6 +32,6 @@ class ProgressTask(db.Model):
     def __repr__(self):
         return (
             f"<ProgressTask task_id={self.task_id} "
-            f"user_email={self.user_email} "
+            f"user_id={self.user_id} "
             f"percent={self.percent} status={self.status}>"
         )
