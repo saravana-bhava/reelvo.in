@@ -18,7 +18,7 @@ from models.user import User
 from models.reel import Reel
 from models.schedule import Schedule
 from utils.instagram import post_to_instagram
-from utils.instagram_db import get_instagram_credentials  # Changed here to ORM-based token fetch
+from utils.instagram_db import get_instagram_credentials
 
 # Load .env
 load_dotenv()
@@ -78,9 +78,9 @@ def post_due_reels():
     init_db()  # Initialize DB and create session
 
     failures = []
+    success_count = 0
 
     try:
-        # Query all schedules where status is 'pending' and scheduled_for <= now
         due_schedules = (
             db.session.query(Schedule)
             .filter(Schedule.status == 'pending')
@@ -103,7 +103,6 @@ def post_due_reels():
             video = os.path.basename(reel.video_path)
             caption = reel.caption or ""
 
-            # Using ORM-based token fetch
             token_data = get_instagram_credentials(user_email)
             if not token_data or "access_token" not in token_data:
                 logger.warning(f"[{user_email}] 🚫 No valid Instagram token.")
@@ -111,7 +110,7 @@ def post_due_reels():
                 continue
 
             video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
-            if not os.path.exists(video_path):
+            if not os.path.isfile(video_path):
                 logger.warning(f"[{user_email}] ❌ Video not found: {video_path}")
                 failures.append(f"[{user_email}] Missing file: {video}")
                 continue
@@ -119,9 +118,16 @@ def post_due_reels():
             logger.info(f"[{user_email}] 📲 Posting scheduled reel: {video}")
 
             try:
-                success = post_to_instagram(user_email, video_path, caption)
-                if success:
-                    # Mark schedule and reel as posted
+                result = post_to_instagram(
+                    video_path=video_path,
+                    caption=caption,
+                    user_email=user_email,
+                    task_id=None,
+                    use_drive=True
+                )
+
+                if result and "Reel posted successfully" in result:
+                    # Mark as posted
                     schedule.status = 'posted'
                     schedule.error_log = None
                     schedule.retry_count = 0
@@ -131,11 +137,12 @@ def post_due_reels():
                     reel.posted_at = datetime.now()
 
                     db.session.commit()
+                    success_count += 1
                     logger.info(f"[{user_email}] ✅ Successfully posted: {video}")
                 else:
                     logger.error(f"[{user_email}] ❌ Post API failed: {video}")
                     schedule.status = 'failed'
-                    schedule.error_log = "Post API failure"
+                    schedule.error_log = result or "Post API failure"
                     db.session.commit()
                     failures.append(f"[{user_email}] Failed API post: {video}")
 
@@ -150,7 +157,7 @@ def post_due_reels():
         logger.error(f"Unexpected error in post_due_reels: {e}")
         failures.append(f"Unexpected error: {str(e)}")
 
-    logger.info("✅ Finished scheduled posting.")
+    logger.info(f"✅ Finished scheduled posting. Success: {success_count}, Failures: {len(failures)}")
 
     if failures:
         send_email_alert("[Alert] Reel Posting Failures", "\n".join(failures))
