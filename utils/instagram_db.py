@@ -18,11 +18,12 @@ def get_instagram_credentials(user_email):
 
     return {
         "access_token": token.access_token,
-        "expires_at": token.expires_at
+        "expires_at": token.expires_at,
+        "platform_user_id": token.platform_user_id
     }
 
 
-def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=5184000):
+def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=5184000, platform_user_id=None):
     user = User.query.get(user_id)
     if not user:
         raise ValueError(f"User with ID {user_id} not found")
@@ -35,13 +36,16 @@ def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=
         token.access_token = access_token
         token.refresh_token = refresh_token
         token.expires_at = expires_at
+        if platform_user_id:
+            token.platform_user_id = platform_user_id
     else:
         token = UserToken(
             user_id=user_id,
             platform='instagram',
             access_token=access_token,
             refresh_token=refresh_token,
-            expires_at=expires_at
+            expires_at=expires_at,
+            platform_user_id=platform_user_id
         )
         db.session.add(token)
 

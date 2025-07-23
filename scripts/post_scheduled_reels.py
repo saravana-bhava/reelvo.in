@@ -5,15 +5,19 @@ Posts scheduled reels using Instagram API, marks them posted,
 logs success/failure, and sends email alerts on failures.
 """
 
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import logging
 import smtplib
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+from flask import Flask
 
-from models import db, init_db
+from models import db
 from models.user import User
 from models.reel import Reel
 from models.schedule import Schedule
@@ -69,103 +73,117 @@ def send_email_alert(subject, message):
         logger.error(f"❌ Failed to send email alert: {e}")
 
 # ---------------------
+# Flask App & DB Setup
+# ---------------------
+
+def create_app():
+    app = Flask(__name__)
+
+    db_url = os.getenv("DB_URL")
+    if not db_url:
+        raise RuntimeError("❌ DB_URL is not set in .env")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db.init_app(app)
+    return app
+
+# ---------------------
 # Main Posting Logic
 # ---------------------
 
-def post_due_reels():
+def post_due_reels(app):
     logger.info("📤 Starting scheduled reel poster...")
-
-    init_db()  # Initialize DB and create session
 
     failures = []
     success_count = 0
 
-    try:
-        due_schedules = (
-            db.session.query(Schedule)
-            .filter(Schedule.status == 'pending')
-            .filter(Schedule.scheduled_for <= datetime.now())
-            .all()
-        )
+    with app.app_context():
+        try:
+            due_schedules = (
+                db.session.query(Schedule)
+                .filter(Schedule.status == 'pending')
+                .filter(Schedule.scheduled_for <= datetime.now())
+                .all()
+            )
 
-        logger.info(f"📋 Found {len(due_schedules)} due scheduled reels.")
+            logger.info(f"📋 Found {len(due_schedules)} due scheduled reels.")
 
-        for schedule in due_schedules:
-            user = db.session.query(User).filter_by(id=schedule.user_id).first()
-            reel = db.session.query(Reel).filter_by(id=schedule.reel_id).first()
+            for schedule in due_schedules:
+                user = db.session.query(User).filter_by(id=schedule.user_id).first()
+                reel = db.session.query(Reel).filter_by(id=schedule.reel_id).first()
 
-            if not user or not reel:
-                logger.warning(f"Schedule ID {schedule.id} references missing User or Reel.")
-                failures.append(f"Schedule ID {schedule.id} missing user or reel")
-                continue
+                if not user or not reel:
+                    logger.warning(f"Schedule ID {schedule.id} references missing User or Reel.")
+                    failures.append(f"Schedule ID {schedule.id} missing user or reel")
+                    continue
 
-            user_email = user.email
-            video = os.path.basename(reel.video_path)
-            caption = reel.caption or ""
+                user_email = user.email
+                video = os.path.basename(reel.video_path)
+                caption = reel.caption or ""
 
-            token_data = get_instagram_credentials(user_email)
-            if not token_data or "access_token" not in token_data:
-                logger.warning(f"[{user_email}] 🚫 No valid Instagram token.")
-                failures.append(f"[{user_email}] No valid Instagram token.")
-                continue
+                token_data = get_instagram_credentials(user_email)
+                if not token_data or "access_token" not in token_data:
+                    logger.warning(f"[{user_email}] 🚫 No valid Instagram token.")
+                    failures.append(f"[{user_email}] No valid Instagram token.")
+                    continue
 
-            video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
-            if not os.path.isfile(video_path):
-                logger.warning(f"[{user_email}] ❌ Video not found: {video_path}")
-                failures.append(f"[{user_email}] Missing file: {video}")
-                continue
+                video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
+                if not os.path.isfile(video_path):
+                    logger.warning(f"[{user_email}] ❌ Video not found: {video_path}")
+                    failures.append(f"[{user_email}] Missing file: {video}")
+                    continue
 
-            logger.info(f"[{user_email}] 📲 Posting scheduled reel: {video}")
+                logger.info(f"[{user_email}] 📲 Posting scheduled reel: {video}")
 
-            try:
-                result = post_to_instagram(
-                    video_path=video_path,
-                    caption=caption,
-                    user_email=user_email,
-                    task_id=None,
-                    use_drive=True
-                )
+                try:
+                    result = post_to_instagram(
+                        video_path=video_path,
+                        caption=caption,
+                        user_email=user_email,
+                        task_id=None,
+                        use_drive=True
+                    )
 
-                if result and "Reel posted successfully" in result:
-                    # Mark as posted
-                    schedule.status = 'posted'
-                    schedule.error_log = None
-                    schedule.retry_count = 0
-                    schedule.posted_at = datetime.now()
+                    if result and "Reel posted successfully" in result:
+                        schedule.status = 'posted'
+                        schedule.error_log = None
+                        schedule.retry_count = 0
+                        schedule.posted_at = datetime.now()
 
-                    reel.status = 'posted'
-                    reel.posted_at = datetime.now()
+                        reel.status = 'posted'
+                        reel.posted_at = datetime.now()
 
-                    db.session.commit()
-                    success_count += 1
-                    logger.info(f"[{user_email}] ✅ Successfully posted: {video}")
-                else:
-                    logger.error(f"[{user_email}] ❌ Post API failed: {video}")
+                        db.session.commit()
+                        success_count += 1
+                        logger.info(f"[{user_email}] ✅ Successfully posted: {video}")
+                    else:
+                        logger.error(f"[{user_email}] ❌ Post API failed: {video}")
+                        schedule.status = 'failed'
+                        schedule.error_log = result or "Post API failure"
+                        db.session.commit()
+                        failures.append(f"[{user_email}] Failed API post: {video}")
+
+                except Exception as e:
+                    logger.exception(f"[{user_email}] ❌ Exception during post: {video}")
                     schedule.status = 'failed'
-                    schedule.error_log = result or "Post API failure"
+                    schedule.error_log = str(e)
                     db.session.commit()
-                    failures.append(f"[{user_email}] Failed API post: {video}")
+                    failures.append(f"[{user_email}] Exception: {str(e)}")
 
-            except Exception as e:
-                logger.exception(f"[{user_email}] ❌ Exception during post: {video}")
-                schedule.status = 'failed'
-                schedule.error_log = str(e)
-                db.session.commit()
-                failures.append(f"[{user_email}] Exception: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error in post_due_reels: {e}")
+            failures.append(f"Unexpected error: {str(e)}")
 
-    except Exception as e:
-        logger.error(f"Unexpected error in post_due_reels: {e}")
-        failures.append(f"Unexpected error: {str(e)}")
+        logger.info(f"✅ Finished scheduled posting. Success: {success_count}, Failures: {len(failures)}")
 
-    logger.info(f"✅ Finished scheduled posting. Success: {success_count}, Failures: {len(failures)}")
-
-    if failures:
-        send_email_alert("[Alert] Reel Posting Failures", "\n".join(failures))
-
+        if failures:
+            send_email_alert("[Alert] Reel Posting Failures", "\n".join(failures))
 
 # ---------------------
 # Entry Point
 # ---------------------
 
 if __name__ == "__main__":
-    post_due_reels()
+    app = create_app()
+    post_due_reels(app)

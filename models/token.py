@@ -12,6 +12,7 @@ class UserToken(db.Model, TimestampMixin):
     refresh_token = db.Column(db.String)
     expires_at = db.Column(db.DateTime)
     platform = db.Column(db.String, nullable=False)
+    platform_user_id = db.Column(db.String, nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'platform', name='uq_user_id_platform'),

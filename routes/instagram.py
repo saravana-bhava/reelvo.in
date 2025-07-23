@@ -108,6 +108,7 @@ def instagram_callback():
             }
         )
         long_token = long_data.get("access_token") if long_data else None
+        refresh_token = ""
         expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)
 
         if not long_token:
@@ -163,7 +164,7 @@ def instagram_callback():
                 else:
                     session["instagram_profile_picture"] = None
 
-            update_instagram_tokens(user_id, long_token, ig_user_id, expires_in)
+            update_instagram_tokens(user_id, long_token, refresh_token, expires_in, ig_user_id)
             session["connected"] = True
             flash("✅ Instagram connected successfully!", "success")
 
