@@ -22,14 +22,14 @@ def get_instagram_credentials(user_email):
     }
 
 
-def update_instagram_tokens(user_email, access_token, refresh_token="", expires_in=5184000):
-    user = User.query.filter_by(email=user_email).first()
+def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=5184000):
+    user = User.query.get(user_id)
     if not user:
-        raise ValueError(f"User with email {user_email} not found")
+        raise ValueError(f"User with ID {user_id} not found")
 
     expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
-    token = UserToken.query.filter_by(user_id=user.id, platform='instagram').first()
+    token = UserToken.query.filter_by(user_id=user_id, platform='instagram').first()
 
     if token:
         token.access_token = access_token
@@ -37,7 +37,7 @@ def update_instagram_tokens(user_email, access_token, refresh_token="", expires_
         token.expires_at = expires_at
     else:
         token = UserToken(
-            user_id=user.id,
+            user_id=user_id,
             platform='instagram',
             access_token=access_token,
             refresh_token=refresh_token,

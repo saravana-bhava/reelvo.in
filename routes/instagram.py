@@ -167,9 +167,9 @@ def instagram_callback():
             session["connected"] = True
             flash("✅ Instagram connected successfully!", "success")
 
-    except Exception:
+    except Exception as e:
         current_app.logger.exception("[OAuth] Instagram callback error")
-        flash("❌ Instagram connection failed. Try again later.", "error")
+        flash(f"❌ Instagram connection failed. {str(e)} Try again later.")
 
     return redirect(url_for("dashboard.dashboard"))
 
