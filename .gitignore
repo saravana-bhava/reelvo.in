@@ -108,6 +108,8 @@ tests/
 cache/
 _docs/
 _temp/
+_remotedb/
+output/
 
 # ─────────────────────────────────────────────
 # FRONTEND (NODE, NEXT.JS, ETC.)
