@@ -15,19 +15,12 @@ from utils.google_drive import upload_to_google_drive
 # Constants
 INSTAGRAM_API_URL = "https://graph.facebook.com/v19.0"
 
-# Optional UI hook
-try:
-    from progress import update_progress
-except ImportError:
-    def update_progress(task_id, status, percent): pass
-
 
 def post_to_instagram(
     video_path: str,
     caption: str,
     user_email: str,
     video_url: str = "",
-    task_id: str = None,
     use_drive: bool = True
 ) -> str:
     """
@@ -35,14 +28,12 @@ def post_to_instagram(
     If video_url is not provided, uploads to Google Drive (optional).
     Returns an HTML-safe result message.
     """
-    update_progress(task_id, "📡 Connecting to Instagram...", 91)
-
     creds = get_instagram_credentials(user_email)
     if not creds:
         return "❌ No Instagram credentials found for user."
 
     access_token = creds.get("access_token")
-    user_id = creds.get("ig_user_id")
+    user_id = creds.get("platform_user_id")
 
     if not access_token or not user_id:
         return "❌ Instagram access token or user ID is missing."
@@ -50,20 +41,20 @@ def post_to_instagram(
     # Upload to Google Drive if needed
     if use_drive:
         if not video_url or not video_url.startswith("http"):
-            update_progress(task_id, "☁️ Uploading video to Drive...", 92)
-            video_url, error = upload_to_google_drive(video_path, user_email, task_id=task_id)
+            video_url, error = upload_to_google_drive(video_path, user_email)
             if error:
                 return f"❌ {error}"
     else:
         # Generate a direct site-hosted URL if not using Google Drive
         if not video_url or not video_url.startswith("http"):
-            site_base_url = os.getenv("SITE_BASE_URL", "https://reelvo.in")
-            relative_path = video_path.replace("static/", "").lstrip("/")
-            video_url = f"{site_base_url}/{relative_path}"
+            protocol = os.getenv("PROTOCOL", "https")
+            host = os.getenv("HOST", "reelvo-local.sazm.in")
+            site_base_url = f"{protocol}://{host}"
+            filename = os.path.basename(video_path)
+            video_url = f"{site_base_url}/videos/{user_email}/{filename}"
 
     try:
         # Step 1: Create media container
-        update_progress(task_id, "📦 Creating media container...", 93)
         container_url = f"{INSTAGRAM_API_URL}/{user_id}/media"
         payload = {
             "media_type": "REELS",
@@ -81,7 +72,6 @@ def post_to_instagram(
             return "❌ Failed to create Instagram media container (no ID returned)."
 
         # Step 2: Publish the media
-        update_progress(task_id, "🚀 Publishing to Instagram...", 95)
         publish_url = f"{INSTAGRAM_API_URL}/{user_id}/media_publish"
         r2 = requests.post(publish_url, data={
             "creation_id": container_id,
@@ -110,7 +100,6 @@ def post_to_instagram(
             platform="Instagram",
             permalink=permalink
         )
-        update_progress(task_id, "✅ Instagram upload complete", 98)
 
         if permalink.startswith("http"):
             return f"📤 Reel posted successfully: <a href='{permalink}' target='_blank'>View</a>"

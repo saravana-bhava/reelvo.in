@@ -97,6 +97,7 @@ def post_due_reels(app):
 
     failures = []
     success_count = 0
+    use_drive = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
 
     with app.app_context():
         try:
@@ -141,8 +142,8 @@ def post_due_reels(app):
                         video_path=video_path,
                         caption=caption,
                         user_email=user_email,
-                        task_id=None,
-                        use_drive=True
+                        video_url = "",
+                        use_drive=use_drive
                     )
 
                     if result and "Reel posted successfully" in result:
