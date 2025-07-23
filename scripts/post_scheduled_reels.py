@@ -139,6 +139,7 @@ def post_due_reels(app):
 
                 try:
                     result = post_to_instagram(
+                        reel_id=schedule.reel_id,
                         video_path=video_path,
                         caption=caption,
                         user_email=user_email,

@@ -17,6 +17,7 @@ INSTAGRAM_API_URL = "https://graph.facebook.com/v19.0"
 
 
 def post_to_instagram(
+    reel_id: str,
     video_path: str,
     caption: str,
     user_email: str,
@@ -71,6 +72,22 @@ def post_to_instagram(
         if not container_id:
             return "❌ Failed to create Instagram media container (no ID returned)."
 
+        # Step 1.5: Wait for media container to finish processing
+        for attempt in range(30):  # up to ~90 seconds
+            status_check_url = f"{INSTAGRAM_API_URL}/{container_id}"
+            status_resp = requests.get(status_check_url, params={"fields": "status_code", "access_token": access_token}, timeout=10)
+
+            if status_resp.ok:
+                status = status_resp.json().get("status_code")
+                print(f"[Attempt {attempt+1}] Container {container_id} status: {status}")
+                if status == "FINISHED":
+                    break
+                elif status == "ERROR":
+                    return f"❌ Media processing failed for container ID {container_id}"
+            else:
+                print(f"[Attempt {attempt+1}] Failed to fetch status for container {container_id}: {status_resp.text}")
+            time.sleep(3)
+
         # Step 2: Publish the media
         publish_url = f"{INSTAGRAM_API_URL}/{user_id}/media_publish"
         r2 = requests.post(publish_url, data={
@@ -94,10 +111,7 @@ def post_to_instagram(
 
         # Log to SQL
         log_post_to_db(
-            user_email=user_email,
-            video_path=video_path,
-            caption=caption,
-            platform="Instagram",
+            reel_id=reel_id,
             permalink=permalink
         )
 

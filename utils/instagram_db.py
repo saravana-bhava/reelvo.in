@@ -63,23 +63,13 @@ def delete_instagram_token(user_email):
         db.session.commit()
 
 
-def log_post_to_db(user_email, video_path, caption, platform, permalink):
-    user = User.query.filter_by(email=user_email).first()
-    if not user:
-        raise ValueError(f"User with email {user_email} not found")
+def log_post_to_db(reel_id, permalink):
+    reel = Reel.query.get(reel_id)
+    if not reel:
+        raise ValueError(f"Reel with ID {reel_id} not found")
 
-    reel = Reel(
-        user_id=user.id,
-        video_path=video_path,
-        caption=caption,
-        platform=platform,
-        status='posted',
-        posted_at=datetime.utcnow(),
-        script='',
-        theme_name='',
-        lang='en',
-        error_log=f"Posted to IG: {permalink}"
-    )
+    reel.status = 'posted'
+    reel.posted_at = datetime.utcnow()
+    reel.error_log = f"Posted to IG: {permalink}"
 
-    db.session.add(reel)
     db.session.commit()
