@@ -1,5 +1,6 @@
 <!-- File: templates/includes/sidebar.html -->
-{% set user_email = session.get('user.email') or '' %}
+{% set user = session.get('user', {}) %}
+{% set user_email = user.get('email', '') %}
 {% set has_profile_pic = session.get('connected') and session.get('instagram_profile_picture') %}
 {% set logo_path = 'watermark/' + user_email + '/logo.png' %}
 
