@@ -9,7 +9,7 @@ from flask import (
 )
 from utils.instagram_db import update_instagram_tokens, delete_instagram_token
 from utils.instagram import post_to_instagram
-from utils.auth_utils import get_user_email
+from utils.auth_utils import get_user_id, get_user_email
 from werkzeug.exceptions import Unauthorized
 
 instagram_bp = Blueprint("instagram", __name__)
@@ -30,7 +30,7 @@ GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 def safe_get(url, params=None, timeout=10):
     """Wrapper for GET requests with error handling and logging."""
     try:
-        response = requests.get(url, params=params, timeout=timeout)
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -153,16 +153,17 @@ def instagram_callback():
         )
         profile_url = profile_data.get("profile_picture_url") if profile_data else None
 
+        user_id = get_user_id()
         user_email = get_user_email()
-        if user_email:
-            if profile_url:
+        if user_id:
+            if profile_url and user_email:
                 logo_path = f"output/{user_email}/watermark/logo.png"
                 if download_and_save_image(profile_url, logo_path):
                     session["instagram_profile_picture"] = logo_path
                 else:
                     session["instagram_profile_picture"] = None
 
-            update_instagram_tokens(user_email, long_token, ig_user_id, expires_in)
+            update_instagram_tokens(user_id, long_token, ig_user_id, expires_in)
             session["connected"] = True
             flash("✅ Instagram connected successfully!", "success")
 
@@ -179,12 +180,12 @@ def instagram_callback():
 
 @instagram_bp.route("/disconnect-instagram", methods=["POST"])
 def disconnect_instagram():
-    user_email = get_user_email()
-    if not user_email:
+    user_id = get_user_id()
+    if not user_id:
         raise Unauthorized("User not logged in")
 
     try:
-        delete_instagram_token(user_email)
+        delete_instagram_token(user_id)
     except Exception as e:
         current_app.logger.error(f"[Disconnect] Token deletion failed: {e}")
 
@@ -200,8 +201,8 @@ def disconnect_instagram():
 
 @instagram_bp.route("/api/post-reel", methods=["POST"])
 def api_post_reel():
-    user_email = get_user_email()
-    if not user_email:
+    user_id = get_user_id()
+    if not user_id:
         return jsonify({"error": "User not logged in"}), 401
 
     data = request.get_json()
@@ -216,7 +217,7 @@ def api_post_reel():
         result_html = post_to_instagram(
             video_path=video_path,
             caption=caption,
-            user_email=user_email,
+            user_id=user_id,
             video_url=video_url
         )
         return jsonify({"success": True, "message": result_html})

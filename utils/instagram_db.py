@@ -12,39 +12,36 @@ def get_instagram_credentials(user_email):
     if not user:
         return None
 
-    token = UserToken.query.filter_by(email=user_email, platform='instagram').first()
+    token = UserToken.query.filter_by(user_id=user.id, platform='instagram').first()
     if not token:
         return None
 
     return {
         "access_token": token.access_token,
-        "expires_at": token.expires_at,
-        "ig_user_id": token.ig_user_id
+        "expires_at": token.expires_at
     }
 
 
-def update_instagram_tokens(user_email, access_token, ig_user_id, refresh_token="", expires_in=5184000):
+def update_instagram_tokens(user_email, access_token, refresh_token="", expires_in=5184000):
     user = User.query.filter_by(email=user_email).first()
     if not user:
         raise ValueError(f"User with email {user_email} not found")
 
     expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
-    token = UserToken.query.filter_by(email=user_email, platform='instagram').first()
+    token = UserToken.query.filter_by(user_id=user.id, platform='instagram').first()
 
     if token:
         token.access_token = access_token
         token.refresh_token = refresh_token
         token.expires_at = expires_at
-        token.ig_user_id = ig_user_id
     else:
         token = UserToken(
-            email=user_email,
+            user_id=user.id,
             platform='instagram',
             access_token=access_token,
             refresh_token=refresh_token,
-            expires_at=expires_at,
-            ig_user_id=ig_user_id
+            expires_at=expires_at
         )
         db.session.add(token)
 
@@ -52,7 +49,11 @@ def update_instagram_tokens(user_email, access_token, ig_user_id, refresh_token=
 
 
 def delete_instagram_token(user_email):
-    token = UserToken.query.filter_by(email=user_email, platform='instagram').first()
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        return
+
+    token = UserToken.query.filter_by(user_id=user.id, platform='instagram').first()
     if token:
         db.session.delete(token)
         db.session.commit()
