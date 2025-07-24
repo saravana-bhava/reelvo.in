@@ -281,8 +281,15 @@ def process_reel_job(
                 base = "[wm]"
 
             if subtitles_enabled and os.path.exists(srt_path):
+                if language == "hi":
+                        font_name = "NotoSansDevanagari-Regular"
+                    elif language == "en":
+                        font_name = "DejaVuSans-Bold"
+                    else:
+                        font_name = "Arial"
+
                 style = (
-                    "Alignment=2,Fontname=DejaVuSans-Bold,Fontsize=16,"
+                    "Alignment=2,Fontname={font_name},Fontsize=16,"
                     "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
                     "BorderStyle=3,Outline=2,MarginV=25"
                 )
