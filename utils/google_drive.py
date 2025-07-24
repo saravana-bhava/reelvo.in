@@ -64,6 +64,8 @@ def get_drive_service():
             creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
 
         if not creds or not creds.valid:
+            from google_auth_oauthlib import flow
+            print("InstalledAppFlow methods:", dir(flow.InstalledAppFlow))
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
             creds = flow.run_console()
             with open(TOKEN_PATH, "w") as token:
