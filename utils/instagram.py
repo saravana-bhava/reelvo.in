@@ -49,7 +49,7 @@ def post_to_instagram(
         # Generate a direct site-hosted URL if not using Google Drive
         if not video_url or not video_url.startswith("http"):
             protocol = os.getenv("PROTOCOL", "https")
-            host = os.getenv("HOST", "reelvo-local.sazm.in")
+            host = os.getenv("HOST", "reelvo.sazm.in")
             site_base_url = f"{protocol}://{host}"
             filename = os.path.basename(video_path)
             video_url = f"{site_base_url}/videos/{user_email}/{filename}"
