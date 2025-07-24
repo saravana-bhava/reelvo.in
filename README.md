@@ -1,194 +1,104 @@
-# 🎬 AI Instagram Reels Automation Platform (MVP)
+# 🎬 Reelvo – AI Instagram Reels Automation Platform (MVP)
 
-An AI-powered platform that **automatically generates and schedules Instagram Reels** using GPT scripts, TTS voices, and stock video footage — optionally auto-posted to Instagram and backed up on Google Drive.
-
----
-
-## 🚀 FEATURES
-
-- 🧠 **AI script generation** via GPT with fallbacks  
-- 🗣️ **Voiceover** Google Cloud TTS / gTTS  
-- 🎞️ **Stock footage** pulled from Pexels & Pixabay  
-- 🎬 **Subtitled videos** created with FFmpeg  
-- 📁 **Stored locally** per user in `/output/<email>/`  
-- ☁️ **Uploaded to Google Drive**  
-- 📲 **Auto-posts** to Instagram via Graph API  
-- 🕒 **Scheduler** for daily auto-posting (via CRON)  
-- 🔄 Modular scripts (for pipeline, post, schedule, batch)  
+**Reelvo** is an end-to-end automation platform that **generates, schedules, and auto-posts Instagram Reels** using GPT-based script generation, TTS voiceovers, and royalty-free stock footage. Ideal for creators, agencies, and AI content workflows.
 
 ---
 
-## 🛠 TECH STACK
+## 🚀 Features
 
-| Layer     | Tech                                  |
-|-----------|---------------------------------------|
-| Backend   | Python + Flask                        |
-| AI        | OpenAI GPT                            |
-| TTS       | Google TTS / gTTS                     |
-| Video     | FFmpeg + stock clips (Pexels/Pixabay) |
-| Storage   | Local filesystem + Google Drive       |
-| Auth      | Instagram Graph API + Tokens          |
-| Frontend  | HTML + CSS (Bootstrap-inspired)       |
-| Deploy    | Render / Railway / Docker-compatible  |
+- 🧠 **AI-Powered Script Generation** (OpenAI/GPT)
+- 🗣️ **Voiceovers** using Google Cloud TTS or gTTS
+- 🎞️ **Stock Video** from Pexels, Pixabay, with fallbacks
+- 🎬 **FFmpeg Subtitled Video Generation**
+- 📁 **Local User-Specific Output** (`/output/<email>/`)
+- ☁️ **Optional Upload to Google Drive**
+- 📲 **Auto-post to Instagram** via Graph API
+- 🕒 **Daily CRON Scheduler**
+- 🔄 **Modular Architecture** (batchable CLI scripts)
 
 ---
 
-## 📁 PROJECT STRUCTURE
+## 🛠 Tech Stack
 
-```
+| Layer       | Technology                              |
+|-------------|------------------------------------------|
+| Backend     | Python, Flask                            |
+| AI          | OpenAI GPT (via OpenRouter)              |
+| TTS         | Google Cloud TTS / gTTS                  |
+| Video       | FFmpeg, Pexels, Pixabay, Freesound       |
+| Storage     | Local filesystem + Google Drive          |
+| Auth        | Instagram Graph API                      |
+| Frontend    | HTML, TailwindCSS, Bootstrap elements    |
+| Deployment  | Render / Railway / Docker-Compatible     |
+
+---
+
+## 📁 Project Structure
+
+\`\`\`
 .
-├── app.py
-├── install.sh
-├── start.sh
-├── requirements.txt
-├── render.yaml
-├── templates/
-├── routes/
-├── utils/
-├── scripts/
-├── scripts/logs/
-├── db/
-├── secure/
-└── output/
-```
+├── app.py                      # Flask entry point
+├── assets/                    # Default clips, fonts, logos, music
+├── db/                        # SQLite DB and init scripts
+├── models/                    # SQLAlchemy models
+├── routes/                    # Flask route modules
+├── scripts/                   # Scheduled jobs, CLI pipelines
+├── secure/                    # OAuth and service credentials
+├── seeders/                   # Seeder scripts for themes/users/plans
+├── static/                    # CSS, images, favicon
+├── templates/                 # HTML templates (Jinja)
+├── utils/                     # All helper functions
+├── token.json                 # Instagram auth token cache
+├── requirements.txt           # Python dependencies
+├── package.json               # JS/Tailwind dependencies
+├── tailwind.config.js         # Tailwind config
+├── render.yaml                # Render.com deployment config
+├── postcss.config.js          # PostCSS (Tailwind build)
+└── README.md
+\`\`\`
 
 ---
 
-## ⚙️ LOCAL DEVELOPMENT
+## ⚙️ Local Development
 
-```bash
+\`\`\`bash
 git clone https://github.com/your-org/reelvo.git
-cd reelvo.in
-python3 -m venv .venv && source .venv/bin/activate
+cd reelvo
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 sudo apt-get install -y ffmpeg
-FLASK_ENV=development ./start.sh
-```
+python app.py
+\`\`\`
 
 Visit: [http://localhost:5000/reelvo.in](http://localhost:5000/reelvo.in)
 
 ---
 
-## 🧪 TESTING SCRIPTS (MANUAL)
+## 🧪 CLI Scripts
 
-```bash
-# Run full generation pipeline for one category
-python scripts/run_generation_pipeline.py motivation developer@sazm.in
-
-# Run all 5 categories for one user
-python scripts/run_all_tasks.py developer@sazm.in
-
-# Run auto-post and schedule check (use in CRON)
-python scripts/run_category_pipeline.py
-
-# Schedule all unscheduled reels
-python scripts/schedule_reels.py developer@sazm.in
-
-# Post reels due for today
-python scripts/post_scheduled_reels.py developer@sazm.in
-```
+\`\`\`bash
+python scripts/post_scheduled_reels.py
+\`\`\`
 
 ---
 
-## 🔐 ENVIRONMENT CONFIG (`.env`)
+## 🔐 Environment Variables (`.env.example`)
 
-```env
-# File: .env
-
-# ─────────────────────────────────────────────
-# ENVIRONMENT
-# ─────────────────────────────────────────────
-DEFAULT_EMAIL=developer@sazm.in
-DISABLE_CACHE=false
-FLASK_ENV=production
-FLASK_SECRET_KEY=your-production-secret-key
-HOST=reelvo-local.sazm.in
-LOG_LEVEL=INFO
-PORT=5000
-PROTOCOL=https
-SLEEP_BETWEEN_RUNS=2
-
-# ──────────────────────────────────────────────────
-# SMTP EMAIL SETTINGS (for password reset)
-# ──────────────────────────────────────────────────
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-smtp-email@example.com
-SMTP_PASSWORD=your-smtp-password
-SMTP_SENDER_NAME=Reelvo Support
-SMTP_USE_TLS=true
-
-# ──────────────────────────────────────────────────
-# OPENAI SETTINGS
-# ──────────────────────────────────────────────────
-USE_OPENAI=false
-PROVIDER=openrouter
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_BASE_URL=https://openrouter.ai/api/v1
-OPENAI_MODEL=deepseek/deepseek-chat-v3-0324:free
-
-# ──────────────────────────────────────────────────
-# GOOGLE CLOUD TTS SETTINGS
-# ──────────────────────────────────────────────────
-USE_GOOGLE_CLOUD_TTS=true
-GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/SazM/reelvo.in/secure/credentials.json
-GOOGLE_CLOUD_TTS_VOICE=hi-IN-Wavenet-A
-
-# ──────────────────────────────────────────────────
-# GOOGLE DRIVE
-# ──────────────────────────────────────────────────
-UPLOAD_TO_DRIVE=true
-GOOGLE_DRIVE_PARENT_FOLDER_ID=your-google-drive-folder-id
-
-# ──────────────────────────────────────────────────
-# INSTAGRAM GRAPH API SETTINGS
-# ──────────────────────────────────────────────────
-POST_TO_IG=true
-FB_APP_ID=your-fb-app-id
-FB_APP_SECRET=your-fb-app-secret
-
-# ──────────────────────────────────────────────────
-# PEXELS API SETTINGS
-# ──────────────────────────────────────────────────
-USE_PEXELS=true
-PEXELS_API_KEY=your-pexels-api-key
-
-# ──────────────────────────────────────────────────
-# PIXABAY API SETTINGS
-# ──────────────────────────────────────────────────
-USE_PIXABAY=true
-PIXABAY_API_KEY=your-pixabay-api-key
-
-# ──────────────────────────────────────────────────
-# FREESOUND API SETTINGS
-# ──────────────────────────────────────────────────
-FREESOUND_API_CLIENT=your-freesound-client-id
-FREESOUND_API_KEY=your-freesound-api-key
-```
+See `.env.example` for all configuration variables.
+Use it to create your local `.env` file for deployment or development.
 
 ---
 
-## 📦 DEPLOYMENT (RENDER.COM)
-
-1. Push repo to GitHub  
-2. Create a new Web Service on [https://render.com](https://render.com)  
-3. Add required `.env` variables in Render dashboard  
-4. Render auto-detects `render.yaml`  
-5. Click **Deploy**
-
----
-
-## 👨‍💻 AUTHOR
+## 👨‍💻 Author
 
 **Saravana Bhava**  
-🔗 [https://sazm.in](https://sazm.in)  
-📧 mail@sazm.in
+🌐 [https://sazm.in](https://sazm.in)  
+📧 [mail@sazm.in](mailto:mail@sazm.in)
 
 ---
 
-## 📄 LICENSE
+## 📄 License
 
-Private MVP – Not open source.  
-For demo access, licensing, or deployment rights, contact the author directly.
-
-
+**Private MVP – Not Open Source**  
+For demo, licensing, or deployment access, please contact the author.
