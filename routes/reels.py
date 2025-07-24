@@ -252,7 +252,6 @@ def generate_script_ajax():
         return jsonify({"error": str(e)}), 500
 
 @reels_bp.route("/videos/<user_email>/<filename>")
-@login_required
 def serve_video(user_email, filename):
     return send_from_directory(os.path.join("output", user_email, "videos"), filename)
 
