@@ -65,7 +65,7 @@ def get_drive_service():
 
         if not creds or not creds.valid:
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
-            creds = flow.run_console(port=0)
+            creds = flow.run_console()
             with open(TOKEN_PATH, "w") as token:
                 token.write(creds.to_json())
             logger.info("✅ Saved new OAuth token.")
