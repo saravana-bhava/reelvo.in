@@ -29,6 +29,10 @@ def post_to_instagram(
     If video_url is not provided, uploads to Google Drive (optional).
     Returns an HTML-safe result message.
     """
+    print(f"[INFO] 🚀 Starting post for Reel ID: {reel_id} | User: {user_email}")
+    print(f"[INFO] ✏️ Caption (first 50 chars): {caption[:50]}")
+    print(f"[INFO] 📁 Local video path: {video_path}")
+
     creds = get_instagram_credentials(user_email)
     if not creds:
         return "❌ No Instagram credentials found for user."
@@ -42,8 +46,10 @@ def post_to_instagram(
     # Upload to Google Drive if needed
     if use_drive:
         if not video_url or not video_url.startswith("http"):
+            print("[INFO] Uploading video to Google Drive...")
             video_url, error = upload_to_google_drive(video_path, user_email)
             if error:
+                print(f"[ERROR] Google Drive upload failed: {error}")
                 return f"❌ {error}"
     else:
         # Generate a direct site-hosted URL if not using Google Drive
@@ -54,8 +60,11 @@ def post_to_instagram(
             filename = os.path.basename(video_path)
             video_url = f"{site_base_url}/videos/{user_email}/{filename}"
 
+    print(f"[INFO] 🔗 Video URL used: {video_url}")
+
     try:
         # Step 1: Create media container
+        print(f"[INFO] 🧪 Creating Instagram media container...")
         container_url = f"{INSTAGRAM_API_URL}/{user_id}/media"
         payload = {
             "media_type": "REELS",
@@ -67,28 +76,45 @@ def post_to_instagram(
 
         r1 = requests.post(container_url, data=payload, timeout=30)
         r1.raise_for_status()
-        container_id = r1.json().get("id")
+        container_response = r1.json()
+        print(f"[DEBUG] 🧾 Container creation response: {container_response}")
 
+        container_id = container_response.get("id")
         if not container_id:
+            print(f"[ERROR] ❌ Container creation failed. Response: {r1.text}")
             return "❌ Failed to create Instagram media container (no ID returned)."
 
         # Step 1.5: Wait for media container to finish processing
+        print(f"[INFO] ⏳ Waiting for container {container_id} to finish processing...")
         for attempt in range(30):  # up to ~90 seconds
             status_check_url = f"{INSTAGRAM_API_URL}/{container_id}"
-            status_resp = requests.get(status_check_url, params={"fields": "status_code", "access_token": access_token}, timeout=10)
+            status_resp = requests.get(
+                status_check_url,
+                params={"fields": "status_code", "access_token": access_token},
+                timeout=10
+            )
 
             if status_resp.ok:
-                status = status_resp.json().get("status_code")
-                print(f"[Attempt {attempt+1}] Container {container_id} status: {status}")
+                status_data = status_resp.json()
+                status = status_data.get("status_code")
+                print(f"[Attempt {attempt+1}] Container {container_id} status: {status} | Response: {status_data}")
+
                 if status == "FINISHED":
+                    print(f"[SUCCESS] ✅ Container {container_id} is ready.")
                     break
                 elif status == "ERROR":
+                    print(f"[ERROR] ❌ Media processing failed for container ID {container_id} | Response: {status_data}")
                     return f"❌ Media processing failed for container ID {container_id}"
             else:
-                print(f"[Attempt {attempt+1}] Failed to fetch status for container {container_id}: {status_resp.text}")
+                print(f"[Attempt {attempt+1}] ⚠️ Failed to fetch status for container {container_id}: {status_resp.text}")
+
             time.sleep(3)
+        else:
+            print(f"[ERROR] 🕒 Timeout waiting for container {container_id} to finish.")
+            return f"❌ Timeout waiting for container {container_id} to finish processing."
 
         # Step 2: Publish the media
+        print(f"[INFO] 📤 Publishing container {container_id}...")
         publish_url = f"{INSTAGRAM_API_URL}/{user_id}/media_publish"
         r2 = requests.post(publish_url, data={
             "creation_id": container_id,
@@ -96,6 +122,7 @@ def post_to_instagram(
         }, timeout=30)
         r2.raise_for_status()
         media_id = r2.json().get("id")
+        print(f"[SUCCESS] 📸 Media published. Media ID: {media_id}")
 
         # Step 3: Optional - Fetch permalink
         permalink = "URL not available"
@@ -108,8 +135,12 @@ def post_to_instagram(
             )
             if r3.ok:
                 permalink = r3.json().get("permalink", permalink)
+                print(f"[INFO] 🔗 Permalink fetched: {permalink}")
+            else:
+                print(f"[WARN] ⚠️ Failed to fetch permalink: {r3.text}")
 
-        # Log to SQL
+        # Log to DB
+        print(f"[INFO] 🗃️ Logging post to DB: Reel ID: {reel_id}, Permalink: {permalink}")
         log_post_to_db(
             reel_id=reel_id,
             permalink=permalink
@@ -120,6 +151,8 @@ def post_to_instagram(
         return "✅ Reel uploaded, but permalink is unavailable."
 
     except requests.exceptions.RequestException as e:
+        print(f"[EXCEPTION] ❗ API request error for reel {reel_id}: {e}")
         return f"❌ Instagram API request failed: {e}"
     except Exception as e:
+        print(f"[EXCEPTION] ❗ Unexpected error while posting reel {reel_id}: {e}")
         return f"❌ Unexpected Instagram upload error: {e}"
