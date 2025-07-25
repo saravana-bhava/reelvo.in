@@ -111,11 +111,9 @@ def post_due_reels(app):
                 .all()
             )
 
-            logger.info(f"📋 Found {len(due_schedules)} due schedules at {now_kolkata}")
-
             for schedule in due_schedules:
-                user = db.session.query(User).get(schedule.user_id)
-                reel = db.session.query(Reel).get(schedule.reel_id)
+                user = db.session.get(User, schedule.user_id)
+                reel = db.session.get(Reel, schedule.reel_id)
 
                 if not user or not reel:
                     msg = f"Schedule ID {schedule.id} references missing user/reel"
@@ -178,7 +176,6 @@ def post_due_reels(app):
             logger.exception("🚨 Fatal error in post_due_reels()")
             failures.append(f"Fatal exception: {str(e)}")
 
-        logger.info(f"✅ Done. Success: {success_count}, Failures: {len(failures)}")
         if failures:
             send_email_alert("🚨 Reel Posting Failures", "\n".join(failures))
 
@@ -187,5 +184,4 @@ def post_due_reels(app):
 # ---------------------
 if __name__ == "__main__":
     app = create_app()
-    logger.info(f"⏰ Running post_due_reels at UTC {datetime.now(timezone.utc).isoformat()}")
     post_due_reels(app)
