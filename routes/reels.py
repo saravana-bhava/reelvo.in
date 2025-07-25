@@ -12,12 +12,14 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 from models import db, Reel
+from models.schedule import Schedule
 from utils.auth_decorator import login_required
 from utils.auth_utils import get_user_id, get_user_email
 from utils.generate_script import generate_script_for_user
 from utils.reel_job import process_reel_job
 from utils.progress_tracker import start_progress, get_progress
 from pydub.utils import mediainfo
+from datetime import datetime
 
 reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
@@ -130,7 +132,9 @@ def create_reel_action():
     if len(raw_theme) > 100:
         return redirect_with_form_data("Topic name too long.")
 
-    theme_name = secure_filename(raw_theme.strip().replace(" ", "_"))
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    theme_name = secure_filename(raw_theme.strip().replace(" ", "_")) + "_" + timestamp
+
     audio_path = None
     if custom_voice_file:
         user_audio_dir = os.path.join("output", user_email, "tts")
@@ -306,6 +310,11 @@ def delete_reel(reel_id):
         if not reel:
             flash("⚠️ Reel not found or already deleted.", "warning")
             return redirect(url_for("reels.list_reels"))
+
+        # ✅ Delete associated schedule
+        schedule = Schedule.query.filter_by(user_id=user_id, reel_id=reel.id).first()
+        if schedule:
+            db.session.delete(schedule)
 
         filename = os.path.basename(reel.video_path)
         base_video = os.path.splitext(filename)[0]
