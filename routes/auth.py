@@ -13,6 +13,8 @@ from utils.auth_utils import (
     verify_reset_token,
     send_email
 )
+from utils.instagram_db import get_instagram_credentials
+import os
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -47,6 +49,16 @@ def login():
             return redirect(url_for("auth.login"))
 
         session["user"] = {"id": user.id, "email": user.email}
+
+        creds = get_instagram_credentials(user.email)
+        if creds and creds.get("access_token") and creds.get("platform_user_id"):
+            session["connected"] = True
+            logo_path = f"output/{user.email}/watermark/logo.png"
+            session["instagram_profile_picture"] = logo_path if os.path.exists(logo_path) else None
+        else:
+            session["connected"] = False
+            session["instagram_profile_picture"] = None
+
         return redirect(url_for("dashboard.dashboard"))
 
     return render_template("login.html")

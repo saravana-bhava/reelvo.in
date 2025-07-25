@@ -215,10 +215,13 @@ def api_post_reel():
         return jsonify({"error": "Missing required fields: video_path or video_url"}), 400
 
     try:
+        user_email = get_user_email()
+
         result_html = post_to_instagram(
+            reel_id=data.get("reel_id", ""),
             video_path=video_path,
             caption=caption,
-            user_id=user_id,
+            user_email=user_email,
             video_url=video_url
         )
         return jsonify({"success": True, "message": result_html})
