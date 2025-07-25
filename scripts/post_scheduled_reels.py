@@ -11,7 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import logging
 import smtplib
-from datetime import datetime
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
@@ -104,7 +104,7 @@ def post_due_reels(app):
             due_schedules = (
                 db.session.query(Schedule)
                 .filter(Schedule.status == 'pending')
-                .filter(Schedule.scheduled_for <= datetime.now())
+                .filter(Schedule.scheduled_for <= datetime.now(timezone.utc))
                 .all()
             )
 
