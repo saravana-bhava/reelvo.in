@@ -311,9 +311,9 @@ def delete_reel(reel_id):
             flash("⚠️ Reel not found or already deleted.", "warning")
             return redirect(url_for("reels.list_reels"))
 
-        # ✅ Delete associated schedule
-        schedule = Schedule.query.filter_by(user_id=user_id, reel_id=reel.id).first()
-        if schedule:
+        # ✅ Delete associated schedules
+        schedules = Schedule.query.filter_by(user_id=user_id, reel_id=reel.id).all()
+        for schedule in schedules:
             db.session.delete(schedule)
 
         filename = os.path.basename(reel.video_path)
