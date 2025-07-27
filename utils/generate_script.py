@@ -100,12 +100,16 @@ def generate_script(prompt: str, language: str = "en") -> str:
             logger.warning(f"[⚠️] No fallback for '{prompt_norm}' in '{language_norm}'. Available: {langs}")
             return f"[Theme script for '{prompt_norm}' in '{language_norm}']"
 
+    import uuid
+    variation_seed = str(uuid.uuid4())[:8]
+
     chat_prompt = (
-        f"Write a short voiceover script for an Instagram Reel. "
+        f"Write a short, original voiceover script for an Instagram Reel. "
         f"The theme is '{prompt_norm}', "
         f"language: {'Hindi' if language_norm == 'hi' else 'English'}. "
         f"The script should be under 30 seconds, energetic, emotional, and impactful. "
-        f"Output only the script lines—no headings, emojis, scene directions, or bullet points."
+        f"Output only the script lines—no headings, emojis, scene directions, or bullet points. "
+        f"Add subtle variation. Seed: {variation_seed}"
     )
 
     if USE_OPENAI:

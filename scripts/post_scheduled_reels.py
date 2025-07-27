@@ -104,12 +104,20 @@ def post_due_reels(app):
     with app.app_context():
         try:
             now_kolkata = datetime.now(timezone.utc).astimezone(pytz_timezone("Asia/Kolkata")).replace(tzinfo=None)
+
+            # Step 1: Lock and claim due schedules
             due_schedules = (
                 db.session.query(Schedule)
                 .filter(Schedule.status == 'pending')
                 .filter(Schedule.scheduled_for <= now_kolkata)
+                .with_for_update(skip_locked=True)
                 .all()
             )
+
+            # Step 2: Mark as 'posting' immediately to avoid race conditions
+            for schedule in due_schedules:
+                schedule.status = 'posting'
+            db.session.commit()
 
             for schedule in due_schedules:
                 user = db.session.get(User, schedule.user_id)
@@ -130,6 +138,9 @@ def post_due_reels(app):
                     msg = f"[{user_email}] Missing file: {video_path}"
                     logger.warning(msg)
                     failures.append(msg)
+                    schedule.status = 'failed'
+                    schedule.error_log = msg
+                    db.session.commit()
                     continue
 
                 token_data = get_instagram_credentials(user_email)
@@ -137,6 +148,9 @@ def post_due_reels(app):
                     msg = f"[{user_email}] No valid Instagram token."
                     logger.warning(msg)
                     failures.append(msg)
+                    schedule.status = 'failed'
+                    schedule.error_log = msg
+                    db.session.commit()
                     continue
 
                 logger.info(f"[{user_email}] ▶ Posting reel: {video}")
