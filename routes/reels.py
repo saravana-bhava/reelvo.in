@@ -235,19 +235,26 @@ def generate_script_ajax():
     try:
         data = request.get_json()
         user_email = get_user_email()
-        topic = data.get("custom_topic", "").strip()
+        custom_topic = data.get("custom_topic", "").strip()
         theme = data.get("theme")
         language = data.get("language", "en")
 
-        if not theme and not topic:
+        if not theme and not custom_topic:
             return jsonify({"error": "Please provide a theme or custom topic."}), 400
+
+        raw_theme = custom_topic or theme or "default"
+        if len(raw_theme) > 100:
+            return redirect_with_form_data("Topic name too long.")
+
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        theme_name = secure_filename(raw_theme.strip().replace(" ", "_")) + "_" + timestamp
 
         script_path = generate_script_for_user(
             user_email=user_email,
             folder_name="scripts",
-            theme_name=topic or theme,
+            theme_name=theme_name,
             language=language,
-            prompt=topic or theme
+            prompt=custom_topic or theme
         )
         with open(script_path, encoding="utf-8") as f:
             return jsonify({"script_text": f.read().strip()})
