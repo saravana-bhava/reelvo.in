@@ -114,9 +114,9 @@ def post_due_reels(app):
                 .all()
             )
 
-            # Step 2: Mark as 'posting' immediately to avoid race conditions
+            # Step 2: Mark as 'processing' immediately to avoid race conditions
             for schedule in due_schedules:
-                schedule.status = 'posting'
+                schedule.status = 'processing'
             db.session.commit()
 
             for schedule in due_schedules:
