@@ -80,6 +80,8 @@ def create_app():
     from routes.instagram import instagram_bp
     from routes.schedule import schedule_bp
     from routes.coming_soon import coming_bp
+    from routes.privacy import privacy_bp
+    from routes.terms import terms_bp
 
     blueprints = [
         home_bp,
@@ -91,6 +93,8 @@ def create_app():
         instagram_bp,
         schedule_bp,
         coming_bp,
+        privacy_bp,
+        terms_bp,
     ]
 
     for bp in blueprints:
