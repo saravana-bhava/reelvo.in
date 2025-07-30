@@ -18,7 +18,7 @@ load_dotenv()
 
 FREESOUND_API_KEY = os.getenv("FREESOUND_API_KEY")
 FREESOUND_API_URL = "https://freesound.org/apiv2/search/text/"
-HEADERS = {"Authorization": f"Token {FREESOUND_API_KEY}"}
+HEADERS = {"Authorization": f"Token {FREESOUND_API_KEY}"} if FREESOUND_API_KEY else {}
 
 
 def sanitize_filename(name: str) -> str:

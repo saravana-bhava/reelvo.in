@@ -50,16 +50,12 @@ def start_progress(task_id: str, user_id: int) -> None:
 
 def update_progress(task_id: str, status: str, percent: int) -> None:
     task = ProgressTask.query.filter_by(task_id=task_id).first()
-
     if not task:
         return
 
     now = time.time()
     elapsed = int(now - task.start_time)
-    percent = min(max(percent, 0), 100)
-
-    if percent < task.percent:
-        percent = task.percent
+    percent = max(task.percent, min(max(percent, 0), 100))
 
     if percent == task.percent and status == task.status:
         return
@@ -74,7 +70,6 @@ def update_progress(task_id: str, status: str, percent: int) -> None:
 
 def finish_progress(task_id: str, status: str, percent: int = 100, download_url: Optional[str] = None) -> None:
     task = ProgressTask.query.filter_by(task_id=task_id).first()
-
     if not task:
         return
 
@@ -92,7 +87,6 @@ def finish_progress(task_id: str, status: str, percent: int = 100, download_url:
 
 def get_progress(task_id: str) -> Dict[str, Any]:
     task = ProgressTask.query.filter_by(task_id=task_id).first()
-
     if task:
         return {
             "status": task.status,

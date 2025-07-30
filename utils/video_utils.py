@@ -22,7 +22,12 @@ DISABLE_CACHE = os.getenv("DISABLE_CACHE", "false").strip().lower() == "true"
 
 # Logging setup
 logger = logging.getLogger("video_utils")
-logging.basicConfig(level=logging.INFO)
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 # Constants
 CACHE_DIR = os.path.join("cache", "videos")
@@ -42,7 +47,7 @@ def get_video_duration(filepath: str) -> Optional[float]:
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            text=True,
             check=True
         )
         return float(result.stdout.strip())
@@ -95,12 +100,12 @@ def download_video(
             If return_url=False: returns output_path or None on failure.
             If return_url=True: returns (output_path, url) or (None, None) on failure.
     """
+    temp_path = output_path + ".tmp"
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         hashed = hashlib.md5(url.encode()).hexdigest()
         cached_path = os.path.join(CACHE_DIR, f"{hashed}.mp4")
-        temp_path = output_path + ".tmp"
 
         # Use cache if available and valid
         if not DISABLE_CACHE and os.path.exists(cached_path):
@@ -146,6 +151,7 @@ def download_video(
 
         os.replace(temp_path, output_path)
         logger.info(f"[✅] Downloaded OK ({duration:.2f}s) → {output_path}")
+
         if not DISABLE_CACHE:
             if os.path.exists(output_path):
                 logger.info(f"[📁] Caching {output_path} → {cached_path}")

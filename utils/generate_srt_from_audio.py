@@ -23,7 +23,12 @@ except ImportError:
 
 # Logging setup
 logger = logging.getLogger("subtitle_gen")
-logging.basicConfig(level=logging.INFO)
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 # Suppress FP16 warning on CPU
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
@@ -141,11 +146,11 @@ def convert_srt_to_ass(
         subs = list(srt.parse(f.read()))
 
     def format_time(t: timedelta) -> str:
-        total = int(t.total_seconds())
-        hours = total // 3600
-        minutes = (total % 3600) // 60
-        seconds = total % 60
-        cs = int((t.total_seconds() - total) * 100)
+        total_ms = int(t.total_seconds() * 100)
+        hours = total_ms // 360000
+        minutes = (total_ms % 360000) // 6000
+        seconds = (total_ms % 6000) // 100
+        cs = total_ms % 100
         return f"{hours}:{minutes:02}:{seconds:02}.{cs:02}"
 
     ass_header = f"""[Script Info]

@@ -9,12 +9,12 @@ def login_required(f: Callable) -> Callable:
     """
     Flask decorator to ensure a user is logged in before accessing a route.
 
-    Redirects to the login page with a flash message if the user is not in session.
+    If not logged in, redirects to login page with a warning flash message.
     """
     @wraps(f)
     def decorated_function(*args: Any, **kwargs: Any) -> Response:
         if "user" not in session:
-            flash("Please log in to access this page.", "warning")
+            flash("⚠️ Please log in to access this page.", "warning")
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
 

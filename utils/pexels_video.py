@@ -1,6 +1,7 @@
 # File: utils/pexels_video.py
 
 import os
+import sys
 import logging
 import requests
 from typing import Optional, Set
@@ -16,6 +17,10 @@ logging.basicConfig(level=logging.INFO)
 
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 PEXELS_API_URL = "https://api.pexels.com/videos/search"
+
+if not PEXELS_API_KEY:
+    logger.error("[❌] Missing PEXELS_API_KEY in .env")
+    raise EnvironmentError("PEXELS_API_KEY not found in environment variables")
 
 HEADERS = {
     "Authorization": PEXELS_API_KEY
@@ -42,12 +47,7 @@ def fetch_pexels_video(
     Returns:
         str | None: Downloaded video URL, or None if no suitable clip is found.
     """
-    if not PEXELS_API_KEY:
-        logger.error("[❌] Missing PEXELS_API_KEY in .env")
-        return None
-
-    if used_video_ids is None:
-        used_video_ids = set()
+    used_video_ids = used_video_ids or set()
 
     logger.info(f"[🌐] Searching Pexels for vertical videos: '{theme}'")
 
@@ -72,37 +72,33 @@ def fetch_pexels_video(
 
             if not video_id or video_id in used_video_ids:
                 continue
-
             if not (min_duration <= duration <= max_duration):
                 logger.debug(f"[⏩] Skipping video {video_id} due to duration {duration}s")
                 continue
 
             used_video_ids.add(video_id)  # ✅ Add early to avoid retry
 
-            files = result.get("video_files", [])
-            for file in files:
+            for file in result.get("video_files", []):
                 width = file.get("width", 0)
                 height = file.get("height", 0)
                 link = file.get("link")
 
-                if not link:
+                if not link or width < 1080 or height < 1920:
+                    logger.debug(f"[🔻] Skipped low-res or missing link: {width}x{height}")
                     continue
 
-                if width >= 1080 and height >= 1920:
-                    logger.info(f"[🎞️] Trying video {video_id}: {width}x{height}, {duration}s")
-                    success = download_video(
-                        link,
-                        output_path,
-                        min_duration=min_duration,
-                        max_duration=max_duration
-                    )
-                    if success:
-                        logger.info(f"[✅] Saved to {output_path}")
-                        return link
-                    else:
-                        logger.warning("[⚠️] Download failed, trying next file...")
+                logger.info(f"[🎞️] Trying video {video_id}: {width}x{height}, {duration}s")
+                success = download_video(
+                    link,
+                    output_path,
+                    min_duration=min_duration,
+                    max_duration=max_duration
+                )
+                if success:
+                    logger.info(f"[✅] Saved to {output_path}")
+                    return link
                 else:
-                    logger.debug(f"[🔻] Skipped low-res file: {width}x{height}")
+                    logger.warning("[⚠️] Download failed, trying next file...")
 
         logger.warning("[⚠️] No valid vertical video found on Pexels.")
         return None
@@ -115,10 +111,7 @@ def fetch_pexels_video(
     return None
 
 
-# CLI test mode
-if __name__ == "__main__":
-    import sys
-
+def main():
     if len(sys.argv) != 3:
         print("Usage: python utils/pexels_video.py <theme> <output_path>")
         sys.exit(1)
@@ -131,3 +124,7 @@ if __name__ == "__main__":
         print(f"✅ Downloaded from: {downloaded}")
     else:
         print("❌ No suitable video found.")
+
+
+if __name__ == "__main__":
+    main()

@@ -23,11 +23,12 @@ load_dotenv()
 
 # Logger setup
 logger = logging.getLogger("google_drive")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("[%(levelname)s] %(message)s")
-handler.setFormatter(formatter)
-logger.handlers = [handler]
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 # Configuration
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -135,10 +136,8 @@ def upload_to_google_drive(
         service = get_drive_service()
 
         if USE_SERVICE_ACCOUNT:
-            # Folder hierarchy: reels (shared)
             user_folder_id = PARENT_SHARED_FOLDER_ID
         else:
-            # Folder hierarchy: reels (shared) → user
             user_folder_id = get_or_create_folder(service, user_name, PARENT_SHARED_FOLDER_ID)
 
         filename = os.path.basename(local_path)

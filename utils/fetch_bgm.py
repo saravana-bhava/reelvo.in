@@ -36,7 +36,8 @@ def sanitize_filename(name: str) -> str:
     """
     Sanitize a string to a lowercase alphanumeric-safe filename.
     """
-    return ''.join(c for c in name if c in string.ascii_letters + string.digits + "_").lower()
+    allowed_chars = string.ascii_letters + string.digits + "_"
+    return ''.join(c for c in name if c in allowed_chars).lower()
 
 
 def download_bgm_from_url(url: str, dest_path: Path, task_id: Optional[str] = None) -> Optional[str]:
@@ -58,7 +59,8 @@ def download_bgm_from_url(url: str, dest_path: Path, task_id: Optional[str] = No
 
         with open(dest_path, 'wb') as f:
             for chunk in response.iter_content(1024 * 64):
-                f.write(chunk)
+                if chunk:
+                    f.write(chunk)
 
         logger.info(f"[✅] BGM saved to: {dest_path}")
         if task_id:

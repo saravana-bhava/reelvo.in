@@ -19,11 +19,12 @@ load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 # Logging setup
 logger = logging.getLogger("tts_audio")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("[%(levelname)s] %(message)s")
-handler.setFormatter(formatter)
-logger.handlers = [handler]
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 # Feature flags
 USE_GOOGLE_CLOUD = os.getenv("USE_GOOGLE_CLOUD_TTS", "false").lower() == "true"
@@ -121,7 +122,7 @@ def generate_tts_audio(
                 "ffmpeg", "-y", "-i", raw_path,
                 "-ar", "44100", "-ac", "1", "-b:a", "192k",
                 tts_path
-            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
             raise RuntimeError(f"FFmpeg conversion failed: {e}")
 
@@ -142,7 +143,6 @@ if __name__ == "__main__":
 
     tts_path = sys.argv[1]
     language = sys.argv[2]
-    # script_text spans from argv[3] until the third last argument (since last two are voice and cache)
     script_text = " ".join(sys.argv[3:-2])
     tts_voice = sys.argv[-2]
     cache_str = sys.argv[-1]

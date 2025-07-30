@@ -63,7 +63,7 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
         response.raise_for_status()
 
         response_data = response.json()
-        if "choices" not in response_data or not response_data["choices"]:
+        if not response_data.get("choices"):
             logger.error("[❌] No choices returned in response.")
             return None
 

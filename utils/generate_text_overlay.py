@@ -13,11 +13,12 @@ from PIL import Image, ImageDraw, ImageFont
 
 # Logger setup
 logger = logging.getLogger("text_overlay")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("[%(levelname)s] %(message)s")
-handler.setFormatter(formatter)
-logger.handlers = [handler]
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 # Constants
 CANVAS_WIDTH = 1080
@@ -45,32 +46,32 @@ def generate_text_overlay(
         raise ValueError("Cannot render empty script text.")
 
     # Font resolution
-    font_path = None
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     font_dir = os.path.join(base_dir, "assets", "fonts")
+    font_path = None
 
-    if language == "hi":
-        possible_fonts = [
+    possible_fonts = {
+        "hi": [
             os.path.join(font_dir, "NotoSansDevanagari-Regular.ttf"),
             "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
             "/usr/local/share/fonts/NotoSansDevanagari-Regular.ttf",
             "/usr/share/fonts/opentype/noto/NotoSansDevanagari-Regular.otf"
-        ]
-    else:
-        possible_fonts = [
+        ],
+        "en": [
             os.path.join(font_dir, "DejaVuSans-Bold.ttf"),
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
             "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"
         ]
+    }
 
-    for path in possible_fonts:
+    for path in possible_fonts.get(language, possible_fonts["en"]):
         if os.path.exists(path):
             font_path = path
             break
 
     if not font_path:
-        logger.error("No suitable font found. Tried:\n" + "\n".join(possible_fonts))
+        logger.error("No suitable font found. Tried:\n" + "\n".join(possible_fonts.get(language, [])))
         raise FileNotFoundError("No suitable font found. Please install or provide one manually.")
 
     try:

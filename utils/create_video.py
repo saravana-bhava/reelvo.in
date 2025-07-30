@@ -18,13 +18,12 @@ logger = logging.getLogger("create_video")
 if not logger.hasHandlers():
     logging.basicConfig(level=logging.INFO)
 
-
 # Import progress updater
 try:
     from progress import update_progress
 except ImportError:
-    def update_progress(task_id, status, percent): pass
-
+    def update_progress(task_id, status, percent):  # dummy fallback
+        pass
 
 def create_video(
     video_path: str,

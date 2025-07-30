@@ -8,6 +8,9 @@ from models.reel import Reel
 
 
 def get_instagram_credentials(user_email):
+    """
+    Retrieve Instagram token data for a given user's email.
+    """
     user = User.query.filter_by(email=user_email).first()
     if not user:
         return None
@@ -24,6 +27,9 @@ def get_instagram_credentials(user_email):
 
 
 def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=5184000, platform_user_id=None):
+    """
+    Update or insert Instagram tokens for a user.
+    """
     user = User.query.get(user_id)
     if not user:
         raise ValueError(f"User with ID {user_id} not found")
@@ -53,6 +59,9 @@ def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=
 
 
 def delete_instagram_token(user_email):
+    """
+    Delete stored Instagram token for a given user.
+    """
     user = User.query.filter_by(email=user_email).first()
     if not user:
         return
@@ -64,6 +73,9 @@ def delete_instagram_token(user_email):
 
 
 def log_post_to_db(reel_id, permalink):
+    """
+    Mark a Reel as posted and log the Instagram permalink.
+    """
     reel = Reel.query.get(reel_id)
     if not reel:
         raise ValueError(f"Reel with ID {reel_id} not found")

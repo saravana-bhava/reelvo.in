@@ -22,7 +22,8 @@ USE_PEXELS = os.getenv("USE_PEXELS", "false").lower() == "true"
 USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 
 logger = logging.getLogger("download_clips")
-logging.basicConfig(level=logging.INFO)
+if not logger.hasHandlers():
+    logging.basicConfig(level=logging.INFO)
 
 
 def sanitize_english(text: str) -> str:

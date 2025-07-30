@@ -8,9 +8,14 @@ Falls back to original text if translation fails.
 import logging
 from deep_translator import GoogleTranslator
 
-# Logger setup
+# Logger setup (configured only if no handlers exist)
 logger = logging.getLogger("translator")
-logging.basicConfig(level=logging.INFO)
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
 def translate_to_english(text: str) -> str:

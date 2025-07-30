@@ -10,7 +10,6 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 from flask import current_app, session
 
-
 # -----------------------------
 # Token Generation + Verification
 # -----------------------------
@@ -33,19 +32,24 @@ def verify_reset_token(token_str: str, secret_key: str) -> Optional[str]:
     try:
         email, expires, token, sig = token_str.split("|")
         if int(expires) < time.time():
-            current_app.logger.info(f"[Token Expired] Token for {email} expired at {expires}")
+            current_app.logger.info(f"[Token] Expired for {email} at {expires}")
             return None
-        expected_sig = hmac.new(secret_key.encode(), f"{email}|{expires}|{token}".encode(), hashlib.sha256).hexdigest()
+
+        expected_sig = hmac.new(
+            secret_key.encode(),
+            f"{email}|{expires}|{token}".encode(),
+            hashlib.sha256
+        ).hexdigest()
+
         if hmac.compare_digest(sig, expected_sig):
             return email
-        else:
-            current_app.logger.warning(f"[Token Mismatch] Signature mismatch for {email}")
-    except ValueError:
-        current_app.logger.warning(f"[Token Error] Malformed token: {token_str}")
-    except Exception as e:
-        current_app.logger.exception(f"[Token Error] Unexpected error verifying token: {e}")
-    return None
 
+        current_app.logger.warning(f"[Token] Signature mismatch for {email}")
+    except ValueError:
+        current_app.logger.warning(f"[Token] Malformed token: {token_str}")
+    except Exception as e:
+        current_app.logger.exception(f"[Token] Verification error: {e}")
+    return None
 
 # -----------------------------
 # SMTP Email Sending
@@ -74,12 +78,13 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
                 server.starttls()
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
-        current_app.logger.info(f"[Email Sent] Email sent to {to_email}")
-        return True
-    except Exception as e:
-        current_app.logger.error(f"[SMTP Error] Failed to send email to {to_email}: {e}")
-        return False
 
+        current_app.logger.info(f"[Email] Sent to {to_email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"[Email] Failed to send to {to_email}: {e}")
+        return False
 
 # -----------------------------
 # Session User Helpers
@@ -112,4 +117,4 @@ def is_logged_in() -> bool:
     """
     Checks if a user is logged in.
     """
-    return get_logged_in_user() is not None
+    return "user" in session

@@ -8,7 +8,6 @@ Supports video URL upload, publishing, and logging.
 import os
 import time
 import requests
-from urllib.parse import urlencode
 from utils.instagram_db import get_instagram_credentials, log_post_to_db
 from utils.google_drive import upload_to_google_drive
 
@@ -44,21 +43,19 @@ def post_to_instagram(
         return "❌ Instagram access token or user ID is missing."
 
     # Upload to Google Drive if needed
-    if use_drive:
-        if not video_url or not video_url.startswith("http"):
-            print("[INFO] Uploading video to Google Drive...")
-            video_url, error = upload_to_google_drive(video_path, user_email)
-            if error:
-                print(f"[ERROR] Google Drive upload failed: {error}")
-                return f"❌ {error}"
-    else:
+    if use_drive and (not video_url or not video_url.startswith("http")):
+        print("[INFO] Uploading video to Google Drive...")
+        video_url, error = upload_to_google_drive(video_path, user_email)
+        if error:
+            print(f"[ERROR] Google Drive upload failed: {error}")
+            return f"❌ {error}"
+    elif not video_url or not video_url.startswith("http"):
         # Generate a direct site-hosted URL if not using Google Drive
-        if not video_url or not video_url.startswith("http"):
-            protocol = os.getenv("PROTOCOL", "https")
-            host = os.getenv("HOST", "reelvo.in")
-            site_base_url = f"{protocol}://{host}"
-            filename = os.path.basename(video_path)
-            video_url = f"{site_base_url}/videos/{user_email}/{filename}"
+        protocol = os.getenv("PROTOCOL", "https")
+        host = os.getenv("HOST", "reelvo.in")
+        site_base_url = f"{protocol}://{host}"
+        filename = os.path.basename(video_path)
+        video_url = f"{site_base_url}/videos/{user_email}/{filename}"
 
     print(f"[INFO] 🔗 Video URL used: {video_url}")
 

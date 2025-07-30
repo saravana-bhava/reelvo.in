@@ -6,6 +6,7 @@ Avoids reused video IDs and ensures video quality meets Instagram Reel specs.
 """
 
 import os
+import sys
 import logging
 import requests
 from typing import Optional, Set
@@ -17,9 +18,14 @@ load_dotenv()
 
 # Logger setup
 logger = logging.getLogger("pixabay_video")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
+
+if not PIXABAY_API_KEY:
+    logger.error("[❌] Missing PIXABAY_API_KEY in .env")
+    raise EnvironmentError("PIXABAY_API_KEY not found in environment variables")
 
 
 def fetch_pixabay_video(
@@ -42,12 +48,7 @@ def fetch_pixabay_video(
     Returns:
         str | None: Downloaded URL (added to used_video_ids), or None on failure.
     """
-    if not PIXABAY_API_KEY:
-        logger.error("[❌] Missing PIXABAY_API_KEY in .env")
-        return None
-
-    if used_video_ids is None:
-        used_video_ids = set()
+    used_video_ids = used_video_ids or set()
 
     logger.info(f"[🌐] Searching Pixabay for vertical videos: '{theme}' "
                 f"(Duration: {min_duration}-{max_duration}s, Min Res: 1080x1920)")
@@ -66,7 +67,6 @@ def fetch_pixabay_video(
         )
         response.raise_for_status()
         hits = response.json().get("hits", [])
-
         logger.info(f"[ℹ️] Found {len(hits)} results on Pixabay.")
 
         for result in hits:
@@ -75,7 +75,6 @@ def fetch_pixabay_video(
 
             if not video_id or video_id in used_video_ids:
                 continue
-
             if not (min_duration <= duration <= max_duration):
                 logger.debug(f"[⏱️] Skipped: ID={video_id} (Duration: {duration}s)")
                 continue
@@ -87,8 +86,8 @@ def fetch_pixabay_video(
                     continue
 
                 url = video.get("url")
-                width = video.get("width")
-                height = video.get("height")
+                width = video.get("width", 0)
+                height = video.get("height", 0)
 
                 if url and width >= 1080 and height >= 1920:
                     logger.info(f"[🎞️] Trying {quality.upper()} quality: "
@@ -118,12 +117,7 @@ def fetch_pixabay_video(
     return None
 
 
-# CLI support
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-
+def main():
     if len(sys.argv) != 3:
         print("Usage: python utils/pixabay_video.py <theme> <output_path>")
         sys.exit(1)
@@ -136,3 +130,7 @@ if __name__ == "__main__":
         print(f"[✅] Downloaded from: {downloaded_url}")
     else:
         print("[❌] No suitable video found.")
+
+
+if __name__ == "__main__":
+    main()

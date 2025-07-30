@@ -7,6 +7,7 @@ import sys
 import time
 from flask import current_app
 from datetime import datetime
+
 from utils.generate_text_overlay import generate_text_overlay
 from utils.generate_tts_audio import generate_tts_audio
 from utils.generate_srt_from_audio import generate_srt_from_audio
@@ -22,12 +23,13 @@ from utils.progress_tracker import (
     finish_progress,
     get_stage_percent,
 )
+
 from models.reel import Reel
 from models import db
 from models.user import User
 
-UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").lower() == "true"
-UPLOAD_TO_GOFILE = os.getenv("UPLOAD_TO_GOFILE", "false").lower() == "true"
+UPLOAD_TO_DRIVE = os.getenv("UPLOAD_TO_DRIVE", "false").strip().lower() == "true"
+UPLOAD_TO_GOFILE = os.getenv("UPLOAD_TO_GOFILE", "false").strip().lower() == "true"
 HOST = os.getenv("HOST", "reelvo.in")
 
 ORIGINAL_STDOUT = sys.stdout
@@ -140,8 +142,7 @@ def process_reel_job(
             os.makedirs(tts_dir, exist_ok=True)
 
             update_progress(task_id, "📜 Saving script...", get_stage_percent(0))
-            script_filename = f"{theme_name}_{language}_text.txt"
-            script_path = os.path.join(scripts_dir, script_filename)
+            script_path = os.path.join(scripts_dir, f"{theme_name}_{language}_text.txt")
             with open(script_path, "w", encoding="utf-8") as f:
                 f.write(script_text)
 
@@ -187,8 +188,7 @@ def process_reel_job(
                 update_progress(task_id, "📃 Generating subtitles...", get_stage_percent(3))
                 srt_dir = os.path.join(output_dir, "srt")
                 os.makedirs(srt_dir, exist_ok=True)
-                srt_filename = f"{theme_name}_{language}_srt.srt"
-                srt_path = os.path.join(srt_dir, srt_filename)
+                srt_path = os.path.join(srt_dir, f"{theme_name}_{language}_srt.srt")
                 generate_srt_from_audio(srt_path, language, audio_path, 6)
 
             update_progress(task_id, "🎶 Mixing background music...", get_stage_percent(4, 0.1))
@@ -206,14 +206,11 @@ def process_reel_job(
 
             if os.path.exists(bgm_path):
                 try:
-                    result = subprocess.run([
+                    subprocess.run([
                         "ffmpeg", "-y", "-i", audio_path, "-i", bgm_path,
                         "-filter_complex", "[1:a]volume=0.1[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2",
                         "-c:a", "aac", "-b:a", "192k", mixed_audio_path
                     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-                    logger.info(result.stdout)
-                    if result.stderr:
-                        logger.error(result.stderr.strip())
                     audio_to_use = mixed_audio_path
                 except subprocess.CalledProcessError as e:
                     logger.error("Error mixing audio:")
@@ -235,15 +232,13 @@ def process_reel_job(
                 ])[:5]
 
             update_progress(task_id, f"🔗 Preparing to combine {len(clips)} clips...", get_stage_percent(5, 1.0))
-
             for idx, clip_path in enumerate(clips):
                 update_progress(task_id, f"📥 Downloaded clip {idx + 1}/{len(clips)}", get_stage_percent(5, (idx + 1) / len(clips)))
                 time.sleep(0.5)
 
             update_progress(task_id, "🎛️ Merging all clips...", get_stage_percent(6, 0.0))
             combined_video_path = concatenate_clips(
-                temp_dir, theme_name, language, clips,
-                task_id=task_id
+                temp_dir, theme_name, language, clips, task_id=task_id
             )
 
             if not combined_video_path:
@@ -280,24 +275,17 @@ def process_reel_job(
                 )
                 base = "[wm]"
 
+            map_video = base
             if subtitles_enabled and os.path.exists(srt_path):
-                if language == "hi":
-                    font_name = "NotoSansDevanagari-Regular"
-                elif language == "en":
-                    font_name = "DejaVuSans-Bold"
-                else:
-                    font_name = "Arial"
-
+                font_name = "NotoSansDevanagari-Regular" if language == "hi" else "DejaVuSans-Bold" if language == "en" else "Arial"
                 style = (
-                    "Alignment=2,Fontname={font_name},Fontsize=16,"
+                    f"Alignment=2,Fontname={font_name},Fontsize=16,"
                     "PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,"
                     "BorderStyle=3,Outline=2,MarginV=25"
                 )
                 escaped_srt = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
                 filters.append(f"{base}subtitles='{escaped_srt}':force_style='{style}'[outv]")
                 map_video = "[outv]"
-            else:
-                map_video = base
 
             videos_dir = os.path.join(output_dir, "videos")
             os.makedirs(videos_dir, exist_ok=True)
@@ -310,7 +298,6 @@ def process_reel_job(
                 return
 
             update_progress(task_id, "✅ Rendering complete!", get_stage_percent(7, 1.0))
-
             upload_url = None
             error = None
 
@@ -328,7 +315,6 @@ def process_reel_job(
                 upload_url = os.path.join("https://", HOST, "videos", user_email, filename).replace("\\", "/")
                 logger.warning(f"[⚠️] Using fallback local video URL: {upload_url}")
 
-            # Save to database
             reel = Reel(
                 user_id=user.id,
                 title=theme_name.replace("_", " ").title(),
