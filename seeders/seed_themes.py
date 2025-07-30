@@ -32,6 +32,7 @@ themes = [
 ]
 
 def seed_themes():
+    """Seed default themes into the database if not already present."""
     app = create_app()
     with app.app_context():
         count_new = 0
@@ -40,7 +41,10 @@ def seed_themes():
                 db.session.add(Theme(name=name, lang=lang, content=content))
                 count_new += 1
         db.session.commit()
-        print(f"✅ Seeded {count_new} new themes." if count_new else "⚠️ No new themes added — already up to date.")
+        if count_new:
+            print(f"✅ Seeded {count_new} new themes.")
+        else:
+            print("⚠️ No new themes added — already up to date.")
 
 if __name__ == "__main__":
     seed_themes()

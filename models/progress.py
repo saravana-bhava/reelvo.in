@@ -21,7 +21,7 @@ class ProgressTask(db.Model):
     )
     elapsed = db.Column(db.Integer, nullable=False, default=0)
 
-    download_url = db.Column(db.Text, nullable=True, default="")
+    download_url = db.Column(db.Text, default="")
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(

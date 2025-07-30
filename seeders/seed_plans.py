@@ -13,7 +13,7 @@ def seed_plans():
     app = create_app()
     with app.app_context():
         if Plan.query.count() > 0:
-            print("⚠️ Plans already seeded.")
+            print("⚠️ Plans already seeded. Skipping.")
             return
 
         plans = [

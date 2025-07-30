@@ -1,3 +1,5 @@
+# File: models/user.py
+
 from models import db
 from models.base import TimestampMixin
 from datetime import datetime, timedelta
@@ -13,7 +15,7 @@ class User(db.Model, TimestampMixin):
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     last_login = db.Column(db.DateTime, nullable=True)
 
-    # ✅ New fields for OTP-based login
+    # OTP-based login fields
     otp_code = db.Column(db.String(6), nullable=True)
     otp_expiry = db.Column(db.DateTime, nullable=True)
     otp_last_sent_at = db.Column(db.DateTime, nullable=True)
