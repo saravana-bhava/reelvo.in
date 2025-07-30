@@ -1,4 +1,12 @@
-# File: routes/auth.py
+# ================================================
+# File:         routes/auth.py
+# Description:  No description provided.
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 31 July 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
 
 from datetime import datetime, timedelta
 import random

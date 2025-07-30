@@ -1,4 +1,12 @@
-# File: app.py
+# ================================================
+# File:         app.py
+# Description:  Flask application entry point, initializes app and routes
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 31 July 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
 
 import os
 import logging

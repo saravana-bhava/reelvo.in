@@ -1,4 +1,12 @@
-# File: utils/generate_tts_audio.py
+# ================================================
+# File:         utils/generate_tts_audio.py
+# Description:  No description provided.
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 31 July 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
 
 """
 Generates TTS audio using Google Cloud TTS or gTTS (fallback).

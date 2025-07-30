@@ -1,4 +1,12 @@
-# File: utils/pixabay_video.py
+# ================================================
+# File:         utils/pixabay_video.py
+# Description:  No description provided.
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 31 July 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
 
 """
 Fetches a vertical video clip (1080x1920+, 5–60s) from Pixabay based on a keyword.

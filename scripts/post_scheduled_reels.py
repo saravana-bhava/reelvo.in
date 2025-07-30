@@ -1,4 +1,12 @@
-# File: scripts/post_scheduled_reels.py
+# ================================================
+# File:         scripts/post_scheduled_reels.py
+# Description:  No description provided.
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 31 July 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
 
 """
 Posts scheduled reels using Instagram API, marks them as posted,
