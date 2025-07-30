@@ -6,7 +6,7 @@
 # 🌐 Web Framework & Server
 # ------------------------
 flask>=2.2
-waitress>=2.1  # WSGI server for production (Windows-compatible)
+waitress>=2.1           # WSGI server for production (Windows-compatible)
 # For async frameworks (if used in future)
 # uvicorn[standard]>=0.23.0
 
@@ -21,7 +21,7 @@ git+https://github.com/openai/whisper.git
 # 🌐 HTTP Clients
 # ------------------------
 requests>=2.28
-httpx<0.26  # Avoids breaking changes from 0.26+
+httpx<0.26              # Avoids breaking changes from 0.26+
 
 # ------------------------
 # 🔊 Text-to-Speech (TTS)
@@ -33,7 +33,7 @@ gTTS>=2.3.2
 # 🎥 Audio / Video Processing
 # ------------------------
 ffmpeg-python>=0.2.0
-moviepy==1.0.3  # Later versions may have bugs
+moviepy==1.0.3          # Later versions may have bugs
 opencv-python>=4.7.0
 pydub>=0.25.1
 Pillow>=9.0.0
@@ -43,7 +43,7 @@ numpy>=1.23
 # 📝 Subtitles
 # ------------------------
 srt>=3.5.0
-deep_translator  # Optional, useful for multilingual support
+deep_translator         # Optional, useful for multilingual support
 
 # ------------------------
 # 🧰 Utilities
