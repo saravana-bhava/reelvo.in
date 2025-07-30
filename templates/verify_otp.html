@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP - Reelvo{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+  🔑 Enter OTP
+</span>
+{% endblock %}
+
+{% block content %}
+<section role="region"
+         aria-labelledby="otp-heading"
+         class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-8 animate-fade-in space-y-6">
+
+  <!-- OTP Verification Form -->
+  <form method="POST"
+        action="{{ url_for('auth.verify_otp') }}"
+        aria-label="OTP Verification Form"
+        class="space-y-6">
+
+    <input type="hidden" name="email" value="{{ email }}">
+
+    <div>
+      <label for="otp" class="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+        🔐 Enter the 6-digit OTP sent to <strong>{{ email }}</strong>
+      </label>
+        <input type="text"
+           id="otp"
+           name="otp"
+           required
+           maxlength="6"
+           placeholder="123456"
+           pattern="[0-9]{6}"
+           class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+           aria-required="true" />
+    </div>
+
+    <button type="submit"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            aria-label="Verify OTP">
+      ✅ Verify & Login
+    </button>
+  </form>
+
+  <!-- Resend OTP -->
+  <form method="POST"
+        action="{{ url_for('auth.request_otp') }}"
+        class="text-center space-y-2">
+    <input type="hidden" name="email" value="{{ email }}">
+    <button id="resendBtn"
+            type="submit"
+            class="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            {% if cooldown_seconds and cooldown_seconds > 0 %}disabled{% endif %}>
+      🔁 Resend OTP
+    </button>
+    {% if cooldown_seconds and cooldown_seconds > 0 %}
+      <p id="cooldownText" class="text-xs text-gray-500 dark:text-gray-400">
+        You can request again in <span id="countdown">{{ cooldown_seconds }}</span>s
+      </p>
+    {% endif %}
+  </form>
+</section>
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+</style>
+
+{% if cooldown_seconds and cooldown_seconds > 0 %}
+<script>
+  let countdown = parseInt(document.getElementById('countdown').textContent);
+  const btn = document.getElementById('resendBtn');
+  const text = document.getElementById('cooldownText');
+
+  const interval = setInterval(() => {
+    countdown--;
+    document.getElementById('countdown').textContent = countdown;
+
+    if (countdown <= 0) {
+      clearInterval(interval);
+      btn.disabled = false;
+      text.textContent = '';
+    }
+  }, 1000);
+</script>
+{% endif %}
+{% endblock %}
