@@ -16,7 +16,7 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
 # ─────────────────────────────────────────────
@@ -33,39 +33,34 @@ logger = logging.getLogger("reelvo")
 # CREATE FLASK APP FUNCTION
 # ─────────────────────────────────────────────
 def create_app():
-    flask_app = Flask(__name__)
-    flask_app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
+    app = Flask(__name__)
+    app.secret_key = os.getenv("FLASK_SECRET_KEY", "demo_secret")
 
-    # Enable Jinja template auto-reload in dev mode
-    dev_mode = os.getenv("FLASK_ENV", "production").lower() == "development"
-    if dev_mode:
-        flask_app.config["TEMPLATES_AUTO_RELOAD"] = True
-        flask_app.jinja_env.auto_reload = True
+    is_dev = os.getenv("FLASK_ENV", "production").lower() == "development"
 
-    # Enable support for reverse proxy headers (e.g., Cloudflare, Nginx)
-    flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_proto=1, x_host=1)
+    if is_dev:
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+        app.jinja_env.auto_reload = True
 
-    # ─────────────────────────────
-    # SQLITE CONFIGURATION
-    # ─────────────────────────────
+    # Reverse proxy support (e.g., Cloudflare, Nginx)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+    # ──────── Database: SQLite ────────
     from models import db
-
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(BASE_DIR, "db", "reelvo.db")
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-    flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-    flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    db.init_app(flask_app)
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db.init_app(app)
 
-    if dev_mode:
-        with flask_app.app_context():
+    if is_dev:
+        with app.app_context():
             db.create_all()
 
-    # ─────────────────────────────
-    # SMTP CONFIGURATION
-    # ─────────────────────────────
-    flask_app.config.update(
+    # ──────── SMTP Config ────────
+    app.config.update(
         ADMIN_MASTER_PASSWORD=os.getenv("ADMIN_MASTER_PASSWORD"),
         SMTP_HOST=os.getenv("SMTP_HOST"),
         SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
@@ -76,15 +71,12 @@ def create_app():
         PREFERRED_URL_SCHEME="https"
     )
 
-    # ─────────────────────────────
-    # REGISTER ROUTE BLUEPRINTS
-    # ─────────────────────────────
+    # ──────── Register Blueprints ────────
     from routes.home import home_bp
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
     from routes.profile import profile_bp
     from routes.reels import reels_bp
-    #from routes.reels.progress import progress_bp
     from routes.instagram import instagram_bp
     from routes.schedule import schedule_bp
     from routes.coming_soon import coming_bp
@@ -92,23 +84,30 @@ def create_app():
     from routes.terms import terms_bp
 
     blueprints = [
-        home_bp,
-        auth_bp,
-        dashboard_bp,
-        profile_bp,
-        reels_bp,
-        #progress_bp,
-        instagram_bp,
-        schedule_bp,
-        coming_bp,
-        privacy_bp,
-        terms_bp,
+        home_bp, auth_bp, dashboard_bp, profile_bp,
+        reels_bp, instagram_bp, schedule_bp,
+        coming_bp, privacy_bp, terms_bp
     ]
 
     for bp in blueprints:
-        flask_app.register_blueprint(bp)
+        app.register_blueprint(bp)
 
-    return flask_app
+    # ──────── Context Processor ────────
+    @app.context_processor
+    def inject_user_logo():
+        from flask import session
+        user = session.get("user", {})
+        email = user.get("email", "")
+        logo_real_path = f"output/{email}/watermark/logo.png" if email else ""
+        logo_path = f"watermark/{email}/logo.png" if email else ""
+        has_logo = os.path.exists(logo_real_path)
+        return {
+            "user_email": email,
+            "logo_path": logo_path,
+            "has_profile_pic": has_logo,
+        }
+
+    return app
 
 # ─────────────────────────────────────────────
 # BACKGROUND TASKS
@@ -120,35 +119,27 @@ def start_background_tasks():
 
     logger.info("🔄 Starting background tasks...")
 
-    Thread(
-        target=refresh_instagram_tokens,
-        daemon=True,
-        name="InstagramTokenRefresher"
-    ).start()
-
-    Thread(
-        target=scheduler_runner,
-        daemon=True,
-        name="SchedulerRunner"
-    ).start()
+    Thread(target=refresh_instagram_tokens, daemon=True, name="InstagramTokenRefresher").start()
+    Thread(target=scheduler_runner, daemon=True, name="SchedulerRunner").start()
 
 # ─────────────────────────────────────────────
-# MAIN APP + RUNNER
+# MAIN RUNNER
 # ─────────────────────────────────────────────
-app = create_app()
-dev_mode = os.getenv("FLASK_ENV", "production").lower() == "development"
-
 def run():
     """Main entry point for running the Flask app."""
     os.makedirs("output", exist_ok=True)
-#    start_background_tasks()
+
+    # Optional: enable background task runner in production
+    if os.getenv("ENABLE_BG_TASKS", "false").lower() == "true":
+        start_background_tasks()
 
     port = int(os.getenv("PORT", 5000))
     host = "0.0.0.0"
+    is_dev = os.getenv("FLASK_ENV", "production").lower() == "development"
 
-    logger.info(f"🚀 Starting server at http://{host}:{port} ({'Dev' if dev_mode else 'Prod'} Mode)")
+    logger.info(f"🚀 Starting server at http://{host}:{port} ({'Dev' if is_dev else 'Prod'} Mode)")
 
-    if dev_mode:
+    if is_dev:
         from werkzeug.serving import run_simple
         logger.warning("⚠️ Running in development mode with debugger and auto-reloader.")
         run_simple(host, port, app, use_debugger=True, use_reloader=True)
@@ -159,5 +150,7 @@ def run():
 # ─────────────────────────────────────────────
 # CLI ENTRY POINT
 # ─────────────────────────────────────────────
+app = create_app()
+
 if __name__ == "__main__":
     run()
