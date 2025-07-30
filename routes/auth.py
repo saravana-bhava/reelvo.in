@@ -40,6 +40,15 @@ google = oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
+def update_instagram_session(email):
+    """Helper to populate session with Instagram connection data."""
+    creds = get_instagram_credentials(email)
+    access_token = creds.get("access_token") if creds else None
+    platform_user_id = creds.get("platform_user_id") if creds else None
+
+    session["connected"] = bool(access_token and platform_user_id)
+    logo_path = f"output/{email}/watermark/logo.png"
+    session["instagram_profile_picture"] = logo_path if os.path.exists(logo_path) else None
 
 @auth_bp.route("/")
 def index():
@@ -70,13 +79,7 @@ def login():
 
         session["user"] = {"id": user.id, "email": user.email}
 
-        creds = get_instagram_credentials(user.email)
-        access_token = creds.get("access_token") if creds else None
-        platform_user_id = creds.get("platform_user_id") if creds else None
-
-        session["connected"] = bool(access_token and platform_user_id)
-        logo_path = f"output/{user.email}/watermark/logo.png"
-        session["instagram_profile_picture"] = logo_path if os.path.exists(logo_path) else None
+        update_instagram_session(user.email)
 
         return redirect(url_for("dashboard.dashboard"))
 
@@ -256,6 +259,9 @@ def verify_otp():
     db.session.commit()
 
     session["user"] = {"id": user.id, "email": user.email}
+
+    update_instagram_session(user.email)
+
     flash("Logged in successfully!", "success")
     return redirect(url_for("dashboard.dashboard"))
 
@@ -319,6 +325,8 @@ def google_callback():
             download_and_save_image(profile_url, logo_path)
         except Exception as e:
             logger.warning(f"⚠️ Failed to download Google profile image: {e}")
+
+    update_instagram_session(user.email)
 
     flash("Logged in with Google!", "success")
     return redirect(url_for("dashboard.dashboard"))
