@@ -4,7 +4,7 @@
 {% block title %}Schedule Reels | Reelvo{% endblock %}
 
 {% block heading %}
-<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-200">
   🗓️ Schedule Reels
 </span>
 {% endblock %}
@@ -108,7 +108,7 @@
   </form>
 
   {% else %}
-    <div class="text-center text-gray-600 dark:text-gray-600 text-lg mt-8">
+    <div class="text-center text-gray-600 dark:text-gray-400 text-lg mt-8">
       ⚠️ You don’t have any scheduled reels.
     </div>
   {% endif %}
@@ -126,7 +126,9 @@
 <!-- Prevent selecting past datetime -->
 <script>
   document.querySelectorAll("input[type='datetime-local']").forEach(input => {
-    input.min = new Date().toISOString().slice(0, 16);
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    input.min = new Date(now - tzOffset).toISOString().slice(0, 16);
   });
 </script>
 {% endblock %}

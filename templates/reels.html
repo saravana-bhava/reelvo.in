@@ -3,7 +3,7 @@
 
 {% block heading %}
 <div class="flex items-center justify-between flex-wrap gap-4">
-  <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+  <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-200">
     📂 Reel History for <span class="text-blue-600 dark:text-blue-400">{{ user }}</span>
   </span>
 </div>
@@ -25,21 +25,19 @@
           </video>
         </div>
 
-        <!-- Content -->
-        <div class="p-5 flex flex-col justify-between h-full gap-4">
+        <!-- Reel Info -->
+        <div class="p-5 flex flex-col gap-4 h-full">
 
-          <!-- Header -->
-          <div>
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title="{{ title_map[vid] }}">
-                🎞️ {{ title_map[vid] }}
-              </h3>
-              {% if vid_date_map and vid in vid_date_map %}
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  🗓️ {{ vid_date_map[vid] }}
-                </span>
-              {% endif %}
-            </div>
+          <!-- Title and Date -->
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title="{{ title_map[vid] }}">
+              🎞️ {{ title_map[vid] }}
+            </h3>
+            {% if vid_date_map and vid in vid_date_map %}
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                🗓️ {{ vid_date_map[vid] }}
+              </span>
+            {% endif %}
           </div>
 
           <!-- Script Preview -->
@@ -63,31 +61,33 @@
             {% endif %}
           </div>
 
-            <!-- Actions -->
-            <div class="flex flex-col gap-2">
-              <form method="post"
-                    action="{{ url_for('schedule.schedule_reel', reel_id=vid) }}">
-                  <button type="submit"
-                    class="w-full inline-flex items-center justify-center py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-green-500"
-                    aria-label="Schedule Reel {{ title_map[vid] }}">
+          <!-- Actions -->
+          <div class="flex flex-col gap-2">
+            <form method="post" action="{{ url_for('schedule.schedule_reel', reel_id=vid) }}">
+              <button type="submit"
+                      class="w-full inline-flex items-center justify-center py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-green-500"
+                      aria-label="Schedule Reel {{ title_map[vid] }}">
                 🗓️ Schedule Reel
-              </form>
-              <form method="post"
-                    action="{{ url_for('reels.delete_reel', reel_id=vid) }}"
-                    onsubmit="return confirm('Are you sure you want to delete this reel?');">
-                <button type="submit"
-                        class="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-red-500"
-                        aria-label="Delete Reel {{ title_map[vid] }}">
-                  🗑️ Delete Reel
-                </button>
-              </form>
-            </div>
+              </button>
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('reels.delete_reel', reel_id=vid) }}"
+                  onsubmit="return confirm('Are you sure you want to delete this reel?');">
+              <button type="submit"
+                      class="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-red-500"
+                      aria-label="Delete Reel {{ title_map[vid] }}">
+                🗑️ Delete Reel
+              </button>
+            </form>
+          </div>
+
         </div>
       </div>
     {% endfor %}
   </div>
 {% else %}
-  <p class="text-center text-gray-600 dark:text-gray-600 text-lg mt-16 animate-fade-in">
+  <p class="text-center text-gray-600 dark:text-gray-400 text-lg mt-16 animate-fade-in">
     ❌ No reels found yet.
   </p>
 {% endif %}
@@ -101,6 +101,7 @@
   </a>
 </div>
 
+<!-- Fade-in Animation -->
 <style>
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(12px); }

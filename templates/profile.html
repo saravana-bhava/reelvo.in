@@ -9,12 +9,10 @@
   <section role="region" aria-label="Profile Info" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
     {% set logo_path = 'watermark/' + user.email + '/logo.png' %}
     {% if session.get("connected") and session.get("instagram_profile_picture") %}
-      <img src="/{{ logo_path }}"
-           alt="Instagram Profile Picture"
+      <img src="/{{ logo_path }}" alt="Instagram Profile Picture"
            class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border-2 border-blue-500 shadow" />
     {% else %}
-      <img src="{{ url_for('static', filename='images/avatar.png') }}"
-           alt="Default Avatar"
+      <img src="{{ url_for('static', filename='images/avatar.png') }}" alt="Default Avatar"
            class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border dark:border-gray-600 shadow" />
     {% endif %}
     <h3 class="text-gray-800 dark:text-gray-200 text-sm font-medium">📧 Email</h3>
@@ -75,8 +73,7 @@
          aria-live="polite">
       {{ referral_link }}
     </div>
-    <button onclick="copyReferralLink()"
-            type="button"
+    <button onclick="copyReferralLink()" type="button"
             class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded transition">
       📋 Copy Link
     </button>
@@ -99,23 +96,21 @@
 <script>
 function copyReferralLink() {
   const linkEl = document.getElementById("referralLink");
-  const text = linkEl?.textContent?.trim();
   const statusEl = document.getElementById("copyStatus");
+  const text = linkEl?.textContent?.trim();
 
-  if (!text) return alert("Referral link not available.");
+  if (!text) {
+    alert("Referral link not available.");
+    return;
+  }
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      if (statusEl) {
-        statusEl.classList.remove("hidden");
-        statusEl.textContent = "✅ Copied!";
-        setTimeout(() => statusEl.classList.add("hidden"), 2500);
-      }
-    }).catch(() => {
-      alert("Failed to copy referral link.");
-    });
-  } else {
-    // Fallback for unsupported browsers or insecure context
+  navigator.clipboard?.writeText(text).then(() => {
+    if (statusEl) {
+      statusEl.classList.remove("hidden");
+      statusEl.textContent = "✅ Copied!";
+      setTimeout(() => statusEl.classList.add("hidden"), 2500);
+    }
+  }).catch(() => {
     const tempInput = document.createElement("input");
     tempInput.value = text;
     document.body.appendChild(tempInput);
@@ -127,11 +122,11 @@ function copyReferralLink() {
         statusEl.textContent = "✅ Copied!";
         setTimeout(() => statusEl.classList.add("hidden"), 2500);
       }
-    } catch (err) {
+    } catch {
       alert("Clipboard copy not supported in this browser.");
     }
     document.body.removeChild(tempInput);
-  }
+  });
 }
 </script>
 {% endblock %}

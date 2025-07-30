@@ -4,17 +4,19 @@
 {% block title %}Creating Reel...{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto mt-16 px-6 text-center">
-  <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-600 mb-6 animate__animated animate__fadeInDown flex items-center justify-center gap-2">
+<div class="max-w-xl mx-auto mt-16 px-6 text-center animate__animated animate__fadeInDown">
+
+  <!-- Title -->
+  <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center justify-center gap-2">
     🎬 Creating Your Reel
-    <svg id="spinner" class="animate-spin h-6 w-6 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg id="spinner" class="animate-spin h-6 w-6 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
     </svg>
   </h2>
 
-  <!-- Progress Bar Container -->
-  <div class="relative w-full h-6 rounded-full bg-gray-300 dark:bg-gray-700 overflow-hidden shadow-inner">
+  <!-- Progress Bar -->
+  <div class="relative w-full h-6 rounded-full bg-gray-300 dark:bg-gray-700 overflow-hidden shadow-inner" aria-label="Progress bar" role="progressbar">
     <div id="progress-bar"
          class="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white text-sm font-medium flex items-center justify-center transition-all duration-500 ease-in-out rounded-full"
          style="width: 0%">
@@ -22,14 +24,15 @@
     </div>
   </div>
 
-  <!-- Progress Message -->
-  <p id="progress-message" class="text-gray-600 dark:text-gray-500 text-sm mt-4">
+  <!-- Status Message -->
+  <p id="progress-message" class="text-gray-600 dark:text-gray-400 text-sm mt-4" aria-live="polite">
     Initializing...
   </p>
 
-  <!-- Final Output -->
+  <!-- Final Link -->
   <div id="final-link"
-       class="mt-6 text-green-700 dark:text-green-400 font-semibold text-md leading-relaxed">
+       class="mt-6 text-green-700 dark:text-green-400 font-semibold text-md leading-relaxed"
+       aria-live="polite">
   </div>
 </div>
 
@@ -45,32 +48,26 @@
   async function pollProgress() {
     try {
       const res = await fetch(`/progress/${taskId}`);
-      if (!res.ok) throw new Error("Progress endpoint returned error");
+      if (!res.ok) throw new Error("Progress endpoint returned an error");
 
       const data = await res.json();
-      const status = data.status || "unknown";
-      const percent = data.percent || 0;
+      const { status = "unknown", percent = 0, message = "", elapsed, download_url } = data;
 
-      // Handle known failure statuses
-      if (status === "failed" || status === "not_found" || status === "error") {
-        msg.innerHTML = `<span class="text-red-600">❌ ${data.message || 'Reel creation failed.'}</span><br><a href="/create-reel" class="text-blue-600 underline mt-2 inline-block">🔁 Try Again</a>`;
+      // Handle failure
+      if (["failed", "not_found", "error"].includes(status)) {
+        msg.innerHTML = `<span class="text-red-600">❌ ${message || 'Reel creation failed.'}</span><br>
+                         <a href="/create-reel" class="text-blue-600 underline mt-2 inline-block">🔁 Try Again</a>`;
         spinner.style.display = "none";
-        return; // Stop polling
+        return;
       }
 
-      bar.style.width = percent + "%";
-      bar.textContent = percent + "%";
+      bar.style.width = `${percent}%`;
+      bar.textContent = `${percent}%`;
 
-      let progressMessage = "Working...";
-      if (data.message && data.message.trim() !== "") {
-        progressMessage = data.message.trim();
-      } else if (status) {
-        progressMessage = status;
-      }
-      msg.innerHTML = progressMessage;
+      msg.innerHTML = message?.trim() || status;
 
-      if (data.elapsed !== undefined) {
-        msg.innerHTML += `<br><small class="text-gray-500">⏱ Elapsed: ${data.elapsed}s</small>`;
+      if (elapsed !== undefined) {
+        msg.innerHTML += `<br><small class="text-gray-500">⏱ Elapsed: ${elapsed}s</small>`;
       }
 
       if (percent < 100) {
@@ -82,21 +79,19 @@
         bar.textContent = "100%";
 
         link.innerHTML = `
-          ✅ <span class="block mb-1">${data.message || 'Reel generation complete!'}</span>
-          <a href="${data.download_url}"
+          ✅ <span class="block mb-1">${message || 'Reel generation complete!'}</span>
+          <a href="${download_url}"
              class="inline-block mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow transition">
             ⬇️ Download Your Reel
           </a>`;
       }
     } catch (err) {
-      console.error("Error polling progress:", err);
+      console.error("Polling error:", err);
       failureCount++;
       if (failureCount >= 3) {
         msg.innerHTML = `<span class="text-red-600">⚠️ Network error. Redirecting...</span>`;
         spinner.style.display = "none";
-        setTimeout(() => {
-          window.location.href = "/create-reel";
-        }, 4000);
+        setTimeout(() => window.location.href = "/create-reel", 4000);
       } else {
         setTimeout(pollProgress, 2000);
       }

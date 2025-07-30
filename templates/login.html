@@ -12,6 +12,7 @@
          aria-labelledby="login-heading"
          class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-8 animate-fade-in space-y-8">
 
+  <!-- Google Login -->
   <div class="animate__animated animate__fadeIn">
     {% include 'includes/google_login_button.html' %}
   </div>
@@ -81,7 +82,6 @@
         aria-label="OTP Login Form"
         class="space-y-4">
 
-    <!-- Email for OTP -->
     <div>
       <label for="otp-email" class="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
         📧 Email for OTP Login
@@ -96,7 +96,6 @@
              aria-required="true" />
     </div>
 
-    <!-- Request OTP Button -->
     <button type="submit"
             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label="Send OTP to Email">

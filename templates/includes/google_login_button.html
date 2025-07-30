@@ -1,5 +1,11 @@
+<!-- File: templates/includes/google_login_button.html -->
 <a href="{{ url_for('auth.google_login') }}"
-   class="w-full flex items-center justify-center gap-2 bg-white text-black border border-gray-300 py-2 px-4 rounded-md shadow hover:bg-gray-50 transition">
-  <img src="https://developers.google.com/identity/images/g-logo.png" alt="G" class="w-5 h-5">
-  Continue with Google
+   class="w-full flex items-center justify-center gap-2 bg-white text-black border border-gray-300 py-2 px-4 rounded-md shadow hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+   role="button" aria-label="Continue with Google">
+  <img src="https://developers.google.com/identity/images/g-logo.png"
+       alt="Google logo"
+       class="w-5 h-5"
+       loading="lazy"
+       decoding="async" />
+  <span class="text-sm font-medium">Continue with Google</span>
 </a>

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Create Reel{% endblock %}
+
 {% block heading %}
 <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
-    🎬 Create Your AI Reel
+  🎬 Create Your AI Reel
 </span>
 {% endblock %}
 
@@ -14,38 +15,18 @@
 
   <div class="bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-gray-600 rounded-xl p-5 text-sm text-blue-900 dark:text-blue-100 shadow">
     <strong class="text-base">How it works:</strong>
-      <ol class="space-y-4 text-gray-800 dark:text-gray-200 text-sm list-decimal list-inside">
-        <li>
-          🔗 <strong>Connect your Instagram account</strong><br />
-          (Skip this step if already connected in your profile settings)
-        </li>
-        <li>
-          🎯 <strong>Choose a theme or enter a custom topic</strong><br />
-          Select from preloaded options or describe your product/niche manually.
-        </li>
-        <li>
-          📝 <strong>Generate or edit a script</strong><br />
-          Click “Generate Script” to auto-generate via AI — or write your own script manually.
-        </li>
-        <li>
-          🗣️ <strong>Choose a voiceover</strong><br />
-          Use AI-generated voice (TTS) or upload your own voice/audio file.
-        </li>
-        <li>
-          🎥 <strong>Generate the AI-powered reel</strong><br />
-          Combine the script + voice into a full video reel in seconds.
-        </li>
-        <li>
-          📅 <strong>Schedule or auto-post to Instagram</strong><br />
-          Generated reels can be scheduled to auto-publish to your connected Instagram account.
-        </li>
-      </ol>
+    <ol class="space-y-4 text-gray-800 dark:text-gray-200 text-sm list-decimal list-inside">
+      <li>🔗 <strong>Connect your Instagram account</strong><br />(Skip this step if already connected in your profile settings)</li>
+      <li>🎯 <strong>Choose a theme or enter a custom topic</strong><br />Select from preloaded options or describe your product/niche manually.</li>
+      <li>📝 <strong>Generate or edit a script</strong><br />Click “Generate Script” to auto-generate via AI — or write your own manually.</li>
+      <li>🗣️ <strong>Choose a voiceover</strong><br />Use AI-generated voice (TTS) or upload your own.</li>
+      <li>🎥 <strong>Generate the AI-powered reel</strong><br />Combine script + voice into a full video reel.</li>
+      <li>📅 <strong>Schedule or auto-post to Instagram</strong><br />Publish reels to your connected account.</li>
+    </ol>
   </div>
 
   <form id="reelForm" method="post" action="{{ url_for('reels.create_reel_action') }}"
-        enctype="multipart/form-data"
-        onsubmit="disableForm()"
-        class="space-y-8">
+        enctype="multipart/form-data" onsubmit="disableForm()" class="space-y-8">
 
     <!-- Theme & Topic -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
@@ -53,7 +34,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Select Theme:</label>
-          <select id="theme" name="theme" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" onchange="checkPromptFilled()">
+          <select id="theme" name="theme" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition" onchange="checkPromptFilled()">
             <option value="">-- Choose theme --</option>
             {% for t in themes %}
               <option value="{{ t }}" {% if t == selected_theme %}selected{% endif %}>{{ t|capitalize }}</option>
@@ -63,7 +44,7 @@
         <div>
           <label for="custom_topic" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Or Custom Topic/Product:</label>
           <input type="text" id="custom_topic" name="custom_topic"
-                 class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                 class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition"
                  placeholder="e.g. Protein Powder" value="{{ custom_topic }}" oninput="checkPromptFilled()" />
         </div>
       </div>
@@ -75,14 +56,15 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label for="language" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Language:</label>
-          <select id="language" name="language" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+          <select id="language" name="language" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition" required>
             <option value="en" {% if language == 'en' %}selected{% endif %}>🇺🇸 English</option>
             <option value="hi" {% if language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
           </select>
         </div>
         <div>
           <label for="voice_option" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Voiceover Option:</label>
-          <select id="voice_option" name="voice_option" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" onchange="toggleVoiceInputs()" required>
+          <select id="voice_option" name="voice_option" onchange="toggleVoiceInputs()"
+                  class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition" required>
             <option value="tts" {% if voice_option == 'tts' %}selected{% endif %}>Use AI Voice (TTS)</option>
             <option value="upload" {% if voice_option == 'upload' %}selected{% endif %}>Upload My Voice</option>
           </select>
@@ -90,7 +72,7 @@
 
         <div id="voice_artist_wrapper" class="col-span-full">
           <label for="voice_artist" class="block text-sm font-medium text-gray-700 dark:text-gray-200">TTS Voice:</label>
-          <select id="voice_artist" name="voice_artist" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+          <select id="voice_artist" name="voice_artist" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition">
             <optgroup label="English">
               <option value="en-US-Wavenet-A" {% if voice_artist == 'en-US-Wavenet-A' %}selected{% endif %}>English Male (Calm)</option>
               <option value="en-US-Wavenet-B" {% if voice_artist == 'en-US-Wavenet-B' %}selected{% endif %}>English Male (Deep)</option>
@@ -125,24 +107,20 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
       <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight mb-2">✍️ Script Generator</h3>
       <div class="flex flex-wrap sm:items-center gap-3 mb-4">
-        <button type="button" id="generateBtn"
-                onclick="generateScript()"
-                class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        <button type="button" id="generateBtn" onclick="generateScript()"
+                class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled aria-label="Generate Script">
           📝 Generate Script
         </button>
-        <div id="script-status" role="status" aria-live="polite" class="text-sm italic text-gray-600 dark:text-gray-300 mt-1 transition-opacity duration-300"></div>
+        <div id="script-status" role="status" aria-live="polite"
+             class="text-sm italic text-gray-600 dark:text-gray-300 mt-1 transition-opacity duration-300"></div>
       </div>
-      <!-- Script Box -->
       <div class="col-span-full">
         <label for="script" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Edit Script:</label>
         <textarea id="script" name="script" rows="6" maxlength="400" required
-                  class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y transition"
-                  aria-label="Script input"
-                  oninput="updateCharCount(this)">{{ script_text }}</textarea>
-        <p id="script-char-count" class="text-sm mt-1 text-gray-500 dark:text-gray-400">
-          0 / 400 characters used
-        </p>
+                  class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 resize-y transition"
+                  aria-label="Script input" oninput="updateCharCount(this)">{{ script_text }}</textarea>
+        <p id="script-char-count" class="text-sm mt-1 text-gray-500 dark:text-gray-400">0 / 400 characters used</p>
       </div>
     </div>
 
@@ -163,16 +141,15 @@
 
     <!-- Submit -->
     <div class="text-center">
-      <button type="submit"
-              aria-label="Create Reel"
-              class="px-6 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 focus:ring-2 focus:ring-offset-2 focus:ring-green-500 font-semibold transition">
+      <button type="submit" aria-label="Create Reel"
+              class="px-6 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 font-semibold transition">
         📦 Create Reel
       </button>
     </div>
   </form>
 </section>
 
-<!-- Optional Fade Animation -->
+<!-- Animation Style -->
 <style>
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
@@ -183,6 +160,7 @@
 }
 </style>
 
+<!-- Script -->
 <script>
 function checkPromptFilled() {
   const theme = document.getElementById('theme').value.trim();
@@ -206,7 +184,6 @@ async function generateScript() {
   generateBtn.disabled = true;
   generateBtn.textContent = '⏳ Generating...';
   statusDiv.textContent = '⏳ Generating script...';
-  statusDiv.setAttribute("aria-live", "polite");
 
   try {
     const res = await fetch('{{ url_for("reels.generate_script_ajax") }}', {
@@ -224,7 +201,7 @@ async function generateScript() {
     } else {
       statusDiv.textContent = data.error || '❌ Generation failed.';
     }
-  } catch (err) {
+  } catch {
     statusDiv.textContent = '❌ Request failed.';
   } finally {
     generateBtn.disabled = false;
@@ -234,11 +211,8 @@ async function generateScript() {
 
 function toggleVoiceInputs() {
   const option = document.getElementById("voice_option").value;
-  const ttsWrapper = document.getElementById("voice_artist_wrapper");
-  const customWrapper = document.getElementById("custom_voice_wrapper");
-
-  ttsWrapper.classList.toggle("hidden", option !== "tts");
-  customWrapper.classList.toggle("hidden", option !== "upload");
+  document.getElementById("voice_artist_wrapper").classList.toggle("hidden", option !== "tts");
+  document.getElementById("custom_voice_wrapper").classList.toggle("hidden", option !== "upload");
 }
 
 function disableForm() {
@@ -246,11 +220,6 @@ function disableForm() {
     document.querySelector('button[type="submit"]').disabled = true;
   }, 100);
 }
-
-window.addEventListener("DOMContentLoaded", () => {
-  checkPromptFilled();
-  toggleVoiceInputs();
-});
 
 function updateCharCount(textarea) {
   const max = 400;
@@ -261,8 +230,9 @@ function updateCharCount(textarea) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const textarea = document.getElementById('script');
-  if (textarea) updateCharCount(textarea);
+  checkPromptFilled();
+  toggleVoiceInputs();
+  updateCharCount(document.getElementById('script'));
 });
 </script>
 {% endblock %}

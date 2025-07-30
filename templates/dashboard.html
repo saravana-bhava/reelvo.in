@@ -7,7 +7,7 @@
     📊 Dashboard
   </span>
   <a href="{{ url_for('reels.create_reel') }}"
-     class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded shadow">
+     class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded shadow transition duration-200">
     ➕ Create New Reel
   </a>
 </div>
@@ -17,7 +17,8 @@
 <div class="grid lg:grid-cols-5 gap-6 items-start mt-6">
 
   <!-- Main Content -->
-  <section class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow p-6 space-y-8" role="main" aria-label="Dashboard Main Content">
+  <section class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow p-6 space-y-8"
+           role="main" aria-label="Dashboard Main Content">
 
     <!-- Hero Message -->
     <div class="text-center space-y-2">
@@ -41,14 +42,10 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {% for reel in reels[:3] %}
           <div class="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm transition hover:shadow-md">
-            <!-- Video Player -->
-            <video controls muted
-                   class="w-full aspect-video bg-black"
-                   aria-label="Reel video for {{ reel.title }}">
+            <video controls muted class="w-full aspect-video bg-black" aria-label="Reel video for {{ reel.title }}">
               <source src="{{ reel.video_url }}" type="video/mp4">
               Your browser does not support the video tag.
             </video>
-            <!-- Footer: Title + Date -->
             <div class="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs text-center py-1 backdrop-blur-sm">
               <div class="truncate px-1 font-semibold">{{ reel.title }}</div>
               <div class="text-[10px]">{{ reel.created_at }}</div>
@@ -58,18 +55,20 @@
           <p class="text-gray-500 dark:text-gray-400 col-span-full">❌ No reels found.</p>
         {% endfor %}
       </div>
+
       <!-- View All Reels Button -->
       <div class="text-center mt-4">
         <a href="{{ url_for('reels.list_reels') }}"
-           class="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded shadow">
+           class="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded shadow transition duration-200">
           📁 View All Reels
         </a>
       </div>
     </div>
   </section>
 
-  <!-- Steps -->
-  <aside class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-4 animate__animated animate__fadeInUp" role="complementary" aria-label="Reel Creation Steps">
+  <!-- Steps Sidebar -->
+  <aside class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-4 animate__animated animate__fadeInUp"
+         role="complementary" aria-label="Reel Creation Steps">
     <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">🎥 Creation Steps</h3>
     <ul class="list-disc list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">
       <li>🔗 Connect your Instagram account</li>

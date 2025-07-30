@@ -10,13 +10,15 @@
     <img src="/{{ logo_path if has_profile_pic else 'static/images/avatar.png' }}"
          alt="{{ 'Instagram Profile Picture' if has_profile_pic else 'Default Avatar' }}"
          title="{{ 'Instagram profile picture' if has_profile_pic else 'Using default avatar' }}"
-         class="w-24 h-24 rounded-full shadow-lg object-cover ring-4 ring-primary transition" />
-    <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 break-words max-w-full text-center">
+         class="w-24 h-24 rounded-full shadow-lg object-cover ring-4 ring-primary transition" loading="lazy" />
+
+    <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 break-words max-w-full">
       {{ user_email }}
     </div>
+
     {% if not session.get("connected") %}
       <a href="{{ url_for('instagram.connect_instagram') }}"
-         class="text-white bg-blue-600 hover:bg-blue-700 transition text-sm font-medium px-4 py-2 rounded shadow">
+         class="text-white bg-blue-600 hover:bg-blue-700 transition text-sm font-medium px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500">
         🔗 Connect Instagram
       </a>
     {% endif %}
@@ -59,7 +61,7 @@
   <!-- Theme Toggle -->
   <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-8">
     <button type="submit"
-            class="w-full py-2 px-4 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-semibold text-gray-800 dark:text-gray-100 transition">
+            class="w-full py-2 px-4 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-semibold text-gray-800 dark:text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
       {% if session.get('theme') == 'dark' %}
         ☀️ Light Mode
       {% else %}
