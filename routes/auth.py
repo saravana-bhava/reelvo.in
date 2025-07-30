@@ -314,9 +314,11 @@ def google_callback():
     session["user"] = {"id": user.id, "email": user.email}
 
     logo_path = f"output/{email}/watermark/logo.png"
-    session["google_profile_picture"] = (
-        logo_path if profile_url and download_and_save_image(profile_url, logo_path) else None
-    )
+    if profile_url and not os.path.exists(logo_path):
+        try:
+            download_and_save_image(profile_url, logo_path)
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to download Google profile image: {e}")
 
     flash("Logged in with Google!", "success")
     return redirect(url_for("dashboard.dashboard"))

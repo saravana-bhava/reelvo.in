@@ -16,14 +16,13 @@
 
   <!-- Profile Info -->
   <section role="region" aria-label="Profile Info" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
-    {% set logo_path = 'watermark/' + user.email + '/logo.png' %}
-    {% if session.get("connected") and session.get("instagram_profile_picture") %}
-      <img src="/{{ logo_path }}" alt="Instagram Profile Picture"
-           class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border-2 border-blue-500 shadow" />
-    {% else %}
-      <img src="{{ url_for('static', filename='images/avatar.png') }}" alt="Default Avatar"
-           class="mx-auto w-24 h-24 rounded-full object-cover mb-4 border dark:border-gray-600 shadow" />
-    {% endif %}
+    <img
+      src="/{{ logo_path if has_profile_pic else 'static/images/avatar.png' }}"
+      alt="{{ 'User Logo' if has_profile_pic else 'Default Avatar' }}"
+      title="{{ 'Custom logo detected' if has_profile_pic else 'Using default avatar' }}"
+      class="mx-auto w-24 h-24 rounded-full object-cover mb-4 shadow ring-4 ring-primary transition"
+      loading="lazy"
+    />
     <h3 class="text-gray-800 dark:text-gray-200 text-sm font-medium">📧 Email</h3>
     <p class="text-blue-600 dark:text-blue-400 font-semibold break-words">{{ user.email }}</p>
   </section>
