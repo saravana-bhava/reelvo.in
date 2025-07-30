@@ -1,6 +1,6 @@
 # ================================================
 # File:         models/__init__.py
-# Description:  No description provided.
+# Description:  Model package initializer
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

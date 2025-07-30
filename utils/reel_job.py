@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/reel_job.py
-# Description:  No description provided.
+# Description:  Job scheduler logic for reel posting
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

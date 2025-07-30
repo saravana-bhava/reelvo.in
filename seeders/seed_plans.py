@@ -1,6 +1,6 @@
 # ================================================
 # File:         seeders/seed_plans.py
-# Description:  No description provided.
+# Description:  Seed data for user subscription plans
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

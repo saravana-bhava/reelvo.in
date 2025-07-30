@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/instagram_db.py
-# Description:  No description provided.
+# Description:  Store Instagram tokens, user info in DB
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

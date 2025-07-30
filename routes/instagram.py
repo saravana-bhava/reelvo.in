@@ -1,6 +1,6 @@
 # ================================================
 # File:         routes/instagram.py
-# Description:  No description provided.
+# Description:  Instagram connection, OAuth, media syncing
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

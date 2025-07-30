@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/generate_tts_audio.py
-# Description:  No description provided.
+# Description:  Convert script to speech using TTS
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

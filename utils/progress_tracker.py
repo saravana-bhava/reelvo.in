@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/progress_tracker.py
-# Description:  No description provided.
+# Description:  Track and persist reel generation progress
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

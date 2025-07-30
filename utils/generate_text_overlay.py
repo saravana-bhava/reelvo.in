@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/generate_text_overlay.py
-# Description:  No description provided.
+# Description:  Render stylized captions onto frames
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

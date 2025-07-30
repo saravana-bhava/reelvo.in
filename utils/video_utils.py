@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/video_utils.py
-# Description:  No description provided.
+# Description:  FFmpeg and OpenCV-based helpers for editing
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

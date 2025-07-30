@@ -1,6 +1,6 @@
 # ================================================
 # File:         models/progress.py
-# Description:  No description provided.
+# Description:  Model to track background reel generation progress
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

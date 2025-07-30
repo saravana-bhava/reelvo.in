@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/create_video.py
-# Description:  No description provided.
+# Description:  Main video creation logic using overlays and audio
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

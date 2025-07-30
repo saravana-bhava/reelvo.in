@@ -1,6 +1,6 @@
 # ================================================
 # File:         scripts/post_scheduled_reels.py
-# Description:  No description provided.
+# Description:  Post scheduled reels to Instagram automatically
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

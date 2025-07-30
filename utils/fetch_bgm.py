@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/fetch_bgm.py
-# Description:  No description provided.
+# Description:  Fetch background music from various sources
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025

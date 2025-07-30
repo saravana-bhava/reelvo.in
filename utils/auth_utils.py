@@ -1,6 +1,6 @@
 # ================================================
 # File:         utils/auth_utils.py
-# Description:  No description provided.
+# Description:  Helper functions for login and password hashing
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
 # Last Updated: 31 July 2025
