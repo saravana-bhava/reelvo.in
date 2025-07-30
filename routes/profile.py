@@ -7,8 +7,13 @@ import os
 
 profile_bp = Blueprint("profile", __name__)
 
+
 @profile_bp.route("/profile")
 def user_profile():
+    """
+    Render the user profile page with referral link.
+    Redirects to login if user is not authenticated.
+    """
     try:
         user = get_logged_in_user()
         if not user:
@@ -19,6 +24,6 @@ def user_profile():
         referral_link = f"{protocol}://{host}/register?ref={user['email']}"
 
         return render_template("profile.html", user=user, referral_link=referral_link)
-    except Exception as e:
+    except Exception:
         current_app.logger.exception("[Profile] Failed to load profile page")
         return redirect(url_for("auth.login"))

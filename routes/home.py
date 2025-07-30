@@ -9,6 +9,7 @@ def home():
     """
     Show the landing page or redirect logged-in users to the dashboard.
     """
-    if session.get("user"):
+    user = session.get("user")
+    if user:
         return redirect(url_for("dashboard.dashboard"))
     return render_template("home.html")

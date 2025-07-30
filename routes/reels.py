@@ -1,16 +1,18 @@
 # File: routes/reels.py
 
 import os
-import json
-import logging
 import uuid
 import glob
+import logging
 from threading import Thread
+from datetime import datetime
 from flask import (
     Blueprint, request, render_template, session, redirect,
     url_for, flash, jsonify, send_from_directory, current_app
 )
 from werkzeug.utils import secure_filename
+from pydub.utils import mediainfo
+
 from models import db, Reel
 from models.schedule import Schedule
 from utils.auth_decorator import login_required
@@ -18,14 +20,15 @@ from utils.auth_utils import get_user_id, get_user_email
 from utils.generate_script import generate_script_for_user
 from utils.reel_job import process_reel_job
 from utils.progress_tracker import start_progress, get_progress
-from pydub.utils import mediainfo
-from datetime import datetime
 
 reels_bp = Blueprint("reels", __name__)
 logger = logging.getLogger("create_reel")
-logging.basicConfig(level=logging.INFO)
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if not logger.handlers:
+    logging.basicConfig(level=logging.INFO)
+
+def get_output_dir(user_email):
+    return os.path.join(current_app.config.get("OUTPUT_DIR", "output"), user_email)
 
 def get_available_themes():
     try:
@@ -39,16 +42,12 @@ def get_available_themes():
 @reels_bp.route("/create-reel", methods=["GET"])
 @login_required
 def create_reel():
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
-
     if session.get("reel_in_progress"):
         return redirect(url_for("reels.reel_progress", task_id=session["reel_in_progress"]))
 
     user_email = get_user_email()
     user_id = get_user_id()
-
-    output_dir = os.path.join("output", user_email)
+    output_dir = get_output_dir(user_email)
     videos_dir = os.path.join(output_dir, "videos")
     scripts_dir = os.path.join(output_dir, "scripts")
     os.makedirs(videos_dir, exist_ok=True)
@@ -56,11 +55,9 @@ def create_reel():
 
     reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
     videos = [r.video_path for r in reels]
-
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
-
-    latest_script = ""
     themes = get_available_themes()
+
     return render_template(
         "create_reel.html",
         user=user_email,
@@ -71,7 +68,7 @@ def create_reel():
         language=request.args.get("language", "en"),
         voice_option=request.args.get("voice_option", "tts"),
         voice_artist=request.args.get("voice_artist", ""),
-        script_text=request.args.get("script", latest_script),
+        script_text=request.args.get("script", ""),
         subtitles_checked="subtitles" in request.args,
         watermark_checked="watermark" in request.args
     )
@@ -79,9 +76,6 @@ def create_reel():
 @reels_bp.route("/create", methods=["POST"])
 @login_required
 def create_reel_action():
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
-
     user_email = get_user_email()
     user_id = get_user_id()
 
@@ -133,11 +127,11 @@ def create_reel_action():
         return redirect_with_form_data("Topic name too long.")
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    theme_name = secure_filename(raw_theme.strip().replace(" ", "_")) + "_" + timestamp
+    theme_name = secure_filename(raw_theme.replace(" ", "_")) + "_" + timestamp
 
     audio_path = None
     if custom_voice_file:
-        user_audio_dir = os.path.join("output", user_email, "tts")
+        user_audio_dir = os.path.join(get_output_dir(user_email), "tts")
         os.makedirs(user_audio_dir, exist_ok=True)
         tts_filename = f"{theme_name}_{language}_voice.mp3".replace(" ", "_")
         audio_path = os.path.join(user_audio_dir, tts_filename)
@@ -185,7 +179,6 @@ def create_reel_action():
 def progress_status(task_id):
     try:
         status = get_progress(task_id)
-
         if not status:
             session.pop("reel_in_progress", None)
             return jsonify({
@@ -196,17 +189,14 @@ def progress_status(task_id):
             }), 404
 
         percent = status.get("percent", 0)
-        message = status.get("status", "Working...")
-        elapsed = status.get("elapsed", 0)
         done = percent >= 100
-
         if done:
             session.pop("reel_in_progress", None)
 
         return jsonify({
             "percent": percent,
-            "message": message,
-            "elapsed": elapsed,
+            "message": status.get("status", "Working..."),
+            "elapsed": status.get("elapsed", 0),
             "done": done,
             "download_url": status.get("download_url", "")
         })
@@ -222,11 +212,9 @@ def progress_status(task_id):
 @login_required
 def reel_progress(task_id):
     status = get_progress(task_id)
-
     if status.get("percent", -1) == -1 or status.get("percent", 0) >= 100:
         session.pop("reel_in_progress", None)
         return redirect(url_for("reels.create_reel"))
-
     return render_template("reel_progress.html", task_id=task_id)
 
 @reels_bp.route("/generate-script", methods=["POST"])
@@ -244,10 +232,10 @@ def generate_script_ajax():
 
         raw_theme = custom_topic or theme or "default"
         if len(raw_theme) > 100:
-            return redirect_with_form_data("Topic name too long.")
+            return jsonify({"error": "Topic name too long."}), 400
 
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        theme_name = secure_filename(raw_theme.strip().replace(" ", "_")) + "_" + timestamp
+        theme_name = secure_filename(raw_theme.replace(" ", "_")) + "_" + timestamp
 
         script_path = generate_script_for_user(
             user_email=user_email,
@@ -264,14 +252,11 @@ def generate_script_ajax():
 
 @reels_bp.route("/videos/<user_email>/<filename>")
 def serve_video(user_email, filename):
-    return send_from_directory(os.path.join("output", user_email, "videos"), filename)
+    return send_from_directory(os.path.join(get_output_dir(user_email), "videos"), filename)
 
 @reels_bp.route("/reel-history", methods=["GET"])
 @login_required
 def list_reels():
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
-
     user_email = get_user_email()
     user_id = get_user_id()
 
@@ -305,9 +290,6 @@ def list_reels():
 @reels_bp.route("/reels/delete/<int:reel_id>", methods=["POST"])
 @login_required
 def delete_reel(reel_id):
-    if "user" not in session:
-        return redirect(url_for("auth.index"))
-
     user_email = get_user_email()
     user_id = get_user_id()
 
@@ -318,20 +300,17 @@ def delete_reel(reel_id):
             flash("⚠️ Reel not found or already deleted.", "warning")
             return redirect(url_for("reels.list_reels"))
 
-        # ✅ Delete associated schedules
         schedules = Schedule.query.filter_by(user_id=user_id, reel_id=reel.id).all()
         for schedule in schedules:
             db.session.delete(schedule)
 
         filename = os.path.basename(reel.video_path)
         base_video = os.path.splitext(filename)[0]
-        base_path = os.path.join("output", user_email)
+        base_path = get_output_dir(user_email)
 
-        # Delete DB record
         db.session.delete(reel)
         db.session.commit()
 
-        # Define file targets to delete
         targets = {
             "video": os.path.join(base_path, "videos", filename),
             "image": os.path.join(base_path, "images", base_video.replace("_video", "_text_image") + ".png"),
@@ -343,20 +322,15 @@ def delete_reel(reel_id):
             "tts_raw": os.path.join(base_path, "tts", base_video.replace("_video", "_voice_raw") + ".mp3"),
         }
 
-        # Delete temp files
         temp_dir = os.path.join(base_path, "temp")
         if os.path.exists(temp_dir):
             base_video_clean = base_video.replace("_video", "").rsplit(".", 1)[0]
-            temp_patterns = [
-                os.path.join(temp_dir, f"{base_video_clean}*.mp4"),
-                os.path.join(temp_dir, f"{base_video_clean}*.m4a"),
-            ]
-            for pattern in temp_patterns:
+            for pattern in [os.path.join(temp_dir, f"{base_video_clean}*.mp4"),
+                            os.path.join(temp_dir, f"{base_video_clean}*.m4a")]:
                 for f in glob.glob(pattern):
                     os.remove(f)
                     deleted_any = True
 
-        # Delete all target files
         for path in targets.values():
             if os.path.exists(path):
                 os.remove(path)

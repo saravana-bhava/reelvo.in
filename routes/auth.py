@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import random
 import os
+
 from authlib.integrations.flask_client import OAuth
 from flask import (
     Blueprint, render_template, request, redirect, session,
@@ -30,9 +31,10 @@ google = oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
+
 @auth_bp.route("/")
 def index():
-    """Redirects to dashboard if logged in, else to login page."""
+    """Redirect to dashboard if logged in, else to login."""
     if "user" in session:
         return redirect(url_for("dashboard.dashboard"))
     return redirect(url_for("auth.login"))
@@ -40,7 +42,7 @@ def index():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Handles user login with password or optional master password."""
+    """Handle login with password or admin master password."""
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -62,7 +64,10 @@ def login():
         session["user"] = {"id": user.id, "email": user.email}
 
         creds = get_instagram_credentials(user.email)
-        if creds and creds.get("access_token") and creds.get("platform_user_id"):
+        access_token = creds.get("access_token") if creds else None
+        platform_user_id = creds.get("platform_user_id") if creds else None
+
+        if access_token and platform_user_id:
             session["connected"] = True
             logo_path = f"output/{user.email}/watermark/logo.png"
             session["instagram_profile_picture"] = logo_path if os.path.exists(logo_path) else None
@@ -77,7 +82,7 @@ def login():
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    """Handles new user registration."""
+    """Handle new user registration."""
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
@@ -108,7 +113,7 @@ def register():
 
 @auth_bp.route("/logout")
 def logout():
-    """Logs the user out by clearing session."""
+    """Log out user by clearing session."""
     session.pop("user", None)
     flash("You’ve been logged out.", "info")
     return redirect(url_for("auth.login"))
@@ -116,7 +121,7 @@ def logout():
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
-    """Handles password reset request by sending email with token."""
+    """Send password reset email with token."""
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         user = User.query.filter_by(email=email).first()
@@ -144,7 +149,7 @@ If you didn't request this, please ignore it.
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password(token):
-    """Handles password reset using secure token."""
+    """Reset password using token."""
     email = verify_reset_token(token, current_app.secret_key)
     if not email:
         flash("Invalid or expired reset link.", "danger")
@@ -171,7 +176,7 @@ def reset_password(token):
 
 @auth_bp.route("/toggle-theme", methods=["POST"])
 def toggle_theme():
-    """Toggles theme between light and dark in session."""
+    """Toggle theme between light and dark."""
     session["theme"] = "dark" if session.get("theme", "light") == "light" else "light"
     return redirect(request.referrer or url_for("profile.user_profile"))
 
@@ -182,14 +187,14 @@ def toggle_theme():
 
 @auth_bp.route("/auth/request-otp", methods=["POST"])
 def request_otp():
-    """Sends a 6-digit OTP to the user's email for login with resend cooldown."""
+    """Send 6-digit OTP to email with cooldown."""
     email = request.form.get("email", "").strip().lower()
     if not email:
         flash("Email is required.", "warning")
         return redirect(url_for("auth.login"))
 
-    user = User.query.filter_by(email=email).first()
     now = datetime.utcnow()
+    user = User.query.filter_by(email=email).first()
 
     if not user:
         user = User(
@@ -201,7 +206,6 @@ def request_otp():
         db.session.add(user)
         db.session.commit()
 
-    # Cooldown check (60 seconds)
     if user.otp_last_sent_at and now < user.otp_last_sent_at + timedelta(seconds=60):
         remaining = int((user.otp_last_sent_at + timedelta(seconds=60) - now).total_seconds())
         flash(f"Please wait {remaining}s before requesting another OTP.", "warning")
@@ -223,13 +227,14 @@ It is valid for 10 minutes. Do not share this code with anyone.
 — Reelvo Team
 """
     send_email(user.email, subject, body)
+
     flash("OTP sent to your email.", "info")
     return redirect(url_for("auth.verify_otp_form", email=email))
 
 
 @auth_bp.route("/auth/verify-otp", methods=["POST"])
 def verify_otp():
-    """Verifies the OTP and logs the user in."""
+    """Verify OTP and log user in."""
     email = request.form.get("email", "").strip().lower()
     otp = request.form.get("otp", "").strip()
 
@@ -254,23 +259,23 @@ def verify_otp():
 
 @auth_bp.route("/auth/verify-otp", methods=["GET"])
 def verify_otp_form():
-    """Renders OTP input form with resend cooldown."""
+    """Render OTP form with cooldown."""
     email = request.args.get("email", "")
     cooldown_seconds = 0
 
     if email:
         user = User.query.filter_by(email=email).first()
         if user and user.otp_last_sent_at:
-            now = datetime.utcnow()
-            elapsed = (now - user.otp_last_sent_at).total_seconds()
+            elapsed = (datetime.utcnow() - user.otp_last_sent_at).total_seconds()
             if elapsed < 60:
                 cooldown_seconds = int(60 - elapsed)
 
     return render_template("verify_otp.html", email=email, cooldown_seconds=cooldown_seconds)
 
+
 @auth_bp.route("/auth/google/login")
 def google_login():
-    """Redirect to Google for authentication."""
+    """Redirect to Google for login."""
     redirect_uri = url_for("auth.google_callback", _external=True)
     return google.authorize_redirect(redirect_uri)
 
@@ -285,17 +290,14 @@ def google_callback():
 
     user_info = resp.json()
     email = user_info["email"]
-    name = user_info.get("name", "")
 
     if not user_info:
         flash("Google login failed. Please try again.", "danger")
         return redirect(url_for("auth.login"))
 
-    email = user_info["email"]
     user = User.query.filter_by(email=email).first()
 
     if not user:
-        # Auto-register new user from Google
         user = User(
             email=email,
             password_hash=generate_password_hash(os.urandom(12).hex()),

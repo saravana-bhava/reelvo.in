@@ -23,11 +23,8 @@ def show_coming(feature: str):
     Returns:
         str: Rendered HTML template with the display name of the feature.
     """
-    feature_key = feature.lower().strip()
-    display_name = FEATURES_MAP.get(feature_key)
-
+    display_name = FEATURES_MAP.get(feature.lower().strip())
     if not display_name:
-        # Optional: Only allow known features to avoid misuse
         abort(404)
 
     return render_template("coming_soon.html", feature_name=display_name)

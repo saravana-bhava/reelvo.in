@@ -6,4 +6,7 @@ terms_bp = Blueprint("terms", __name__)
 
 @terms_bp.route("/terms")
 def terms():
+    """
+    Render the Terms and Conditions page.
+    """
     return render_template("terms.html")

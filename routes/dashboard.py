@@ -29,18 +29,17 @@ def dashboard():
     )
 
     reels_data = []
-
     for reel in reels:
         filename = os.path.basename(reel.video_path)
-
-        title = reel.title.strip() or (reel.theme_name.replace("_", " ").strip().title() if reel.theme_name else filename)
-
-        video_url = f"/videos/{user_email}/{filename}"
+        title = reel.title.strip() if reel.title else (
+            reel.theme_name.replace("_", " ").strip().title()
+            if reel.theme_name else filename
+        )
 
         reels_data.append({
             "id": reel.id,
             "title": title,
-            "video_url": video_url,
+            "video_url": f"/videos/{user_email}/{filename}",
             "created_at": reel.created_at.strftime("%b %d, %Y"),
         })
 

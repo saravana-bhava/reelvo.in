@@ -10,23 +10,29 @@ from utils.auth_utils import get_user_id
 
 schedule_bp = Blueprint("schedule", __name__)
 
+# ------------------------
+# POST: Schedule a reel
+# ------------------------
+
 @schedule_bp.route("/schedule/reel/<int:reel_id>", methods=["POST"])
 def schedule_reel(reel_id):
     user_id = get_user_id()
-
-    from models.schedule import Schedule
+    if not user_id:
+        flash("❌ Authentication required.", "error")
+        return redirect(url_for("auth.login"))
 
     schedule_entry = Schedule(
         user_id=user_id,
         reel_id=reel_id,
         scheduled_for=None,
-        timezone='Asia/Kolkata',
-        status='pending'
+        timezone="Asia/Kolkata",
+        status="pending"
     )
+
     db.session.add(schedule_entry)
     db.session.commit()
 
-    flash(f"✅ Scheduled reel")
+    flash("✅ Reel scheduled successfully.", "success")
     return redirect(url_for("schedule.list_scheduled_jobs_view"))
 
 
@@ -39,14 +45,14 @@ def list_scheduled_jobs_view():
     """Display the scheduled jobs for the current user."""
     user_id = get_user_id()
     if not user_id:
-        return redirect(url_for("auth.index"))
+        return redirect(url_for("auth.login"))
 
     schedules = Schedule.query.filter_by(user_id=user_id)\
         .order_by(Schedule.scheduled_for.asc()).all()
 
+    reel_map = {reel.id: reel.title for reel in Reel.query.all()}
     for item in schedules:
-        reel = Reel.query.get(item.reel_id)
-        item.title = reel.title if reel else "Untitled Reel"
+        item.title = reel_map.get(item.reel_id, "Untitled Reel")
 
     current_app.logger.debug(
         f"[Schedule] user_id={user_id} loaded {len(schedules)} scheduled items."
@@ -68,7 +74,7 @@ def update_schedule():
     """Handle rescheduling or deletion of jobs for the current user."""
     user_id = get_user_id()
     if not user_id:
-        return redirect(url_for("auth.index"))
+        return redirect(url_for("auth.login"))
 
     schedules = Schedule.query.filter_by(user_id=user_id).all()
 
@@ -76,7 +82,7 @@ def update_schedule():
     deleted_count = 0
 
     for item in schedules:
-        if not isinstance(item, Schedule) or item.status == "posted":
+        if item.status == "posted":
             continue
 
         date_key = f"reschedule_{item.id}"
@@ -93,7 +99,6 @@ def update_schedule():
 
         # Handle rescheduling
         new_date_str = request.form.get(date_key, "").strip()
-
         if new_date_str:
             try:
                 new_date = datetime.strptime(new_date_str, "%Y-%m-%dT%H:%M")
@@ -109,5 +114,5 @@ def update_schedule():
 
     db.session.commit()
 
-    flash(f"✅ Schedule updated. {updated_count} rescheduled, {deleted_count} deleted.")
+    flash(f"✅ Schedule updated. {updated_count} rescheduled, {deleted_count} deleted.", "success")
     return redirect(url_for("schedule.list_scheduled_jobs_view"))

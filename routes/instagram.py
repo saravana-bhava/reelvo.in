@@ -30,11 +30,11 @@ GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 def safe_get(url, params=None, timeout=10):
     """Wrapper for GET requests with error handling and logging."""
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=timeout)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        current_app.logger.error(f"[HTTP GET] Failed: {url} - {e}")
+        current_app.logger.error(f"[HTTP GET] {url} failed: {e}")
         return None
 
 
@@ -49,7 +49,7 @@ def download_and_save_image(url, save_path):
                 f.write(chunk)
         return True
     except Exception as e:
-        current_app.logger.error(f"[Download Image] Failed: {url} - {e}")
+        current_app.logger.error(f"[Download Image] {url} failed: {e}")
         return False
 
 
@@ -82,7 +82,7 @@ def instagram_callback():
         return redirect(url_for("dashboard.dashboard"))
 
     try:
-        # Exchange code for short-lived token
+        # Step 1: Exchange code for short-lived token
         token_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
@@ -97,7 +97,7 @@ def instagram_callback():
             flash("❌ Failed to obtain short-lived token.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Exchange for long-lived token
+        # Step 2: Exchange for long-lived token
         long_data = safe_get(
             f"{GRAPH_API_BASE}/oauth/access_token",
             params={
@@ -108,19 +108,19 @@ def instagram_callback():
             }
         )
         long_token = long_data.get("access_token") if long_data else None
-        refresh_token = ""
         expires_in = long_data.get("expires_in", 60 * 60 * 24 * 60)
+        refresh_token = ""
 
         if not long_token:
             flash("❌ Failed to obtain long-lived token.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Get Facebook Pages
+        # Step 3: Get Facebook Pages
         pages_data = safe_get(f"{GRAPH_API_BASE}/me/accounts", params={"access_token": long_token})
         pages = pages_data.get("data", []) if pages_data else []
 
-        # Fallback to business-owned pages
         if not pages:
+            # Fallback: Get owned pages from business account
             biz_data = safe_get(f"{GRAPH_API_BASE}/me/businesses", params={"access_token": long_token})
             for biz in (biz_data.get("data", []) if biz_data else []):
                 owned = safe_get(f"{GRAPH_API_BASE}/{biz['id']}/owned_pages", params={"access_token": long_token})
@@ -137,7 +137,7 @@ def instagram_callback():
             flash("❌ Missing Page ID.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Get IG business account
+        # Step 4: Get Instagram business account
         ig_data = safe_get(
             f"{GRAPH_API_BASE}/{page_id}",
             params={"fields": "instagram_business_account", "access_token": long_token}
@@ -147,15 +147,17 @@ def instagram_callback():
             flash("❌ Instagram account not linked to Page.", "error")
             return redirect(url_for("dashboard.dashboard"))
 
-        # Get IG profile
+        # Step 5: Get IG profile picture
         profile_data = safe_get(
             f"{GRAPH_API_BASE}/{ig_user_id}",
             params={"fields": "username,profile_picture_url", "access_token": long_token}
         )
         profile_url = profile_data.get("profile_picture_url") if profile_data else None
 
+        # Step 6: Save tokens and picture
         user_id = get_user_id()
         user_email = get_user_email()
+
         if user_id:
             if profile_url and user_email:
                 logo_path = f"output/{user_email}/watermark/logo.png"
@@ -170,7 +172,7 @@ def instagram_callback():
 
     except Exception as e:
         current_app.logger.exception("[OAuth] Instagram callback error")
-        flash(f"❌ Instagram connection failed. {str(e)} Try again later.")
+        flash(f"❌ Instagram connection failed. {e}", "error")
 
     return redirect(url_for("dashboard.dashboard"))
 
@@ -216,7 +218,6 @@ def api_post_reel():
 
     try:
         user_email = get_user_email()
-
         result_html = post_to_instagram(
             reel_id=data.get("reel_id", ""),
             video_path=video_path,
