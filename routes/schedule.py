@@ -67,7 +67,7 @@ def list_scheduled_jobs_view():
     )
 
     return render_template(
-        "schedule.html",
+        "scheduled.html",
         user_id=user_id,
         scheduled=schedules
     )
