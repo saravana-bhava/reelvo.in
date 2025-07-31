@@ -16,11 +16,11 @@ class UserToken(db.Model, TimestampMixin):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, nullable=False)
-    access_token = db.Column(db.String, nullable=False)
-    refresh_token = db.Column(db.String)
+    access_token = db.Column(db.String(255), nullable=False)
+    refresh_token = db.Column(db.String(255))
     expires_at = db.Column(db.DateTime)
-    platform = db.Column(db.String, nullable=False)
-    platform_user_id = db.Column(db.String, nullable=True)
+    platform = db.Column(db.String(255), nullable=False)
+    platform_user_id = db.Column(db.String(255), nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'platform', name='uq_user_id_platform'),
