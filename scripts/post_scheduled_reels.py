@@ -174,7 +174,7 @@ def post_due_reels(app):
                         video_path=video_path,
                         caption=caption,
                         user_email=user_email,
-                        video_url="",
+                        video_url=f"https://reelvo.in/videos/{user_email}/{video}",
                         use_drive=use_drive,
                     )
 

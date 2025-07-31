@@ -22,12 +22,12 @@
          class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-8 animate-fade-in space-y-8">
 
   <!-- Google Login -->
-  <div class="animate__animated animate__fadeIn">
+  <div class="animate__animated animate__fadeIn" style="display:none">
     {% include 'includes/google_login_button.html' %}
   </div>
 
   <!-- Divider -->
-  <div class="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
+  <div class="text-center text-gray-500 dark:text-gray-400 text-sm" style="display:none">OR</div>
 
   <!-- Standard Login Form -->
   <form method="post"
@@ -83,13 +83,13 @@
   </form>
 
   <!-- Divider -->
-  <div class="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
+  <div class="text-center text-gray-500 dark:text-gray-400 text-sm" style="display:none">OR</div>
 
   <!-- OTP Login Form -->
   <form method="post"
         action="{{ url_for('auth.request_otp') }}"
         aria-label="OTP Login Form"
-        class="space-y-4">
+        class="space-y-4" style="display:none">
 
     <div>
       <label for="otp-email" class="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
