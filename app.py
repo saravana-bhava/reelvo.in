@@ -47,13 +47,25 @@ def create_app():
 
     # ──────── Database: SQLite ────────
     from models import db
+    from flask_migrate import Migrate
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(BASE_DIR, "db", "reelvo.db")
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
+    from urllib.parse import quote_plus
+
+    user = os.getenv("MYSQL_USER", "mysqluser")
+    password = quote_plus(os.getenv("MYSQL_PASSWORD", "mysqlpassword"))
+    host = os.getenv("MYSQL_HOST", "localhost")
+    port = os.getenv("MYSQL_PORT", "3306")
+    db_name = os.getenv("MYSQL_DB", "reelvo")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db_name}"
+
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     if is_dev:
         with app.app_context():
