@@ -38,7 +38,7 @@ from utils.instagram_db import get_instagram_credentials
 # ---------------------
 load_dotenv()
 
-REQUIRED_ENV_VARS = ["DB_URL", "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD"]
+REQUIRED_ENV_VARS = ["MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_HOST", "MYSQL_PORT", "MYSQL_DB", "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD"]
 missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
 if missing_vars:
     raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}")
@@ -96,7 +96,13 @@ def send_email_alert(subject, message):
 # ---------------------
 def create_app():
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DB_URL")
+    user = os.getenv("MYSQL_USER")
+    password = os.getenv("MYSQL_PASSWORD")
+    host = os.getenv("MYSQL_HOST", "localhost")
+    port = os.getenv("MYSQL_PORT", "3306")
+    db_name = os.getenv("MYSQL_DB")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db_name}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(app)
     return app
