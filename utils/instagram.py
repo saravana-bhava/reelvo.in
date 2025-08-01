@@ -74,7 +74,7 @@ def post_to_instagram(
         payload = {
             "media_type": "REELS",
             "video_url": video_url,
-            "caption": caption,
+            "caption": caption[:2200],
             "access_token": access_token,
             "share_to_feed": "true"
         }
@@ -155,6 +155,13 @@ def post_to_instagram(
             return f"📤 Reel posted successfully: <a href='{permalink}' target='_blank'>View</a>"
         return "✅ Reel uploaded, but permalink is unavailable."
 
+    except requests.exceptions.HTTPError as e:
+        print(f"[EXCEPTION] ❗ API request error for reel {reel_id}: {e}")
+        try:
+            print(f"[RESPONSE BODY] {e.response.json()}")
+        except:
+            print(f"[RESPONSE TEXT] {e.response.text}")
+        return f"❌ Instagram API request failed: {e}"
     except requests.exceptions.RequestException as e:
         print(f"[EXCEPTION] ❗ API request error for reel {reel_id}: {e}")
         return f"❌ Instagram API request failed: {e}"
