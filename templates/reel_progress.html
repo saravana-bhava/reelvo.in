@@ -52,6 +52,12 @@
   const spinner = document.getElementById("spinner");
   let failureCount = 0;
 
+  function formatElapsed(seconds) {
+    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secs = String(seconds % 60).padStart(2, '0');
+    return `${mins}:${secs}`;
+  }
+
   async function pollProgress() {
     try {
       const res = await fetch(`/progress/${taskId}`);
@@ -74,7 +80,8 @@
       msg.innerHTML = message?.trim() || status;
 
       if (elapsed !== undefined) {
-        msg.innerHTML += `<br><small class="text-gray-500">⏱ Elapsed: ${elapsed}s</small>`;
+        const formatted = formatElapsed(elapsed);
+        msg.innerHTML += `<br><small class="text-gray-500">⏱ Elapsed: ${formatted}</small>`;
       }
 
       if (percent < 100) {
