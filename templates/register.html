@@ -21,12 +21,12 @@
          aria-labelledby="register-heading"
          class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-8 animate-fade-in space-y-6">
 
-  <div class="animate__animated animate__fadeIn" style="display:none">
+  <div class="animate__animated animate__fadeIn">
     {% include 'includes/google_login_button.html' %}
   </div>
 
   <!-- Divider -->
-  <div class="text-center text-gray-500 dark:text-gray-400 text-sm" style="display:none">OR</div>
+  <div class="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
 
   <!-- Register Form -->
   <form method="post"
@@ -90,7 +90,7 @@
     </p>
 
     <!-- Optional OTP hint -->
-    <p class="text-center text-xs text-gray-500 dark:text-gray-400" style="display:none">
+    <p class="text-center text-xs text-gray-500 dark:text-gray-400">
       Prefer not to set a password?
       <a href="{{ url_for('auth.login') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Login with Email OTP</a>
     </p>
