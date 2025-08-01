@@ -80,7 +80,7 @@
       msg.innerHTML = message?.trim() || status;
 
       if (elapsed !== undefined) {
-        const formatted = formatElapsed(elapsed);
+        const formatted = formatElapsed(Number(elapsed));  // ✅ Ensure it's a number
         msg.innerHTML += `<br><small class="text-gray-500">⏱ Elapsed: ${formatted}</small>`;
       }
 
