@@ -1,0 +1,61 @@
+<!--
+  File:         templates/manual_reel.html
+  Description:  Form to upload and schedule a manual video reel
+  Framework:    Flask + TailwindCSS
+  Author:       Saravana Bhava
+  Author URL:   https://SazM.in
+-->
+
+{% extends "base.html" %}
+{% block title %}Upload Reel{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+  📤 Upload Manual Reel
+</span>
+{% endblock %}
+
+{% block content %}
+<section class="space-y-8 animate-fade-in">
+  <form id="manualReelForm" method="post" action="{{ url_for('reels.manual_upload') }}"
+        enctype="multipart/form-data" onsubmit="disableForm()" class="space-y-8">
+
+    <!-- Video Upload -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
+      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">🎥 Upload Reel</h3>
+      <input type="file" name="video" accept="video/mp4,video/mov,video/webm" required
+             class="block w-full text-sm text-gray-700 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700" />
+    </div>
+
+    <!-- Caption Input -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
+      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">📝 Caption</h3>
+      <textarea name="caption" rows="4" maxlength="2200" placeholder="Write your reel caption..."
+                class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 resize-y transition"></textarea>
+    </div>
+
+    <!-- Schedule -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
+      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">📅 Schedule Reel</h3>
+      <input type="datetime-local" name="schedule_time" required
+             class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500" />
+    </div>
+
+    <!-- Submit -->
+    <div class="text-center">
+      <button type="submit"
+              class="px-6 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 font-semibold transition">
+        🚀 Upload & Schedule
+      </button>
+    </div>
+  </form>
+</section>
+
+<script>
+function disableForm() {
+  const btn = document.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.innerText = "⏳ Uploading...";
+}
+</script>
+{% endblock %}

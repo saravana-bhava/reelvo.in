@@ -182,6 +182,72 @@ def create_reel_action():
 
     return render_template("reel_progress.html", task_id=task_id)
 
+@reels_bp.route("/manual-upload", methods=["GET", "POST"])
+@login_required
+def manual_upload():
+    user_id = get_user_id()
+    user_email = get_user_email()
+
+    if request.method == "POST":
+        file = request.files.get("video")
+        caption = request.form.get("caption", "").strip()
+        schedule_time_str = request.form.get("schedule_time")
+
+        if not file or not file.filename.lower().endswith((".mp4", ".mov", ".webm")):
+            flash("❌ Please upload a valid video file (.mp4, .mov, .webm).", "error")
+            return redirect(url_for("reels.manual_upload"))
+
+        # Create a timestamped, clean filename
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        ext = os.path.splitext(file.filename)[1].lower()
+        base_filename = f"manual_{timestamp}{ext}"
+
+        filename = secure_filename(base_filename)
+        output_dir = get_output_dir(user_email)
+        video_dir = os.path.join(output_dir, "videos")
+        os.makedirs(video_dir, exist_ok=True)
+        video_path = os.path.join(video_dir, filename)
+        file.save(video_path)
+
+        # Use filename as theme_name and readable title
+        theme_name = os.path.splitext(filename)[0]  # without extension
+        readable_title = theme_name.replace("_", " ").title()
+
+        # Create Reel entry
+        reel = Reel(
+            user_id=user_id,
+            video_path=video_path,
+            script=caption,
+            caption=caption,
+            theme_name=theme_name,
+            title=readable_title,
+            lang="en",
+            status="scheduled" if schedule_time_str else "draft",
+            is_scheduled=bool(schedule_time_str),
+            scheduled_at=datetime.strptime(schedule_time_str, "%Y-%m-%dT%H:%M") if schedule_time_str else None,
+            created_at=datetime.now()
+        )
+        db.session.add(reel)
+        db.session.flush()
+
+        # Optional Schedule entry (if using a separate Schedule model)
+        if schedule_time_str:
+            from models.schedule import Schedule
+            schedule = Schedule(
+                user_id=user_id,
+                reel_id=reel.id,
+                scheduled_time=reel.scheduled_at,
+                timezone="Asia/Kolkata",
+                status="pending"
+            )
+            db.session.add(schedule)
+
+        db.session.commit()
+        flash("✅ Manual reel uploaded successfully!", "success")
+        return redirect(url_for("reels.list_reels"))
+
+    return render_template("manual_upload.html", user=user_email)
+
 @reels_bp.route("/progress/<task_id>")
 @login_required
 def progress_status(task_id):
