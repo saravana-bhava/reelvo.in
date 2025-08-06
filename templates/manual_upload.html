@@ -1,5 +1,5 @@
 <!--
-  File:         templates/manual_reel.html
+  File:         templates/manual_upload.html
   Description:  Form to upload and schedule a manual video reel
   Framework:    Flask + TailwindCSS
   Author:       Saravana Bhava
@@ -7,49 +7,67 @@
 -->
 
 {% extends "base.html" %}
-{% block title %}Upload Reel{% endblock %}
+{% block title %}Manual Upload{% endblock %}
 
 {% block heading %}
-<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
-  📤 Upload Manual Reel
-</span>
+<div class="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white">
+  📤 Manual Reel Upload
+</div>
 {% endblock %}
 
 {% block content %}
-<section class="space-y-8 animate-fade-in">
-  <form id="manualReelForm" method="post" action="{{ url_for('reels.manual_upload') }}"
-        enctype="multipart/form-data" onsubmit="disableForm()" class="space-y-8">
+<div class="space-y-8 w-full animate-fade-in">
+  <div class="text-sm text-gray-600 dark:text-gray-600">
+    Logged in as: <strong>{{ user }}</strong>
+  </div>
+
+  <form method="POST"
+        action="{{ url_for('reels.manual_upload') }}"
+        enctype="multipart/form-data"
+        onsubmit="disableForm()"
+        class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
     <!-- Video Upload -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
-      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">🎥 Upload Reel</h3>
-      <input type="file" name="video" accept="video/mp4,video/mov,video/webm" required
-             class="block w-full text-sm text-gray-700 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700" />
+    <div class="col-span-1 md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">🎥 Upload Reel Video</h2>
+      <input type="file"
+             name="video"
+             accept="video/mp4,video/mov,video/webm"
+             required
+             class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-600 file:text-white hover:file:bg-green-700 transition" />
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Supported: MP4, MOV, WEBM. Max size: 100MB.</p>
     </div>
 
-    <!-- Caption Input -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
-      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">📝 Caption</h3>
-      <textarea name="caption" rows="4" maxlength="2200" placeholder="Write your reel caption..."
-                class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 resize-y transition"></textarea>
+    <!-- Caption -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">📝 Caption</h2>
+      <textarea name="caption"
+                rows="6"
+                maxlength="2200"
+                placeholder="Write your reel caption..."
+                class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition resize-y"></textarea>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Max 2200 characters. Hashtags and emojis allowed.</p>
     </div>
 
     <!-- Schedule -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
-      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">📅 Schedule Reel</h3>
-      <input type="datetime-local" name="schedule_time" required
-             class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500" />
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">📅 Schedule</h2>
+      <input type="datetime-local"
+             name="schedule_time"
+             required
+             class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition" />
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Set when to publish the reel.</p>
     </div>
 
     <!-- Submit -->
-    <div class="text-center">
+    <div class="col-span-1 md:col-span-2 text-center">
       <button type="submit"
-              class="px-6 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 font-semibold transition">
+              class="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition">
         🚀 Upload & Schedule
       </button>
     </div>
   </form>
-</section>
+</div>
 
 <script>
 function disableForm() {

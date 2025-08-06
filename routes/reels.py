@@ -236,7 +236,7 @@ def manual_upload():
             schedule = Schedule(
                 user_id=user_id,
                 reel_id=reel.id,
-                scheduled_time=reel.scheduled_at,
+                scheduled_for=reel.scheduled_at,
                 timezone="Asia/Kolkata",
                 status="pending"
             )
