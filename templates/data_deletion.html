@@ -1,0 +1,36 @@
+<!--
+  File:         templates/data_deletion.html
+  Description:  Data Deletion static content
+  Framework:    Flask + TailwindCSS
+  Version:      1.0.0
+  Last Updated: 3 August 2025
+  Author:       Saravana Bhava
+  Author URL:   https://SazM.in
+-->
+{% extends "base.html" %}
+{% block title %}Data Deletion - Reelvo{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+  📜 Data Deletion
+</span>
+{% endblock %}
+
+{% block content %}
+<section class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 sm:p-10 max-w-4xl mx-auto animate-fade-in" role="region" aria-label="User Data Deletion">
+  <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Request to Delete Your Data</h2>
+
+  <p class="text-gray-700 dark:text-gray-300 mb-4">
+    At Reelvo, we respect your privacy. If you wish to request the deletion of your personal data associated with your Reelvo account, please email us at
+    <a href="mailto:shivamkumr132@gmail.com" class="text-blue-600 underline">shivamkumr132@gmail.com</a>. Kindly include your registered email address and any relevant information that may help us process your request.
+  </p>
+
+  <p class="text-gray-700 dark:text-gray-300 mb-4">
+    Upon receiving a valid request, we will verify and complete the deletion within <strong>7 business days</strong>.
+  </p>
+
+  <p class="text-sm text-gray-500 dark:text-gray-400">
+    If you have any questions or concerns about data privacy or security, feel free to contact us at any time.
+  </p>
+</section>
+{% endblock %}
