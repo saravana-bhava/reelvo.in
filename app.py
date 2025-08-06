@@ -65,6 +65,8 @@ def create_app():
         with app.app_context():
             db.create_all()
 
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
+
     # ──────── SMTP Config ────────
     app.config.update(
         ADMIN_MASTER_PASSWORD=os.getenv("ADMIN_MASTER_PASSWORD"),
