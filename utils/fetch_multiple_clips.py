@@ -11,6 +11,7 @@
 import os
 import re
 import logging
+import random
 import subprocess
 from typing import List, Set, Optional
 from dotenv import load_dotenv
@@ -135,6 +136,9 @@ def fetch_multiple_clips(
 
     for i in range(count):
         clip_path = os.path.join(temp_dir, f"{theme_name}_{language}_clip{i + 1}.mp4")
+        if clip_path in downloaded_clips:
+            logger.info(f"[⏩] Skipping duplicate clip {i+1}")
+            continue
         found = False
 
         for source in sources:
@@ -148,7 +152,7 @@ def fetch_multiple_clips(
                 logger.warning(f"[⚠️] {source.__name__} failed for clip {i + 1}: {e}")
 
         if not found:
-            fallback_index = (i % FALLBACK_COUNT) + 1
+            fallback_index = random.randint(1, FALLBACK_COUNT)
             fallback_file = os.path.join("assets", "clips", f"fallback{fallback_index}.mp4")
             if os.path.exists(fallback_file):
                 success = download_video(fallback_file, clip_path, task_id, index=i, total=count)

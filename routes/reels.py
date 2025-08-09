@@ -377,6 +377,7 @@ def delete_reel(reel_id):
         schedules = Schedule.query.filter_by(user_id=user_id, reel_id=reel.id).all()
         for schedule in schedules:
             db.session.delete(schedule)
+        db.session.commit()
 
         filename = os.path.basename(reel.video_path)
         base_video = os.path.splitext(filename)[0]
