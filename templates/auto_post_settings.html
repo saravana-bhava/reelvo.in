@@ -1,3 +1,12 @@
+<!--
+  File:         templates/auto_post_settings.html
+  Description:  Auto Post Settings
+  Framework:    Flask + TailwindCSS
+  Version:      1.0.0
+  Last Updated: 31 July 2025
+  Author:       Saravana Bhava
+  Author URL:   https://SazM.in
+-->
 {% extends "base.html" %}
 {% block title %}Auto Reel Posting Settings{% endblock %}
 
@@ -9,8 +18,12 @@
 
 {% block content %}
 <section class="space-y-8 animate-fade-in" role="region" aria-label="Auto Reel Posting Settings Section">
+    <div class="text-sm text-gray-600 dark:text-gray-600">
+    Logged in as: <strong>{{ user_email }}</strong>
+    </div>
+
     {% if plan %}
-    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-1 text-gray-700 dark:text-gray-300 text-sm">
+    <div class="bg-blue-50 dark:bg-gray-900 border border-blue-200 dark:border-gray-700 rounded-xl p-4 space-y-1 text-gray-700 dark:text-gray-300 text-sm">
       <h3 class="font-semibold mb-2">📝 Plan Summary</h3>
       <ul class="list-disc list-inside space-y-1">
         <li><strong>Topic:</strong> {{ plan.topic }}</li>
@@ -21,8 +34,8 @@
         <li><strong>Next Post At:</strong> {{ plan.start_date.strftime('%d/%m/%Y') }}, {{ plan.auto_post_time.strftime('%I:%M %p') }}</li>
         <li><strong>Days Remaining:</strong> {{ plan.days_remaining() }}</li>
         <li><strong>Reels Posted:</strong> {{ plan.reels_posted }}</li>
-        <li><strong>Status:</strong> <span class="text-green-600 font-semibold">{{ "Activated" if plan.status == "active" else "Deactivated" }}</span></li>
         <li><strong>Ends On:</strong> {{ plan.end_date().strftime('%d/%m/%Y') }}</li>
+        <li><strong>Status:</strong> <span class="text-green-600 font-semibold">{{ "Activated" if plan.status == "active" else "Deactivated" }}</span></li>
       </ul>
     </div>
     {% endif %}

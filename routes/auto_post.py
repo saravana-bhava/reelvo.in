@@ -12,29 +12,38 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, timedelta
 from models import db
 from models.auto_post_plan import AutoPostPlan
-from utils.auth_utils import get_user_id
+from utils.auth_utils import get_user_id, get_user_email
 
 auto_post_bp = Blueprint("auto_post", __name__)
 
 @auto_post_bp.route("/auto-plan-settings", methods=["GET", "POST"])
 def settings():
     user_id = get_user_id()
-    plan = AutoPostPlan.query.filter_by(user_id=user_id).first()
+    user_email = get_user_email()
+    plans = AutoPostPlan.query.filter_by(user_id=user_id).all()
 
     if request.method == "POST":
         action = request.form.get("action")
+        plan_id = request.form.get("plan_id")  # Plan id from form (for activate/deactivate)
+        plan = None
+
+        if plan_id:
+            plan = AutoPostPlan.query.filter_by(user_id=user_id, id=plan_id).first()
+            if not plan:
+                flash("Plan not found.", "error")
+                return redirect(url_for("auto_post.settings"))
 
         if action == "deactivate":
-            if plan:
+            if plan and plan.status == "active":
                 plan.status = "inactive"
                 db.session.commit()
-                flash("Plan deactivated successfully.", "info")
+                flash(f"Plan '{plan.topic}' deactivated successfully.", "info")
             else:
-                flash("No active plan to deactivate.", "warning")
+                flash("No active plan to deactivate or plan not found.", "warning")
             return redirect(url_for("auto_post.settings"))
 
         elif action == "activate":
-            # Validate required fields as before
+            # Validate fields for new or existing plan
             topic = request.form.get("topic", "").strip()
             start_date_str = request.form.get("start_date", "").strip()
             duration_days_str = request.form.get("duration_days", "").strip()
@@ -47,17 +56,14 @@ def settings():
             if not topic:
                 flash("Topic is required.", "error")
                 return redirect(url_for("auto_post.settings"))
-
             if not start_date_str:
                 flash("Start date is required.", "error")
                 return redirect(url_for("auto_post.settings"))
-
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             except ValueError:
                 flash("Invalid start date format. Use YYYY-MM-DD.", "error")
                 return redirect(url_for("auto_post.settings"))
-
             try:
                 duration_days = int(duration_days_str)
                 if duration_days <= 0:
@@ -65,7 +71,6 @@ def settings():
             except ValueError:
                 flash("Duration days must be a positive integer.", "error")
                 return redirect(url_for("auto_post.settings"))
-
             try:
                 auto_post_time = datetime.strptime(auto_post_time_str, "%H:%M:%S").time()
             except ValueError:
@@ -76,6 +81,7 @@ def settings():
                     return redirect(url_for("auto_post.settings"))
 
             if plan:
+                # Update existing plan
                 plan.topic = topic
                 plan.start_date = start_date
                 plan.duration_days = duration_days
@@ -86,6 +92,7 @@ def settings():
                 plan.voice_artist = voice_artist
                 plan.status = "active"
             else:
+                # Create new plan
                 plan = AutoPostPlan(
                     user_id=user_id,
                     topic=topic,
@@ -100,6 +107,11 @@ def settings():
                 )
                 db.session.add(plan)
 
+            # Optionally, deactivate other active plans for this user to allow only one active at a time:
+            for other_plan in plans:
+                if other_plan.id != plan.id and other_plan.status == "active":
+                    other_plan.status = "inactive"
+
             db.session.commit()
             flash("Auto-Posting Plan activated and saved successfully!", "success")
             return redirect(url_for("auto_post.settings"))
@@ -108,4 +120,4 @@ def settings():
             flash("Unknown action.", "error")
             return redirect(url_for("auto_post.settings"))
 
-    return render_template("auto_post_settings.html", plan=plan)
+    return render_template("auto_post_settings.html", plans=plans, user_email=user_email)
