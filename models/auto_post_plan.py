@@ -21,7 +21,7 @@ class AutoPostPlan(db.Model):
     language = db.Column(db.String(50), default="en")
     subtitles_enabled = db.Column(db.Boolean, default=True)
     watermark_enabled = db.Column(db.Boolean, default=True)
-    voice = db.Column(db.String(100), default="Google UK English Male")
+    voice_artist = db.Column(db.String(100), default="Google UK English Male")
     status = db.Column(db.String(20), default="Active")  # Active / Paused / Completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

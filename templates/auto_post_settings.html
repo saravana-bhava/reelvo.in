@@ -1,44 +1,195 @@
 {% extends "base.html" %}
+{% block title %}Auto Reel Posting Settings{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+  ⚙️ Auto Reel Posting Settings
+</span>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow">
-    <h2 class="text-2xl font-bold mb-4">Auto Reel Posting Settings</h2>
-    <form method="POST">
-        <label class="block font-semibold">Reel Topic / Script</label>
-        <input type="text" name="topic" value="{{ plan.topic if plan else '' }}" class="w-full border p-2 rounded mb-3">
-
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block font-semibold">Start Date</label>
-                <input type="date" name="start_date" value="{{ plan.start_date if plan else '' }}" class="w-full border p-2 rounded">
-            </div>
-            <div>
-                <label class="block font-semibold">Duration (in Days)</label>
-                <input type="number" name="duration_days" value="{{ plan.duration_days if plan else 30 }}" class="w-full border p-2 rounded">
-            </div>
-        </div>
-
-        <div class="mt-3">
-            <label class="block font-semibold">Auto Post Time</label>
-            <input type="time" name="auto_post_time" value="{{ plan.auto_post_time if plan else '' }}" class="w-full border p-2 rounded">
-        </div>
-
-        {% if plan %}
-        <p class="mt-3">Status: <span class="text-green-600 font-semibold">{{ plan.status }}</span></p>
-        <p>Ends on: {{ plan.end_date().strftime('%d/%m/%Y') }}</p>
-        {% endif %}
-
-        <button class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Activate Plan</button>
-    </form>
-
+<section class="space-y-8 animate-fade-in" role="region" aria-label="Auto Reel Posting Settings Section">
     {% if plan %}
-    <div class="mt-6 p-4 border rounded">
-        <h3 class="font-bold">Your Auto-Posting Plan Summary</h3>
-        <p>Topic: {{ plan.topic }}</p>
-        <p>Next Post At: {{ plan.start_date.strftime('%d/%m/%Y') }}, {{ plan.auto_post_time.strftime('%I:%M %p') }}</p>
-        <p>Days Remaining: {{ plan.days_remaining() }}</p>
-        <p>Reels Posted: 0</p>
-        <p>Status: <span class="text-green-600 font-semibold">{{ plan.status }}</span></p>
+    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-1 text-gray-700 dark:text-gray-300 text-sm">
+      <h3 class="font-semibold mb-2">📝 Plan Summary</h3>
+      <ul class="list-disc list-inside space-y-1">
+        <li><strong>Topic:</strong> {{ plan.topic }}</li>
+        <li><strong>Language:</strong> {{ "English" if plan.language == "en" else "Hindi" }}</li>
+        <li><strong>Voice:</strong> {{ plan.voice_artist }}</li>
+        <li><strong>Subtitles:</strong> {{ 'Yes' if plan.subtitles_enabled else 'No' }}</li>
+        <li><strong>Watermark:</strong> {{ 'Yes' if plan.watermark_enabled else 'No' }}</li>
+        <li><strong>Next Post At:</strong> {{ plan.start_date.strftime('%d/%m/%Y') }}, {{ plan.auto_post_time.strftime('%I:%M %p') }}</li>
+        <li><strong>Days Remaining:</strong> {{ plan.days_remaining() }}</li>
+        <li><strong>Reels Posted:</strong> {{ plan.reels_posted }}</li>
+        <li><strong>Status:</strong> <span class="text-green-600 font-semibold">{{ "Activated" if plan.status == "active" else "Deactivated" }}</span></li>
+        <li><strong>Ends On:</strong> {{ plan.end_date().strftime('%d/%m/%Y') }}</li>
+      </ul>
     </div>
     {% endif %}
-</div>
+
+  <form method="POST" class="space-y-8" novalidate>
+    <!-- Topic & Language -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
+      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight mb-2">🎯 Topic & Language</h3>
+
+      <div>
+        <label for="topic" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Reel Topic / Script</label>
+        <input
+          type="text"
+          id="topic"
+          name="topic"
+          value="{{ plan.topic if plan else '' }}"
+          required
+          class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition"
+          placeholder="Enter topic or script"
+        />
+      </div>
+
+      <div>
+        <label for="language" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Language</label>
+        <select
+          id="language"
+          name="language"
+          required
+          class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition"
+        >
+          <option value="en" {% if plan and plan.language == 'en' %}selected{% endif %}>🇺🇸 English</option>
+          <option value="hi" {% if plan and plan.language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
+        </select>
+      </div>
+
+        <div id="voice_artist_wrapper" class="col-span-full">
+          <label for="voice_artist" class="block text-sm font-medium text-gray-700 dark:text-gray-200">TTS Voice:</label>
+          <select id="voice_artist" name="voice_artist" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition">
+            <optgroup label="English">
+              <option value="en-US-Wavenet-A" {% if voice_artist == 'en-US-Wavenet-A' %}selected{% endif %}>English Male (Calm)</option>
+              <option value="en-US-Wavenet-B" {% if voice_artist == 'en-US-Wavenet-B' %}selected{% endif %}>English Male (Deep)</option>
+              <option value="en-US-Wavenet-C" {% if voice_artist == 'en-US-Wavenet-C' %}selected{% endif %}>English Female (Warm)</option>
+              <option value="en-US-Wavenet-D" {% if voice_artist == 'en-US-Wavenet-D' %}selected{% endif %}>English Male (Energetic)</option>
+              <option value="en-US-Wavenet-E" {% if voice_artist == 'en-US-Wavenet-E' %}selected{% endif %}>English Female (Upbeat)</option>
+              <option value="en-US-Wavenet-F" {% if voice_artist == 'en-US-Wavenet-F' %}selected{% endif %}>English Female (Neutral)</option>
+            </optgroup>
+            <optgroup label="Hindi">
+              <option value="hi-IN-Wavenet-A" {% if voice_artist == 'hi-IN-Wavenet-A' %}selected{% endif %}>Hindi Male (Deep)</option>
+              <option value="hi-IN-Wavenet-B" {% if voice_artist == 'hi-IN-Wavenet-B' %}selected{% endif %}>Hindi Male (Warm)</option>
+              <option value="hi-IN-Wavenet-C" {% if voice_artist == 'hi-IN-Wavenet-C' %}selected{% endif %}>Hindi Female (Friendly)</option>
+              <option value="hi-IN-Wavenet-D" {% if voice_artist == 'hi-IN-Wavenet-D' %}selected{% endif %}>Hindi Female (Polite)</option>
+            </optgroup>
+          </select>
+          <div class="mt-3 flex items-center gap-3">
+            <button type="button" onclick="playVoicePreview()"
+                    class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm text-gray-800 dark:text-gray-100 transition">
+              ▶ Preview Voice
+            </button>
+            <audio id="voice-audio-preview" class="hidden" preload="none"></audio>
+          </div>
+        </div>
+
+    </div>
+
+    <!-- Schedule -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
+      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight mb-2">📅 Schedule</h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Start Date</label>
+          <input
+            type="date"
+            id="start_date"
+            name="start_date"
+            value="{{ plan.start_date.strftime('%Y-%m-%d') if plan and plan.start_date else '' }}"
+            required
+            class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition"
+          />
+        </div>
+
+        <div>
+          <label for="duration_days" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Duration (Days)</label>
+          <input
+            type="number"
+            id="duration_days"
+            name="duration_days"
+            min="1"
+            value="{{ plan.duration_days if plan else 30 }}"
+            required
+            class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label for="auto_post_time" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Auto Post Time</label>
+        <input
+          type="time"
+          id="auto_post_time"
+          name="auto_post_time"
+          value="{{ plan.auto_post_time.strftime('%H:%M') if plan and plan.auto_post_time else '' }}"
+          required
+          class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-indigo-500 transition"
+        />
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-4">
+      <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight mb-2">⚙️ Options</h3>
+      <div class="flex flex-col space-y-2 text-gray-800 dark:text-gray-200 text-sm">
+        <label class="inline-flex items-center space-x-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="subtitles_enabled"
+            name="subtitles_enabled"
+            class="rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500"
+            {% if plan and plan.subtitles_enabled %}checked{% endif %}
+          />
+          <span>Include Subtitles</span>
+        </label>
+        <label class="inline-flex items-center space-x-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="watermark_enabled"
+            name="watermark_enabled"
+            class="rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500"
+            {% if plan and plan.watermark_enabled %}checked{% endif %}
+          />
+          <span>Include Watermark</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="text-center">
+      {% if plan and plan.status == 'active' %}
+        <button
+          type="submit"
+          name="action"
+          value="deactivate"
+          class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 transition"
+        >
+          ⏸️ Deactivate Plan
+        </button>
+      {% else %}
+        <button
+          type="submit"
+          name="action"
+          value="activate"
+          class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        >
+          ⚡ Activate Plan
+        </button>
+      {% endif %}
+    </div>
+
+  </form>
+</section>
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+</style>
 {% endblock %}
