@@ -19,6 +19,7 @@ from .theme import Theme
 from .token import UserToken
 from .schedule import Schedule
 from .progress import ProgressTask
+from .auto_post_plan import AutoPostPlan
 
 __all__ = [
     "db",
@@ -28,5 +29,6 @@ __all__ = [
     "Theme",
     "UserToken",
     "Schedule",
-    "ProgressTask"
+    "ProgressTask",
+    "AutoPostPlan"
 ]
