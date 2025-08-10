@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-bold mb-4">Auto Reel Posting Settings</h2>
+    <form method="POST">
+        <label class="block font-semibold">Reel Topic / Script</label>
+        <input type="text" name="topic" value="{{ plan.topic if plan else '' }}" class="w-full border p-2 rounded mb-3">
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block font-semibold">Start Date</label>
+                <input type="date" name="start_date" value="{{ plan.start_date if plan else '' }}" class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block font-semibold">Duration (in Days)</label>
+                <input type="number" name="duration_days" value="{{ plan.duration_days if plan else 30 }}" class="w-full border p-2 rounded">
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="block font-semibold">Auto Post Time</label>
+            <input type="time" name="auto_post_time" value="{{ plan.auto_post_time if plan else '' }}" class="w-full border p-2 rounded">
+        </div>
+
+        {% if plan %}
+        <p class="mt-3">Status: <span class="text-green-600 font-semibold">{{ plan.status }}</span></p>
+        <p>Ends on: {{ plan.end_date().strftime('%d/%m/%Y') }}</p>
+        {% endif %}
+
+        <button class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Activate Plan</button>
+    </form>
+
+    {% if plan %}
+    <div class="mt-6 p-4 border rounded">
+        <h3 class="font-bold">Your Auto-Posting Plan Summary</h3>
+        <p>Topic: {{ plan.topic }}</p>
+        <p>Next Post At: {{ plan.start_date.strftime('%d/%m/%Y') }}, {{ plan.auto_post_time.strftime('%I:%M %p') }}</p>
+        <p>Days Remaining: {{ plan.days_remaining() }}</p>
+        <p>Reels Posted: 0</p>
+        <p>Status: <span class="text-green-600 font-semibold">{{ plan.status }}</span></p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
