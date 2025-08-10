@@ -21,7 +21,7 @@ load_dotenv()
 
 # Logger setup
 logger = logging.getLogger("pexels_video")
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)  # DEBUG for tracing
 
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 PEXELS_API_URL = "https://api.pexels.com/videos/search"
@@ -55,9 +55,10 @@ def fetch_pexels_video(
     Returns:
         str | None: Downloaded video URL, or None if no suitable clip is found.
     """
-    used_video_ids = used_video_ids or set()
+    if used_video_ids is None:
+        used_video_ids = set()
 
-    logger.info(f"[🌐] Searching Pexels for vertical videos: '{theme}'")
+    logger.info(f"[🌐] Searching Pexels for vertical videos: '{theme}', used_video_ids={used_video_ids}")
 
     try:
         response = requests.get(
@@ -84,7 +85,7 @@ def fetch_pexels_video(
                 logger.debug(f"[⏩] Skipping video {video_id} due to duration {duration}s")
                 continue
 
-            used_video_ids.add(video_id)  # ✅ Add early to avoid retry
+            used_video_ids.add(video_id)
 
             for file in result.get("video_files", []):
                 width = file.get("width", 0)

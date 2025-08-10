@@ -26,7 +26,7 @@ load_dotenv()
 
 # Logger setup
 logger = logging.getLogger("pixabay_video")
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(level=logging.DEBUG)
 
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
@@ -56,10 +56,11 @@ def fetch_pixabay_video(
     Returns:
         str | None: Downloaded URL (added to used_video_ids), or None on failure.
     """
-    used_video_ids = used_video_ids or set()
+    if used_video_ids is None:
+        used_video_ids = set()
 
     logger.info(f"[🌐] Searching Pixabay for vertical videos: '{theme}' "
-                f"(Duration: {min_duration}-{max_duration}s, Min Res: 1080x1920)")
+                f"(Duration: {min_duration}-{max_duration}s, Min Res: 1080x1920), used_video_ids={used_video_ids}")
 
     try:
         response = requests.get(

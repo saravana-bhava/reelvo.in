@@ -32,7 +32,7 @@ USE_PIXABAY = os.getenv("USE_PIXABAY", "true").lower() == "true"
 
 logger = logging.getLogger("download_clips")
 if not logger.hasHandlers():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)  # DEBUG LEVEL for verbose tracing
 
 
 def sanitize_english(text: str) -> str:
@@ -132,9 +132,13 @@ def fetch_multiple_clips(
         sources.append(fetch_pixabay_video)
 
     search_query = sanitize_english(script_text)
+    logger.info(f"[INIT] Search query: '{search_query}'")
+    logger.info(f"[INIT] Target clip count: {count}")
+    logger.info(f"[INIT] Using sources: {[s.__name__ for s in sources]}")
     os.makedirs(temp_dir, exist_ok=True)
 
     for i in range(count):
+        logger.info(f"[TRY] Fetching clip {i+1}/{count} | used_video_ids={used_video_ids}")
         clip_path = os.path.join(temp_dir, f"{theme_name}_{language}_clip{i + 1}.mp4")
         if clip_path in downloaded_clips:
             logger.info(f"[⏩] Skipping duplicate clip {i+1}")
