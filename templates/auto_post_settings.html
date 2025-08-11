@@ -38,9 +38,9 @@
     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
       {% for plan in plans %}
       <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition">
-        <td class="px-4 py-3 font-medium truncate max-w-[200px]">{{ plan.topic }}</td>
+        <td class="px-4 py-3 font-medium truncate max-w-[200px] dark:text-gray-300">{{ plan.topic }}</td>
         <td class="px-4 py-3">
-            <div class="flex justify-center mb-2">{{ "English" if plan.language == "en" else "Hindi" }}</div>
+            <div class="flex justify-center mb-2 dark:text-gray-300"">{{ "English" if plan.language == "en" else "Hindi" }}</div>
             <div class="flex justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">{{ plan.voice_artist }}</div>
         </td>
         <td class="px-4 py-3 text-center">
@@ -49,16 +49,16 @@
             {{ '✅' if plan.watermark_enabled else '❌' }}
             </div>
         </td>
-        <td class="px-4 py-3 whitespace-nowrap">
-          <div class="mb-2">
+        <td class="px-4 py-3 text-center whitespace-nowrap">
+          <div class="mb-2 dark:text-gray-300">
           {{ plan.start_date.strftime('%d/%m/%Y') }}, {{ plan.auto_post_time.strftime('%I:%M %p') }}<br>
           </div>
-          <div class="flex justify-center gap-2">
+          <div class="flex dark:text-gray-300 justify-center gap-2">
           {{ plan.end_date().strftime('%d/%m/%Y') }}
           </div>
         </td>
         <td class="px-4 py-3 text-center">
-            <div class="mb-2">
+            <div class="mb-2 dark:text-gray-300">
             {{ plan.days_remaining() }}<br />
             {{ plan.reels_posted }}
             </div>
