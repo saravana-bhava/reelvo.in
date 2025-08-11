@@ -19,7 +19,11 @@
     />
 
     <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 break-words max-w-full">
-      {{ user_email }}
+        {% if session.get("connected") and session.get("ig_profile_id") %}
+          IG: {{ session.get("ig_profile_id") }}
+        {% else %}
+          {{ user_email }}
+        {% endif %}
     </div>
 
     {% if not session.get("connected") %}
