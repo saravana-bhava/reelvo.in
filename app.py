@@ -91,12 +91,12 @@ def create_app():
     from routes.privacy import privacy_bp
     from routes.terms import terms_bp
     from routes.data_deletion import data_deletion_bp
-    from routes.auto_post import auto_post_bp
+    from routes.auto_post import auto_post_settings_bp
 
     blueprints = [
         home_bp, auth_bp, dashboard_bp, profile_bp,
         reels_bp, instagram_bp, schedule_bp,
-        coming_bp, privacy_bp, terms_bp, data_deletion_bp, auto_post_bp
+        coming_bp, privacy_bp, terms_bp, data_deletion_bp, auto_post_settings_bp
     ]
 
     for bp in blueprints:

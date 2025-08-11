@@ -14,110 +14,95 @@ from models import db
 from models.auto_post_plan import AutoPostPlan
 from utils.auth_utils import get_user_id, get_user_email
 
-auto_post_bp = Blueprint("auto_post", __name__)
+auto_post_settings_bp = Blueprint("auto_post_settings", __name__)
 
-@auto_post_bp.route("/auto-plan-settings", methods=["GET", "POST"])
-def settings():
+@auto_post_settings_bp.route("/auto-post-settings", methods=["GET", "POST"])
+def auto_post_settings():
+    edit_plan = None
     user_id = get_user_id()
     user_email = get_user_email()
-    plans = AutoPostPlan.query.filter_by(user_id=user_id).all()
-
+    print(request)
     if request.method == "POST":
         action = request.form.get("action")
-        plan_id = request.form.get("plan_id")  # Plan id from form (for activate/deactivate)
-        plan = None
+        plan_id = request.form.get("plan_id")
 
-        if plan_id:
-            plan = AutoPostPlan.query.filter_by(user_id=user_id, id=plan_id).first()
-            if not plan:
-                flash("Plan not found.", "error")
-                return redirect(url_for("auto_post.settings"))
+        if action in ("save", "update"):
+            # Create or update plan
+            topic = request.form.get("topic")
+            language = request.form.get("language")
+            voice_artist = request.form.get("voice_artist")
+            start_date_str = request.form.get("start_date")
+            duration_days = int(request.form.get("duration_days"))
+            auto_post_time_str = request.form.get("auto_post_time")
+            subtitles_enabled = "subtitles_enabled" in request.form
+            watermark_enabled = "watermark_enabled" in request.form
 
-        if action == "deactivate":
-            if plan and plan.status == "active":
-                plan.status = "inactive"
-                db.session.commit()
-                flash(f"Plan '{plan.topic}' deactivated successfully.", "info")
-            else:
-                flash("No active plan to deactivate or plan not found.", "warning")
-            return redirect(url_for("auto_post.settings"))
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            auto_post_time = datetime.strptime(auto_post_time_str, "%H:%M").time()
 
-        elif action == "activate":
-            # Validate fields for new or existing plan
-            topic = request.form.get("topic", "").strip()
-            start_date_str = request.form.get("start_date", "").strip()
-            duration_days_str = request.form.get("duration_days", "").strip()
-            auto_post_time_str = request.form.get("auto_post_time", "").strip()
-            language = request.form.get("language", "").strip()
-            subtitles_enabled = request.form.get("subtitles_enabled") == "on"
-            watermark_enabled = request.form.get("watermark_enabled") == "on"
-            voice_artist = request.form.get("voice_artist", "").strip()
-
-            if not topic:
-                flash("Topic is required.", "error")
-                return redirect(url_for("auto_post.settings"))
-            if not start_date_str:
-                flash("Start date is required.", "error")
-                return redirect(url_for("auto_post.settings"))
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            except ValueError:
-                flash("Invalid start date format. Use YYYY-MM-DD.", "error")
-                return redirect(url_for("auto_post.settings"))
-            try:
-                duration_days = int(duration_days_str)
-                if duration_days <= 0:
-                    raise ValueError()
-            except ValueError:
-                flash("Duration days must be a positive integer.", "error")
-                return redirect(url_for("auto_post.settings"))
-            try:
-                auto_post_time = datetime.strptime(auto_post_time_str, "%H:%M:%S").time()
-            except ValueError:
-                try:
-                    auto_post_time = datetime.strptime(auto_post_time_str, "%H:%M").time()
-                except ValueError:
-                    flash("Invalid auto post time format. Use HH:MM or HH:MM:SS.", "error")
-                    return redirect(url_for("auto_post.settings"))
-
-            if plan:
-                # Update existing plan
-                plan.topic = topic
-                plan.start_date = start_date
-                plan.duration_days = duration_days
-                plan.auto_post_time = auto_post_time
-                plan.language = language
-                plan.subtitles_enabled = subtitles_enabled
-                plan.watermark_enabled = watermark_enabled
-                plan.voice_artist = voice_artist
-                plan.status = "active"
-            else:
-                # Create new plan
-                plan = AutoPostPlan(
+            if action == "save":
+                new_plan = AutoPostPlan(
                     user_id=user_id,
                     topic=topic,
+                    language=language,
+                    voice_artist=voice_artist,
                     start_date=start_date,
                     duration_days=duration_days,
                     auto_post_time=auto_post_time,
-                    language=language,
                     subtitles_enabled=subtitles_enabled,
                     watermark_enabled=watermark_enabled,
-                    voice_artist=voice_artist,
-                    status="active"
+                    status="active",
                 )
-                db.session.add(plan)
+                db.session.add(new_plan)
+                flash("Auto-reel plan created and activated ✅", "success")
 
-            # Optionally, deactivate other active plans for this user to allow only one active at a time:
-            for other_plan in plans:
-                if other_plan.id != plan.id and other_plan.status == "active":
-                    other_plan.status = "inactive"
+            elif action == "update" and plan_id:
+                plan = AutoPostPlan.query.filter_by(id=plan_id, user_id=user_id).first_or_404()
+                plan.topic = topic
+                plan.language = language
+                plan.voice_artist = voice_artist
+                plan.start_date = start_date
+                plan.duration_days = duration_days
+                plan.auto_post_time = auto_post_time
+                plan.subtitles_enabled = subtitles_enabled
+                plan.watermark_enabled = watermark_enabled
+                flash("Plan updated successfully 💾", "success")
 
             db.session.commit()
-            flash("Auto-Posting Plan activated and saved successfully!", "success")
-            return redirect(url_for("auto_post.settings"))
+            return redirect(url_for("auto_post_settings.auto_post_settings"))
 
-        else:
-            flash("Unknown action.", "error")
-            return redirect(url_for("auto_post.settings"))
+        elif action == "deactivate" and plan_id:
+            plan = AutoPostPlan.query.filter_by(id=plan_id, user_id=user_id).first_or_404()
+            plan.status = "inactive"
+            db.session.commit()
+            flash("Plan paused ⏸", "info")
+            return redirect(url_for("auto_post_settings.auto_post_settings"))
 
-    return render_template("auto_post_settings.html", plans=plans, user_email=user_email)
+        elif action == "activate" and plan_id:
+            plan = AutoPostPlan.query.filter_by(id=plan_id, user_id=user_id).first_or_404()
+            plan.status = "active"
+            db.session.commit()
+            flash("Plan activated ⚡", "success")
+            return redirect(url_for("auto_post_settings.auto_post_settings"))
+
+        elif action == "delete" and plan_id:
+            plan = AutoPostPlan.query.filter_by(id=plan_id, user_id=user_id).first_or_404()
+            db.session.delete(plan)
+            db.session.commit()
+            flash("Plan deleted 🗑", "warning")
+            return redirect(url_for("auto_post_settings.auto_post_settings"))
+
+    elif request.method == "GET":
+        edit_plan_id = request.args.get("edit_plan_id")
+        if edit_plan_id:
+            edit_plan = AutoPostPlan.query.filter_by(id=edit_plan_id, user_id=user_id).first_or_404()
+
+    # Fetch all plans for current user
+    plans = AutoPostPlan.query.filter_by(user_id=user_id).all()
+
+    return render_template(
+        "auto_post_settings.html",
+        user_email=user_email,
+        plans=plans,
+        edit_plan=edit_plan
+    )
