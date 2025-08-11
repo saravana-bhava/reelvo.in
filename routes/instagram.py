@@ -162,6 +162,7 @@ def instagram_callback():
 
             update_instagram_tokens(user_id, long_token, refresh_token, expires_in, ig_user_id)
             session["connected"] = True
+            session["platform_user_id"] = ig_user_id
             flash("✅ Instagram connected successfully!", "success")
 
     except Exception as e:
@@ -187,6 +188,7 @@ def disconnect_instagram():
         current_app.logger.error(f"[Disconnect] Token deletion failed: {e}")
 
     session["connected"] = False
+    session["platform_user_id"] = ''
     session.pop("instagram_profile_picture", None)
     flash("ℹ️ Instagram disconnected.", "info")
     return redirect(url_for("dashboard.dashboard"))

@@ -47,6 +47,7 @@ def update_instagram_session(email):
     platform_user_id = creds.get("platform_user_id") if creds else None
 
     session["connected"] = bool(access_token and platform_user_id)
+    session["platform_user_id"] = platform_user_id
     logo_path = f"output/{email}/watermark/logo.png"
     session["instagram_profile_picture"] = logo_path if os.path.exists(logo_path) else None
 
