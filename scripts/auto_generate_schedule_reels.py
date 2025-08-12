@@ -195,7 +195,7 @@ def automate_reels_and_schedule():
                             use_tts, voice, custom_voice_file,
                             subtitles_enabled, watermark_enabled, scheduled_local
                         ),
-                        daemon=True
+                        daemon=False
                     )
                     thread.start()
 
