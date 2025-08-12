@@ -1,3 +1,13 @@
+# ================================================
+# File:         migrations/versions/de6f192e5b0d_fix_varchar_lengths_for_mysql.py
+# Description:  No description provided.
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 12 August 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
+
 """Fix VARCHAR lengths for MySQL
 
 Revision ID: de6f192e5b0d

@@ -1,8 +1,8 @@
 # ================================================
 # File:         routes/auto_post.py
-# Description:  Scheduler: create, update, delete jobs
+# Description:  Automate Reel Generation and Posting Settings
 # Framework:    Flask + TailwindCSS
-# Version:      1.0.1
+# Version:      1.0.0
 # Last Updated: 12 August 2025
 # Author:       Saravana Bhava
 # Author URL:   https://SazM.in

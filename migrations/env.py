@@ -1,3 +1,13 @@
+# ================================================
+# File:         migrations/env.py
+# Description:  No description provided.
+# Framework:    Flask + TailwindCSS
+# Version:      1.0.0
+# Last Updated: 12 August 2025
+# Author:       Saravana Bhava
+# Author URL:   https://SazM.in
+# ================================================
+
 import logging
 from logging.config import fileConfig
 

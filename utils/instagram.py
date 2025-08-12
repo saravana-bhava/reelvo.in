@@ -3,7 +3,7 @@
 # Description:  Post videos to Instagram and fetch profile info
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
-# Last Updated: 31 July 2025
+# Last Updated: 12 August 2025
 # Author:       Saravana Bhava
 # Author URL:   https://SazM.in
 # ================================================
