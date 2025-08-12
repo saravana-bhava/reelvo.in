@@ -70,6 +70,7 @@ output_/
 # ─────────────────────────────────────────────
 db_/
 db_/reel_logs/
+scripts/logs/
 *.log
 *.tmp
 *.bak
