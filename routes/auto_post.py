@@ -2,8 +2,8 @@
 # File:         routes/auto_post.py
 # Description:  Scheduler: create, update, delete jobs
 # Framework:    Flask + TailwindCSS
-# Version:      1.0.0
-# Last Updated: 31 July 2025
+# Version:      1.0.1
+# Last Updated: 12 August 2025
 # Author:       Saravana Bhava
 # Author URL:   https://SazM.in
 # ================================================
@@ -41,19 +41,58 @@ def auto_post_settings():
         plan_id = request.form.get("plan_id")
 
         if action in ("save", "update"):
-            # Create or update plan
-            topic = request.form.get("topic")
-            language = request.form.get("language")
-            voice_artist = request.form.get("voice_artist")
-            start_date_str = request.form.get("start_date")
-            duration_days = int(request.form.get("duration_days"))
-            auto_post_time_str = request.form.get("auto_post_time")
+            # Get form values with trimming
+            topic = request.form.get("topic", "").strip()
+            language = request.form.get("language", "").strip()
+            voice_artist = request.form.get("voice_artist", "").strip()
+            start_date_str = request.form.get("start_date", "").strip()
+            duration_days_str = request.form.get("duration_days", "").strip()
+            auto_post_time_str = request.form.get("auto_post_time", "").strip()
             subtitles_enabled = "subtitles_enabled" in request.form
             watermark_enabled = "watermark_enabled" in request.form
 
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            auto_post_time = datetime.strptime(auto_post_time_str, "%H:%M").time()
+            # Basic empty field validation
+            if not topic:
+                flash("Topic is required.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+            if not language:
+                flash("Language is required.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+            if not voice_artist:
+                flash("Please select a voice artist.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+            if not start_date_str:
+                flash("Please select a start date.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+            if not duration_days_str:
+                flash("Duration (in days) is required.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+            if not auto_post_time_str:
+                flash("Please select an auto-post time.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
 
+            # Type and format validation
+            try:
+                duration_days = int(duration_days_str)
+                if duration_days <= 0:
+                    raise ValueError
+            except ValueError:
+                flash("Duration must be a positive number.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                flash("Invalid date format. Please use YYYY-MM-DD.", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+
+            try:
+                auto_post_time = datetime.strptime(auto_post_time_str, "%H:%M").time()
+            except ValueError:
+                flash("Invalid time format. Please use HH:MM (24-hour).", "error")
+                return redirect(url_for("auto_post_settings.auto_post_settings"))
+
+            # Save or update
             if action == "save":
                 new_plan = AutoPostPlan(
                     user_id=user_id,
