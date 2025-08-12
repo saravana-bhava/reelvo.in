@@ -13,6 +13,7 @@ import subprocess
 import logging
 import sys
 import time
+import threading
 from flask import current_app
 from datetime import datetime
 
@@ -45,15 +46,24 @@ ORIGINAL_STDERR = sys.stderr
 
 
 class StreamToLogger:
-    def __init__(self, logger, level):
+    _local = threading.local()
+
+    def __init__(self, logger, log_level):
         self.logger = logger
-        self.level = level
+        self.log_level = log_level
 
     def write(self, message):
+        if getattr(self._local, "in_write", False):
+            return
+
         message = message.strip()
         if message:
-            for line in message.splitlines():
-                self.logger.log(self.level, line.strip())
+            try:
+                self._local.in_write = True
+                for line in message.splitlines():
+                    self.logger.log(self.log_level, line.strip())
+            finally:
+                self._local.in_write = False
 
     def flush(self):
         pass
@@ -77,7 +87,7 @@ def setup_user_logger(user_email):
             format='[%(asctime)s] %(levelname)s:%(name)s: %(message)s',
             handlers=[
                 logging.FileHandler(log_path, encoding='utf-8'),
-                logging.StreamHandler(sys.stdout)
+                logging.StreamHandler(ORIGINAL_STDOUT)
             ]
         )
     else:
@@ -85,7 +95,7 @@ def setup_user_logger(user_email):
             root_logger.removeHandler(handler)
         file_handler = logging.FileHandler(log_path, encoding='utf-8')
         file_handler.addFilter(SuppressProgressLogs())
-        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler = logging.StreamHandler(ORIGINAL_STDOUT)
         root_logger.addHandler(file_handler)
         root_logger.addHandler(stream_handler)
         root_logger.setLevel(logging.DEBUG)
