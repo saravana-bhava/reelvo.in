@@ -172,7 +172,8 @@ def create_reel_action():
                 voice,
                 custom_voice_file,
                 subtitles_enabled,
-                watermark_enabled
+                watermark_enabled,
+                None
             )
 
     app = current_app._get_current_object()

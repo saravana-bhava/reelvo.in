@@ -100,13 +100,13 @@ logger = logging.getLogger("reel_job")
 logger.setLevel(logging.DEBUG)
 
 
-def schedule_reel(user_id: int, reel: Reel):
+def schedule_reel(user_id: int, reel: Reel, scheduled_time: None):
     from models.schedule import Schedule
 
     schedule_entry = Schedule(
         user_id=user_id,
         reel_id=reel.id,
-        scheduled_for=None,
+        scheduled_for=scheduled_time,
         timezone='Asia/Kolkata',
         status='pending'
     )
@@ -124,7 +124,8 @@ def process_reel_job(
     voice,
     custom_voice_file,
     subtitles_enabled,
-    watermark_enabled
+    watermark_enabled,
+    scheduled_time
 ):
     from app import app
 
@@ -339,7 +340,7 @@ def process_reel_job(
             db.session.flush()
 
             try:
-                schedule_reel(user_id=user.id, reel=reel)
+                schedule_reel(user_id=user.id, reel=reel, scheduled_time=scheduled_time)
                 db.session.commit()
                 finish_progress(task_id, "🎉 Reel is ready!", 100, download_url=upload_url)
                 logger.info(f"✅ Reel generation complete and marked for scheduling. Log: {log_path}")
