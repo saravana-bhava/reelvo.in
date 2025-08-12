@@ -12,6 +12,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, timedelta
 from models import db
 from models.auto_post_plan import AutoPostPlan
+from utils.auth_decorator import login_required
 from utils.auth_utils import get_user_id, get_user_email
 
 auto_post_settings_bp = Blueprint("auto_post_settings", __name__)
@@ -31,6 +32,7 @@ VOICE_MAP = {
 }
 
 @auto_post_settings_bp.route("/auto-post-settings", methods=["GET", "POST"])
+@login_required
 def auto_post_settings():
     edit_plan = None
     user_id = get_user_id()
