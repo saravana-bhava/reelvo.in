@@ -292,3 +292,15 @@
 }
 </style>
 {% endblock %}
+<script>
+function playVoicePreview() {
+  const selectedVoice = document.getElementById("voice_artist").value;
+  const audioEl = document.getElementById("voice-audio-preview");
+  const previewUrl = `/static/voice_samples/${selectedVoice}.wav`;
+  audioEl.src = previewUrl;
+  audioEl.classList.remove('hidden');
+  audioEl.play().catch(() => {
+    alert("❌ Preview unavailable for this voice.");
+  });
+}
+</script>
