@@ -19,6 +19,7 @@ import os
 import sys
 import uuid
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime, timedelta
 from threading import Thread
 from dotenv import load_dotenv
@@ -36,15 +37,28 @@ from utils.reel_job import process_reel_job
 # ---------------------
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+# ---------------------
+# Setup datewise logging to file + console
+# ---------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+log_date = datetime.utcnow()
+log_dir = os.path.join(BASE_DIR, "logs", log_date.strftime("%Y-%m"))
+os.makedirs(log_dir, exist_ok=True)
+LOG_FILE = os.path.join(log_dir, f"auto_generate_schedule_{log_date.strftime('%d')}.log")
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# File handler with rotation
+file_handler = RotatingFileHandler(LOG_FILE, maxBytes=2 * 1024 * 1024, backupCount=5)
+file_formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s', '%Y-%m-%d %H:%M:%S')
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+
+# Console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(file_formatter)
+logger.addHandler(console_handler)
 
 # ---------------------
 # Flask App Factory
@@ -201,4 +215,9 @@ def automate_reels_and_schedule():
 # Entry Point
 # ---------------------
 if __name__ == "__main__":
-    automate_reels_and_schedule()
+    try:
+        logger.info("Starting auto_generate_schedule_reels script.")
+        automate_reels_and_schedule()
+    except Exception as e:
+        logger.error(f"Fatal error in main: {e}", exc_info=True)
+        sys.exit(1)

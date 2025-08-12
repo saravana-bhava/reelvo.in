@@ -3,7 +3,7 @@
 # Description:  Post scheduled reels to Instagram automatically
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
-# Last Updated: 31 July 2025
+# Last Updated: 12 August 2025
 # Author:       Saravana Bhava
 # Author URL:   https://SazM.in
 # ================================================
@@ -38,7 +38,10 @@ from utils.instagram_db import get_instagram_credentials
 # ---------------------
 load_dotenv()
 
-REQUIRED_ENV_VARS = ["MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_HOST", "MYSQL_PORT", "MYSQL_DB", "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD"]
+REQUIRED_ENV_VARS = [
+    "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_HOST", "MYSQL_PORT", "MYSQL_DB",
+    "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_PORT"
+]
 missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
 if missing_vars:
     raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}")
@@ -89,7 +92,7 @@ def send_email_alert(subject, message):
 
         logger.info(f"📧 Email alert sent to {msg['To']}")
     except Exception as e:
-        logger.error(f"❌ Failed to send email alert: {e}")
+        logger.error(f"❌ Failed to send email alert: {e}", exc_info=True)
 
 # ---------------------
 # Flask App Factory
@@ -117,9 +120,10 @@ def post_due_reels(app):
 
     with app.app_context():
         try:
+            # Convert current UTC time to Asia/Kolkata timezone (naive datetime for DB comparison)
             now_kolkata = datetime.now(timezone.utc).astimezone(pytz_timezone("Asia/Kolkata")).replace(tzinfo=None)
 
-            # Step 1: Lock and claim due schedules
+            # Step 1: Lock and claim due schedules (skip locked for concurrency safety)
             due_schedules = (
                 db.session.query(Schedule)
                 .filter(Schedule.status == 'pending')
@@ -128,53 +132,62 @@ def post_due_reels(app):
                 .all()
             )
 
-            # Step 2: Mark as 'processing' immediately to avoid race conditions
+            if not due_schedules:
+                logger.info("No scheduled reels to post at this time.")
+                return
+
+            # Step 2: Mark schedules as processing to prevent re-processing
             for schedule in due_schedules:
                 schedule.status = 'processing'
             db.session.commit()
 
+            # Step 3: Post reels to Instagram
             for schedule in due_schedules:
-                user = db.session.get(User, schedule.user_id)
-                reel = db.session.get(Reel, schedule.reel_id)
-
-                if not user or not reel:
-                    msg = f"Schedule ID {schedule.id} references missing user/reel"
-                    logger.warning(msg)
-                    failures.append(msg)
-                    continue
-
-                user_email = user.email
-                caption = reel.caption or ""
-                video = os.path.basename(reel.video_path)
-                video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video)
-
-                if not os.path.exists(video_path):
-                    msg = f"[{user_email}] Missing file: {video_path}"
-                    logger.warning(msg)
-                    failures.append(msg)
-                    schedule.status = 'failed'
-                    schedule.error_log = msg
-                    db.session.commit()
-                    continue
-
-                token_data = get_instagram_credentials(user_email)
-                if not token_data or "access_token" not in token_data:
-                    msg = f"[{user_email}] No valid Instagram token."
-                    logger.warning(msg)
-                    failures.append(msg)
-                    schedule.status = 'failed'
-                    schedule.error_log = msg
-                    db.session.commit()
-                    continue
-
-                logger.info(f"[{user_email}] ▶ Posting reel: {video}")
                 try:
+                    user = db.session.get(User, schedule.user_id)
+                    reel = db.session.get(Reel, schedule.reel_id)
+
+                    if not user or not reel:
+                        msg = f"Schedule ID {schedule.id} references missing user or reel."
+                        logger.warning(msg)
+                        failures.append(msg)
+                        schedule.status = 'failed'
+                        schedule.error_log = msg
+                        db.session.commit()
+                        continue
+
+                    user_email = user.email
+                    caption = reel.caption or ""
+                    video_filename = os.path.basename(reel.video_path)
+                    video_path = os.path.join(OUTPUT_DIR, user_email, "videos", video_filename)
+
+                    if not os.path.isfile(video_path):
+                        msg = f"[{user_email}] Missing video file: {video_path}"
+                        logger.warning(msg)
+                        failures.append(msg)
+                        schedule.status = 'failed'
+                        schedule.error_log = msg
+                        db.session.commit()
+                        continue
+
+                    token_data = get_instagram_credentials(user_email)
+                    if not token_data or "access_token" not in token_data:
+                        msg = f"[{user_email}] No valid Instagram access token."
+                        logger.warning(msg)
+                        failures.append(msg)
+                        schedule.status = 'failed'
+                        schedule.error_log = msg
+                        db.session.commit()
+                        continue
+
+                    logger.info(f"[{user_email}] ▶ Posting reel: {video_filename}")
+
                     result = post_to_instagram(
                         reel_id=schedule.reel_id,
                         video_path=video_path,
                         caption=caption,
                         user_email=user_email,
-                        video_url=f"https://reelvo.in/videos/{user_email}/{video}",
+                        video_url=f"https://reelvo.in/videos/{user_email}/{video_filename}",
                         use_drive=use_drive,
                     )
 
@@ -189,23 +202,26 @@ def post_due_reels(app):
 
                         db.session.commit()
                         success_count += 1
-                        logger.info(f"[{user_email}] ✅ Posted successfully: {video}")
+                        logger.info(f"[{user_email}] ✅ Posted successfully: {video_filename}")
                     else:
-                        raise ValueError(result or "Unknown error from post API")
+                        raise RuntimeError(result or "Unknown error from Instagram API")
 
-                except Exception as e:
-                    logger.exception(f"[{user_email}] ❌ Post failed: {video}")
+                except Exception as post_err:
+                    logger.error(f"[{user_email}] ❌ Post failed: {video_filename} - {post_err}", exc_info=True)
+                    failures.append(f"[{user_email}] Post error: {post_err}")
                     schedule.status = 'failed'
-                    schedule.error_log = str(e)
+                    schedule.error_log = str(post_err)
                     db.session.commit()
-                    failures.append(f"[{user_email}] Post error: {str(e)}")
 
         except Exception as e:
-            logger.exception("🚨 Fatal error in post_due_reels()")
-            failures.append(f"Fatal exception: {str(e)}")
+            logger.error("🚨 Fatal error in post_due_reels()", exc_info=True)
+            failures.append(f"Fatal exception: {e}")
 
-        if failures:
-            send_email_alert("🚨 Reel Posting Failures", "\n".join(failures))
+    # Send alert email if there are failures
+    if failures:
+        send_email_alert("🚨 Reel Posting Failures", "\n".join(failures))
+
+    logger.info(f"Posting complete. Successes: {success_count}, Failures: {len(failures)}")
 
 # ---------------------
 # Entry Point
