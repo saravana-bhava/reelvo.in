@@ -16,12 +16,26 @@ from utils.auth_utils import get_user_id, get_user_email
 
 auto_post_settings_bp = Blueprint("auto_post_settings", __name__)
 
+# Mapping of voice codes to friendly display names
+VOICE_MAP = {
+    "en-US-Wavenet-A": "English Male (Calm)",
+    "en-US-Wavenet-B": "English Male (Deep)",
+    "en-US-Wavenet-C": "English Female (Warm)",
+    "en-US-Wavenet-D": "English Male (Energetic)",
+    "en-US-Wavenet-E": "English Female (Upbeat)",
+    "en-US-Wavenet-F": "English Female (Neutral)",
+    "hi-IN-Wavenet-A": "Hindi Male (Deep)",
+    "hi-IN-Wavenet-B": "Hindi Male (Warm)",
+    "hi-IN-Wavenet-C": "Hindi Female (Friendly)",
+    "hi-IN-Wavenet-D": "Hindi Female (Polite)",
+}
+
 @auto_post_settings_bp.route("/auto-post-settings", methods=["GET", "POST"])
 def auto_post_settings():
     edit_plan = None
     user_id = get_user_id()
     user_email = get_user_email()
-    print(request)
+
     if request.method == "POST":
         action = request.form.get("action")
         plan_id = request.form.get("plan_id")
@@ -100,9 +114,19 @@ def auto_post_settings():
     # Fetch all plans for current user
     plans = AutoPostPlan.query.filter_by(user_id=user_id).all()
 
+    # Attach friendly voice names
+    for p in plans:
+        p.voice_artist_name = VOICE_MAP.get(p.voice_artist, p.voice_artist)
+
+    edit_plan_voice_name = None
+    if edit_plan:
+        edit_plan_voice_name = VOICE_MAP.get(edit_plan.voice_artist, edit_plan.voice_artist)
+
     return render_template(
         "auto_post_settings.html",
         user_email=user_email,
         plans=plans,
-        edit_plan=edit_plan
+        edit_plan=edit_plan,
+        edit_plan_voice_name=edit_plan_voice_name,
+        VOICE_MAP=VOICE_MAP
     )
