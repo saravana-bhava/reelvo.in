@@ -11,8 +11,8 @@
 """
 Automate Reel Generation and Scheduling
 
-This script fetches active auto-post plans, generates scripts, schedules reels, and
-starts background threads for reel generation jobs.
+This script fetches active auto-post plans, generates scripts, schedules reels,
+and runs reel generation jobs sequentially.
 """
 
 import os
@@ -21,7 +21,6 @@ import uuid
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime, timedelta
-from threading import Thread
 from dotenv import load_dotenv
 from flask import Flask
 
@@ -84,7 +83,7 @@ def create_app():
     return app
 
 
-def run_reel_job_in_background(
+def run_reel_job(
     app, task_id, user_id, user_email, theme_name, language, script_text,
     use_tts, voice, custom_voice_file, subtitles_enabled, watermark_enabled, scheduled_time
 ):
@@ -186,20 +185,15 @@ def automate_reels_and_schedule():
                     # Generate task id
                     task_id = str(uuid.uuid4())
 
-                    # Run reel generation job threaded in background
-                    thread = Thread(
-                        target=run_reel_job_in_background,
-                        args=(
-                            app, task_id, plan.user_id, user.email,
-                            theme_name, plan.language, script_text,
-                            use_tts, voice, custom_voice_file,
-                            subtitles_enabled, watermark_enabled, scheduled_local
-                        ),
-                        daemon=False
+                    # Run reel generation job
+                    run_reel_job(
+                        app, task_id, plan.user_id, user.email,
+                        theme_name, plan.language, script_text,
+                        use_tts, voice, custom_voice_file,
+                        subtitles_enabled, watermark_enabled, scheduled_local
                     )
-                    thread.start()
 
-                    logger.info(f"Started background reel job thread for plan id {plan.id}, task_id {task_id}")
+                    logger.info(f"Completed reel job for plan id {plan.id}, task_id {task_id}")
 
                 except Exception as inner_exc:
                     logger.error(f"Error processing plan id {plan.id}: {inner_exc}", exc_info=True)
