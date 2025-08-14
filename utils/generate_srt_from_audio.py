@@ -73,7 +73,7 @@ def generate_srt_from_audio(
     logger.info(f"[🧠] Transcribing audio → {audio_path}")
 
     try:
-        result = MODEL.transcribe(audio_path, word_timestamps=True, language=language)
+        result = MODEL.transcribe(audio_path, word_timestamps=True, language=language, verbose=False)
     except Exception as e:
         raise RuntimeError(f"[❌] Whisper transcription failed: {e}")
 
