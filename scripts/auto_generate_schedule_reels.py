@@ -170,8 +170,22 @@ def automate_reels_and_schedule():
                         language=plan.language,
                         prompt=plan.topic
                     )
+
+                    # Check if script exists and is non-empty before continuing
+                    if not os.path.exists(script_path):
+                        logger.error(f"Script file not found for plan id {plan.id}. Skipping reel generation.")
+                        continue
+
+                    if os.path.getsize(script_path) == 0:
+                        logger.error(f"Script file is empty for plan id {plan.id}. Skipping reel generation.")
+                        continue
+
                     with open(script_path, encoding="utf-8") as f:
-                        script_text = f.read()
+                        script_text = f.read().strip()
+
+                    if not script_text:
+                        logger.error(f"Script text is empty after reading for plan id {plan.id}. Skipping reel generation.")
+                        continue
 
                     # Voice settings
                     use_tts = True
