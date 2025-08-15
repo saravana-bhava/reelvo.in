@@ -29,6 +29,10 @@ PROGRESS_STAGES = [
     10,  # 8 - Uploading
 ]
 
+# Minimal logging
+def _log_progress(task_id: str, status: str, percent: int) -> None:
+    print(f"[Progress] Task {task_id}: {percent}% - {status}")
+
 
 def start_progress(task_id: str, user_id: int) -> None:
     now = time.time()
@@ -62,9 +66,10 @@ def update_progress(task_id: str, status: str, percent: int) -> None:
         return
 
     now = time.time()
-    elapsed = int(now - task.start_time)
+    elapsed = max(0, int(now - task.start_time))  # prevent negative elapsed
     percent = max(task.percent, min(max(percent, 0), 100))
 
+    # Skip update if nothing changed
     if percent == task.percent and status == task.status:
         return
 
@@ -73,24 +78,33 @@ def update_progress(task_id: str, status: str, percent: int) -> None:
     task.elapsed = elapsed
     db.session.commit()
 
-    print(f"[Progress Status] Task {task_id} => {{'status': '{status}', 'percent': {percent}, 'elapsed': {elapsed}}}")
+    # Only log significant steps (every 10% or status change)
+    if percent % 10 == 0 or status != task.status:
+        _log_progress(task_id, status, percent)
 
 
-def finish_progress(task_id: str, status: str, percent: int = 100, download_url: Optional[str] = None) -> None:
+def finish_progress(
+    task_id: str,
+    status: str,
+    percent: int = 100,
+    download_url: Optional[str] = None
+) -> None:
     task = ProgressTask.query.filter_by(task_id=task_id).first()
     if not task:
         return
 
     now = time.time()
-    elapsed = int(now - task.start_time)
+    elapsed = max(0, int(now - task.start_time))
     percent = min(max(percent, 0), 100)
-    status_with_time = f"{status}<br>⏱️ Took {elapsed:.1f} sec"
+    status_with_time = f"{status} ⏱️ {elapsed:.1f}s"
 
     task.status = status_with_time
     task.percent = percent
     task.elapsed = elapsed
     task.download_url = download_url or ""
     db.session.commit()
+
+    _log_progress(task_id, status_with_time, percent)
 
 
 def get_progress(task_id: str) -> Dict[str, Any]:

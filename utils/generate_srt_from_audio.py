@@ -38,8 +38,9 @@ if not logger.hasHandlers():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-# Suppress FP16 warning on CPU
+# Silence Whisper warnings and logs
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+logging.getLogger("whisper").setLevel(logging.WARNING)
 
 # Load Whisper model once
 try:
@@ -53,7 +54,8 @@ def generate_srt_from_audio(
     srt_path: str,
     language: str,
     audio_path: str,
-    words_per_line: int = 6
+    words_per_line: int = 6,
+    task_id: str = "Subtitles"
 ) -> None:
     """
     Generate SRT subtitle using Whisper transcription.
@@ -77,10 +79,7 @@ def generate_srt_from_audio(
     except Exception as e:
         raise RuntimeError(f"[❌] Whisper transcription failed: {e}")
 
-    words = []
-    for segment in result.get("segments", []):
-        words.extend(segment.get("words", []))
-
+    words = [w for seg in result.get("segments", []) for w in seg.get("words", [])]
     if not words:
         raise ValueError("[❌] No words found in Whisper transcription.")
 
@@ -118,8 +117,10 @@ def generate_srt_from_audio(
         last_end_time = end
         index += 1
 
-        percent = int(((index - 1) / total_chunks) * 100)
-        update_progress("Subtitles", f"Processing voice {index - 1}/{total_chunks}", percent)
+        # Only update progress every 5 subtitles or at 100%
+        percent = min(100, int((index - 1) / total_chunks * 100))
+        if index % 5 == 0 or percent >= 100:
+            update_progress(task_id, f"Processing voice {index - 1}/{total_chunks}", percent)
 
     os.makedirs(os.path.dirname(srt_path), exist_ok=True)
     with open(srt_path, "w", encoding="utf-8") as f:
@@ -135,31 +136,17 @@ def generate_srt_from_audio(
         logger.info(f"[🈶] ASS generated for Hindi → {ass_path}")
 
 
-def convert_srt_to_ass(
-    srt_path: str,
-    ass_path: str,
-    font: str = "Noto Sans Devanagari",
-    fontsize: int = 18
-) -> None:
-    """
-    Convert .srt subtitles to .ass for Unicode (e.g., Hindi) support.
-
-    Args:
-        srt_path (str): Input SRT file.
-        ass_path (str): Output ASS file.
-        font (str): Font to use (default for Hindi).
-        fontsize (int): Size of font.
-    """
+def convert_srt_to_ass(srt_path: str, ass_path: str, font: str = "Noto Sans Devanagari", fontsize: int = 18) -> None:
     with open(srt_path, "r", encoding="utf-8") as f:
         subs = list(srt.parse(f.read()))
 
     def format_time(t: timedelta) -> str:
-        total_ms = int(t.total_seconds() * 100)
-        hours = total_ms // 360000
-        minutes = (total_ms % 360000) // 6000
-        seconds = (total_ms % 6000) // 100
-        cs = total_ms % 100
-        return f"{hours}:{minutes:02}:{seconds:02}.{cs:02}"
+        total_cs = int(t.total_seconds() * 100)
+        h = total_cs // 360000
+        m = (total_cs % 360000) // 6000
+        s = (total_cs % 6000) // 100
+        cs = total_cs % 100
+        return f"{h}:{m:02}:{s:02}.{cs:02}"
 
     ass_header = f"""[Script Info]
 ScriptType: v4.00+
@@ -177,12 +164,10 @@ Style: Default,{font},{fontsize},&H00FFFFFF,&H80000000,1,2,0,2,10,10,100,1
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-    ass_events = ""
-    for sub in subs:
-        start = format_time(sub.start)
-        end = format_time(sub.end)
-        text = sub.content.replace("\n", " ").strip()
-        ass_events += f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}\n"
+    ass_events = "".join(
+        f"Dialogue: 0,{format_time(sub.start)},{format_time(sub.end)},Default,,0,0,0,,{sub.content.replace(chr(10),' ')}\n"
+        for sub in subs
+    )
 
     os.makedirs(os.path.dirname(ass_path), exist_ok=True)
     with open(ass_path, "w", encoding="utf-8") as f:
