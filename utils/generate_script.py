@@ -83,6 +83,8 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
 
         return script
 
+    except httpx.RequestError as e:
+        logger.error(f"[❌] Request error during API call: {e}")
     except httpx.HTTPStatusError as e:
         logger.error(f"[❌] HTTP error during API call: {e}")
     except Exception as e:
@@ -93,6 +95,7 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
 def generate_script(prompt: str, language: str = "en") -> str:
     """
     Generate a 30-second Instagram script using OpenAI or DB fallback.
+    Guarantees a non-empty script.
     """
     prompt_norm = prompt.strip().lower()
     language_norm = language.strip().lower()
@@ -100,13 +103,14 @@ def generate_script(prompt: str, language: str = "en") -> str:
     def fallback_script() -> str:
         from models.theme import Theme
         theme = Theme.query.filter_by(name=prompt_norm, lang=language_norm).first()
-        if theme:
+        if theme and theme.content.strip():
             return dedent(theme.content).strip()
         else:
             available = Theme.query.filter_by(name=prompt_norm).all()
             langs = list(set(t.lang for t in available))
             logger.warning(f"[⚠️] No fallback for '{prompt_norm}' in '{language_norm}'. Available: {langs}")
-            return f"[Theme script for '{prompt_norm}' in '{language_norm}']"
+            # Return minimal placeholder to ensure script is not empty
+            return f"[Default script for '{prompt_norm}' in '{language_norm}']"
 
     import uuid
     variation_seed = str(uuid.uuid4())[:8]
@@ -125,8 +129,9 @@ def generate_script(prompt: str, language: str = "en") -> str:
         if script:
             logger.info(f"[✅] Script generated for '{prompt}' ({language})")
             return script
+        else:
+            logger.warning(f"[⚠️] API failed, falling back for '{prompt}' ({language})")
 
-    logger.info(f"[⚠️] Using fallback script for '{prompt}' ({language})")
     return fallback_script()
 
 
@@ -139,6 +144,7 @@ def generate_script_for_user(
 ) -> str:
     """
     Wrapper to generate and store a script for a user.
+    Ensures a script file is always written.
     """
     logger.info(f"[📝] Generating script → User: '{user_email}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
 
@@ -150,6 +156,10 @@ def generate_script_for_user(
     script_path = os.path.join(output_dir, f"{theme_name}_{language}_text.txt")
 
     script = generate_script(prompt=prompt, language=language)
+    if not script.strip():
+        logger.error(f"[❌] Generated script is empty, inserting placeholder for '{theme_name}'")
+        script = f"[Script could not be generated for '{theme_name}' in '{language}']"
+
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
 

@@ -172,19 +172,19 @@ def automate_reels_and_schedule():
                     )
 
                     # Check if script exists and is non-empty before continuing
-                    if not os.path.exists(script_path):
-                        logger.error(f"Script file not found for plan id {plan.id}. Skipping reel generation.")
+                    if not script_path or not os.path.exists(script_path):
+                        logger.error(f"[❌] Script generation failed for plan id {plan.id}. Aborting this plan.")
                         continue
 
                     if os.path.getsize(script_path) == 0:
-                        logger.error(f"Script file is empty for plan id {plan.id}. Skipping reel generation.")
+                        logger.error(f"[❌] Script file is empty for plan id {plan.id}. Aborting this plan.")
                         continue
 
                     with open(script_path, encoding="utf-8") as f:
                         script_text = f.read().strip()
 
                     if not script_text:
-                        logger.error(f"Script text is empty after reading for plan id {plan.id}. Skipping reel generation.")
+                        logger.error(f"[❌] Script text is empty after reading for plan id {plan.id}. Aborting this plan.")
                         continue
 
                     # Voice settings
