@@ -9,7 +9,7 @@
 # ================================================
 
 """
-Generates short Instagram reel scripts using OpenAI or fallback from DB.
+Generates short Instagram reel scripts using OpenAI.
 Saves output to: output/{user_email}/scripts/{theme_name}_{language}_text.txt
 Supports: English and Hindi
 """
@@ -20,6 +20,8 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from typing import Optional
 import httpx
+import sys
+import uuid
 
 # Setup
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -48,24 +50,23 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
         logger.error("[🔑] No API key provided for OpenAI/OpenRouter.")
         return None
 
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+    if PROVIDER == "openrouter":
+        headers["HTTP-Referer"] = "https://yourdomain.com/"
+        headers["X-Title"] = "Reel Script Generator"
+
+    url = f"{BASE_URL.rstrip('/')}/chat/completions"
+
+    payload = {
+        "model": MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7
+    }
+
     try:
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        if PROVIDER == "openrouter":
-            headers["HTTP-Referer"] = "https://yourdomain.com/"
-            headers["X-Title"] = "Reel Script Generator"
-
-        url = f"{BASE_URL.rstrip('/')}/chat/completions"
-
-        payload = {
-            "model": MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7
-        }
-
         logger.info(f"[📡] Sending request to {url} via {PROVIDER}...")
         response = httpx.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
@@ -80,39 +81,30 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
         # Strip quotes if wrapped
         if (script.startswith('"') and script.endswith('"')) or (script.startswith("“") and script.endswith("”")):
             script = script[1:-1].strip()
-
         return script
-
-    except httpx.RequestError as e:
-        logger.error(f"[❌] Request error during API call: {e}")
     except httpx.HTTPStatusError as e:
         logger.error(f"[❌] HTTP error during API call: {e}")
+    except httpx.RequestError as e:
+        logger.error(f"[❌] Request error during API call: {e}")
     except Exception as e:
         logger.error(f"[❌] Unexpected error during script generation: {e}")
     return None
 
 
+def fallback_script(prompt_norm: str, language_norm: str) -> str:
+    """Return a static fallback if API fails."""
+    logger.warning(f"[⚠️] No API response, using static fallback for '{prompt_norm}' ({language_norm})")
+    return f"[Default script for '{prompt_norm}' in '{language_norm}']"
+
+
 def generate_script(prompt: str, language: str = "en") -> str:
     """
-    Generate a 30-second Instagram script using OpenAI or DB fallback.
+    Generate a 30-second Instagram script using OpenAI or static fallback.
     Guarantees a non-empty script.
     """
     prompt_norm = prompt.strip().lower()
     language_norm = language.strip().lower()
 
-    def fallback_script() -> str:
-        from models.theme import Theme
-        theme = Theme.query.filter_by(name=prompt_norm, lang=language_norm).first()
-        if theme and theme.content.strip():
-            return dedent(theme.content).strip()
-        else:
-            available = Theme.query.filter_by(name=prompt_norm).all()
-            langs = list(set(t.lang for t in available))
-            logger.warning(f"[⚠️] No fallback for '{prompt_norm}' in '{language_norm}'. Available: {langs}")
-            # Return minimal placeholder to ensure script is not empty
-            return f"[Default script for '{prompt_norm}' in '{language_norm}']"
-
-    import uuid
     variation_seed = str(uuid.uuid4())[:8]
 
     chat_prompt = (
@@ -132,7 +124,7 @@ def generate_script(prompt: str, language: str = "en") -> str:
         else:
             logger.warning(f"[⚠️] API failed, falling back for '{prompt}' ({language})")
 
-    return fallback_script()
+    return fallback_script(prompt_norm, language_norm)
 
 
 def generate_script_for_user(
@@ -170,8 +162,6 @@ def generate_script_for_user(
 
 # CLI support
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) < 6:
         print("Usage: python utils/generate_script.py <user_email> <folder_name> <theme_name> <language> <prompt>")
         sys.exit(1)

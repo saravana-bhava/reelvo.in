@@ -17,11 +17,23 @@ Generates:
 """
 
 import os
+import torch
 import srt
 import whisper
 import warnings
 import logging
 from datetime import timedelta
+
+from tqdm import tqdm
+tqdm(disable=True)
+
+# Prevent Torch Dynamo / FX from dumping bytecode
+os.environ.pop("TORCH_LOGS", None)
+os.environ.pop("TORCHDYNAMO_VERBOSE", None)
+
+if hasattr(torch, "_dynamo"):
+    torch._dynamo.config.verbose = False
+    torch._dynamo.config.suppress_errors = True
 
 # Optional progress UI support
 try:
@@ -75,7 +87,12 @@ def generate_srt_from_audio(
     logger.info(f"[🧠] Transcribing audio → {audio_path}")
 
     try:
-        result = MODEL.transcribe(audio_path, word_timestamps=True, language=language, verbose=False)
+        result = MODEL.transcribe(
+            audio_path,
+            word_timestamps=True,
+            language=language,
+            verbose=False
+        )
     except Exception as e:
         raise RuntimeError(f"[❌] Whisper transcription failed: {e}")
 
