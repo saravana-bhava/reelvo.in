@@ -44,6 +44,23 @@ except ImportError:
     def update_progress(task_id, status, percent): pass
 
 
+def clean_script_text(script: str) -> str:
+    """Normalize script output by removing unwanted wrappers or labels."""
+    text = script.strip()
+
+    # Strip quotes if wrapped
+    if (text.startswith('"') and text.endswith('"')) or (text.startswith("“") and text.endswith("”")):
+        text = text[1:-1].strip()
+
+    # Remove leading "Script:", "Voiceover:", etc.
+    for prefix in ["script:", "voiceover:", "narration:", "caption:"]:
+        if text.lower().startswith(prefix):
+            text = text[len(prefix):].strip()
+            break
+
+    return text
+
+
 def generate_script_via_api(prompt: str) -> Optional[str]:
     """Generates a script using OpenAI-compatible API."""
     if not API_KEY:
@@ -76,11 +93,8 @@ def generate_script_via_api(prompt: str) -> Optional[str]:
             logger.error("[❌] No choices returned in response.")
             return None
 
-        script = response_data["choices"][0]["message"]["content"].strip()
-
-        # Strip quotes if wrapped
-        if (script.startswith('"') and script.endswith('"')) or (script.startswith("“") and script.endswith("”")):
-            script = script[1:-1].strip()
+        raw_script = response_data["choices"][0]["message"]["content"]
+        script = clean_script_text(raw_script)
         return script
     except httpx.HTTPStatusError as e:
         logger.error(f"[❌] HTTP error during API call: {e}")
@@ -112,7 +126,7 @@ def generate_script(prompt: str, language: str = "en") -> str:
         f"The theme is '{prompt_norm}', "
         f"language: {'Hindi' if language_norm == 'hi' else 'English'}. "
         f"The script should be under 30 seconds, energetic, emotional, and impactful. "
-        f"Output only the script lines—no headings, emojis, scene directions, or bullet points. "
+        f"Output only the script text itself — do not include any labels like 'Script:', 'Voiceover:', 'Narration:', or similar. "
         f"Add subtle variation. Seed: {variation_seed}"
     )
 
