@@ -162,9 +162,9 @@ def generate_script_for_user(
     script_path = os.path.join(output_dir, f"{theme_name}_{language}_text.txt")
 
     script = generate_script(prompt=prompt, language=language)
-    if not script.strip():
-        logger.error(f"[❌] Generated script is empty, inserting placeholder for '{theme_name}'")
-        script = f"[Script could not be generated for '{theme_name}' in '{language}']"
+    if not script or not script.strip():
+        logger.error(f"[❌] Script generation failed for '{theme_name}' — no file created.")
+        return None
 
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(dedent(script).strip())
