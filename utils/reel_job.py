@@ -152,6 +152,12 @@ def process_reel_job(
                 finish_progress(task_id, "❌ User not found.", 0)
                 return
 
+            # 🚨 Stop automation if no script text is provided
+            if not script_text or not script_text.strip():
+                logger.error("❌ No script text found. Skipping reel generation.")
+                finish_progress(task_id, "❌ No script generated. Skipping reel.", 0)
+                return
+
             output_dir = os.path.join("output", user_email)
             scripts_dir = os.path.join(output_dir, "scripts")
             images_dir = os.path.join(output_dir, "images")
