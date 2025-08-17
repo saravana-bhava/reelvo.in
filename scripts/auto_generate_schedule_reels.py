@@ -12,7 +12,9 @@
 Automate Reel Generation and Scheduling
 
 This script fetches active auto-post plans, generates scripts, schedules reels,
-and runs reel generation jobs sequentially.
+and runs reel generation jobs. Instead of generating all reels for the next day
+in one run, it splits them into 4-hour slots and processes only the slot that
+matches the current cron execution time.
 """
 
 import os
@@ -50,7 +52,10 @@ logger.setLevel(logging.INFO)
 
 # File handler with rotation
 file_handler = RotatingFileHandler(LOG_FILE, maxBytes=2 * 1024 * 1024, backupCount=5)
-file_formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s', '%Y-%m-%d %H:%M:%S')
+file_formatter = logging.Formatter(
+    '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    '%Y-%m-%d %H:%M:%S'
+)
 file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 
@@ -83,6 +88,9 @@ def create_app():
     return app
 
 
+# ---------------------
+# Reel Job Runner
+# ---------------------
 def run_reel_job(
     app, task_id, user_id, user_email, theme_name, language, script_text,
     use_tts, voice, custom_voice_file, subtitles_enabled, watermark_enabled, scheduled_time
@@ -109,6 +117,18 @@ def run_reel_job(
         logger.error(f"Error in reel job for task_id={task_id}: {e}", exc_info=True)
 
 
+# ---------------------
+# Helper: Determine 4-hour slot
+# ---------------------
+def get_time_slot(dt: datetime):
+    """Return the start hour of the 4-hour slot for given datetime."""
+    hour = dt.hour
+    return (hour // 4) * 4  # 0, 4, 8, 12, 16, 20
+
+
+# ---------------------
+# Main Automation Logic
+# ---------------------
 def automate_reels_and_schedule():
     logger.info("Starting automation of reels and scheduling.")
     app = create_app()
@@ -119,6 +139,12 @@ def automate_reels_and_schedule():
 
             today = datetime.now(timezone.utc).date()
             next_day = today + timedelta(days=1)
+
+            # Determine current UTC slot
+            now_utc = datetime.now(timezone.utc)
+            slot_start_hour = get_time_slot(now_utc)
+            slot_end_hour = slot_start_hour + 4
+            logger.info(f"Processing next-day reels for slot {slot_start_hour:02d}:00–{slot_end_hour:02d}:00 UTC")
 
             for plan in active_plans:
                 try:
@@ -137,17 +163,18 @@ def automate_reels_and_schedule():
                         logger.info(f"Marked plan id {plan.id} as Completed (end date passed).")
                         continue
 
-                    # Only schedule reels for next day if it falls within plan duration
+                    # Only schedule reels for next day if within plan duration
                     if not (start_date <= next_day <= end_date):
                         logger.debug(f"Next day {next_day} is outside plan duration for plan id {plan.id}. Skipping.")
                         continue
 
-                    current_date = next_day
+                    scheduled_local = datetime.combine(next_day, plan.auto_post_time)
 
-                    # Compose scheduled datetime in UTC (assuming auto_post_time is naive local time)
-                    scheduled_local = datetime.combine(current_date, plan.auto_post_time)
+                    # Only process if within the current 4-hour slot
+                    if not (slot_start_hour <= scheduled_local.hour < slot_end_hour):
+                        continue
 
-                    # Check if already scheduled
+                    # Prevent duplicates
                     existing = Schedule.query.filter_by(
                         user_id=plan.user_id,
                         scheduled_for=scheduled_local,
@@ -162,7 +189,7 @@ def automate_reels_and_schedule():
                     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
                     theme_name = f"{raw_topic.replace(' ', '_').lower()}_{timestamp}"
 
-                    # Generate script file path
+                    # Generate script file
                     script_path = generate_script_for_user(
                         user_email=user.email,
                         folder_name="scripts",
@@ -171,32 +198,32 @@ def automate_reels_and_schedule():
                         prompt=plan.topic
                     )
 
-                    # Check if script exists and is non-empty before continuing
+                    # Validate script
                     if not script_path or not os.path.exists(script_path):
-                        logger.error(f"[❌] Script generation failed for plan id {plan.id}. Aborting this plan.")
+                        logger.error(f"[❌] Script generation failed for plan id {plan.id}. Skipping.")
                         continue
 
                     if os.path.getsize(script_path) == 0:
-                        logger.error(f"[❌] Script file is empty for plan id {plan.id}. Aborting this plan.")
+                        logger.error(f"[❌] Script file empty for plan id {plan.id}. Skipping.")
                         continue
 
                     with open(script_path, encoding="utf-8") as f:
                         script_text = f.read().strip()
 
                     if not script_text:
-                        logger.error(f"[❌] Script text is empty after reading for plan id {plan.id}. Aborting this plan.")
+                        logger.error(f"[❌] Script text empty for plan id {plan.id}. Skipping.")
                         continue
 
                     # Voice settings
                     use_tts = True
                     voice = plan.voice_artist
-                    custom_voice_file = None  # No custom voice file upload in automation
+                    custom_voice_file = None
 
                     # Subtitle and watermark flags
                     subtitles_enabled = plan.subtitles_enabled
                     watermark_enabled = plan.watermark_enabled
 
-                    # Generate task id
+                    # Task ID
                     task_id = str(uuid.uuid4())
 
                     # Run reel generation job
@@ -213,7 +240,7 @@ def automate_reels_and_schedule():
                     logger.error(f"Error processing plan id {plan.id}: {inner_exc}", exc_info=True)
 
             db.session.commit()
-            logger.info("Completed automation cycle.")
+            logger.info("Completed automation cycle for current slot.")
 
         except Exception as e:
             logger.error(f"Unexpected error in automate_reels_and_schedule: {e}", exc_info=True)
