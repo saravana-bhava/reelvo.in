@@ -31,9 +31,11 @@ tqdm(disable=True)
 os.environ.pop("TORCH_LOGS", None)
 os.environ.pop("TORCHDYNAMO_VERBOSE", None)
 
+# Completely disable TorchDynamo
 if hasattr(torch, "_dynamo"):
-    torch._dynamo.config.verbose = False
     torch._dynamo.config.suppress_errors = True
+    torch._dynamo.config.verbose = False
+    torch._dynamo.disable()
 
 # Optional progress UI support
 try:
