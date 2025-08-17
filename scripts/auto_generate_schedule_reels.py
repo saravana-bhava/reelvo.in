@@ -20,7 +20,7 @@ import sys
 import uuid
 import logging
 from logging.handlers import RotatingFileHandler
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from flask import Flask
 
@@ -40,7 +40,7 @@ load_dotenv()
 # Setup datewise logging to file + console
 # ---------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-log_date = datetime.utcnow()
+log_date = datetime.now(timezone.utc)
 log_dir = os.path.join(BASE_DIR, "logs", log_date.strftime("%Y-%m"))
 os.makedirs(log_dir, exist_ok=True)
 LOG_FILE = os.path.join(log_dir, f"auto_generate_schedule_{log_date.strftime('%d')}.log")
@@ -117,7 +117,7 @@ def automate_reels_and_schedule():
             active_plans = AutoPostPlan.query.filter_by(status="Active").all()
             logger.info(f"Found {len(active_plans)} active auto-post plans.")
 
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
             next_day = today + timedelta(days=1)
 
             for plan in active_plans:
@@ -159,7 +159,7 @@ def automate_reels_and_schedule():
 
                     # Generate unique theme_name
                     raw_topic = plan.topic or "default"
-                    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+                    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
                     theme_name = f"{raw_topic.replace(' ', '_').lower()}_{timestamp}"
 
                     # Generate script file path
