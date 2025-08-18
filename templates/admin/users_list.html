@@ -1,57 +1,91 @@
 {% extends "base.html" %}
+{% block title %}Manage Users | Reelvo{% endblock %}
+
+{% block heading %}
+<div class="flex">
+  <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+    👥 Manage Users
+  </span>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="p-6 bg-white shadow rounded-2xl">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Manage Users</h1>
+<div class="p-8 bg-white shadow-lg rounded-2xl border border-gray-200 mt-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
     <a href="{{ url_for('admin.add_user') }}"
-       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
-      + Add User
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-xl shadow transition duration-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v16m8-8H4"/>
+      </svg>
+      Add User
     </a>
   </div>
 
-  <!-- Search form -->
-  <form method="get" class="mb-4 flex flex-wrap gap-2">
-    <input type="text" name="email" placeholder="Search by email"
-           value="{{ request.args.get('email','') }}"
-           class="border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300 w-64">
+  <!-- Search -->
+  <form method="get" class="mb-6 flex flex-wrap gap-3">
+    <input type="text" name="search" placeholder="Search by email or ID..."
+           value="{{ search }}"
+           class="flex-1 min-w-[220px] border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none shadow-sm transition"/>
     <button type="submit"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
-      Search
+            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow font-medium transition duration-200">
+      🔍 Search
     </button>
   </form>
 
   <!-- Users Table -->
-  <div class="overflow-x-auto">
-    <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
-      <thead class="bg-gray-100 text-gray-700">
+  <div class="overflow-x-auto rounded-xl border border-gray-200">
+    <table class="min-w-full text-sm text-left">
+      <thead class="bg-gray-100 text-gray-700 text-sm uppercase font-semibold tracking-wide">
         <tr>
-          <th class="p-3 text-left">
-            <a href="?sort=id&dir={{ 'desc' if sort=='id' and direction=='asc' else 'asc' }}&email={{ request.args.get('email','') }}"
-               class="hover:underline">ID</a>
+          <th class="p-4">
+            <a href="?sort=id&dir={{ 'desc' if sort_by=='id' and direction=='asc' else 'asc' }}&search={{ search }}"
+               class="flex items-center gap-1 hover:underline">
+              ID
+              {% if sort_by == 'id' %}
+                <span class="text-xs">{{ '↑' if direction=='asc' else '↓' }}</span>
+              {% endif %}
+            </a>
           </th>
-          <th class="p-3 text-left">
-            <a href="?sort=email&dir={{ 'desc' if sort=='email' and direction=='asc' else 'asc' }}&email={{ request.args.get('email','') }}"
-               class="hover:underline">Email</a>
+          <th class="p-4">
+            <a href="?sort=email&dir={{ 'desc' if sort_by=='email' and direction=='asc' else 'asc' }}&search={{ search }}"
+               class="flex items-center gap-1 hover:underline">
+              Email
+              {% if sort_by == 'email' %}
+                <span class="text-xs">{{ '↑' if direction=='asc' else '↓' }}</span>
+              {% endif %}
+            </a>
           </th>
-          <th class="p-3 text-center">Actions</th>
+          <th class="p-4 text-center">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-200">
         {% for user in users.items %}
-        <tr class="hover:bg-gray-50">
-          <td class="p-3">{{ user.id }}</td>
-          <td class="p-3">{{ user.email }}</td>
-          <td class="p-3 text-center space-x-3">
-            <a href="{{ url_for('admin.edit_user', user_id=user.id, email=request.args.get('email','')) }}"
-               class="text-blue-600 hover:underline">Edit</a>
-            <a href="{{ url_for('admin.delete_user', user_id=user.id, email=request.args.get('email','')) }}"
-               class="text-red-600 hover:underline"
-               onclick="return confirm('Delete this user?')">Delete</a>
+        <tr class="hover:bg-gray-50 transition">
+          <td class="p-4 font-medium text-gray-800">{{ user.id }}</td>
+          <td class="p-4">
+            <span class="inline-block bg-gray-100 px-3 py-1 rounded-lg text-gray-700 font-medium">
+              {{ user.email }}
+            </span>
+          </td>
+          <td class="p-4 text-center space-x-4">
+            <a href="{{ url_for('admin.edit_user', user_id=user.id, search=search, sort=sort_by, dir=direction) }}"
+               class="text-blue-600 hover:text-blue-800 font-medium transition">Edit</a>
+            <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="inline">
+              <button type="submit"
+                      class="text-red-600 hover:text-red-800 font-medium transition"
+                      onclick="return confirm('Are you sure you want to delete this user?')">
+                Delete
+              </button>
+            </form>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="3" class="p-4 text-center text-gray-500">No users found</td>
+          <td colspan="3" class="p-6 text-center text-gray-500 italic">No users found</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -59,22 +93,30 @@
   </div>
 
   <!-- Pagination -->
-  <div class="mt-6 flex justify-between items-center">
-    {% if users.has_prev %}
-      <a href="{{ url_for('admin.users', page=users.prev_num, sort=sort, dir=direction, email=request.args.get('email','')) }}"
-         class="px-4 py-2 border rounded-lg hover:bg-gray-100">Previous</a>
-    {% else %}
-      <span class="px-4 py-2 text-gray-400 border rounded-lg">Previous</span>
-    {% endif %}
+  {% if users.pages > 1 %}
+  <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-3">
+    <div>
+      {% if users.has_prev %}
+        <a href="{{ url_for('admin.users_list', page=users.prev_num, sort=sort_by, dir=direction, search=search) }}"
+           class="px-4 py-2 border rounded-lg hover:bg-gray-100 transition">← Previous</a>
+      {% else %}
+        <span class="px-4 py-2 text-gray-400 border rounded-lg">← Previous</span>
+      {% endif %}
+    </div>
 
-    <span class="text-gray-600">Page {{ users.page }} of {{ users.pages }}</span>
+    <div class="flex items-center gap-2">
+      <span class="text-gray-600">Page <strong>{{ users.page }}</strong> of {{ users.pages }}</span>
+    </div>
 
-    {% if users.has_next %}
-      <a href="{{ url_for('admin.users', page=users.next_num, sort=sort, dir=direction, email=request.args.get('email','')) }}"
-         class="px-4 py-2 border rounded-lg hover:bg-gray-100">Next</a>
-    {% else %}
-      <span class="px-4 py-2 text-gray-400 border rounded-lg">Next</span>
-    {% endif %}
+    <div>
+      {% if users.has_next %}
+        <a href="{{ url_for('admin.users_list', page=users.next_num, sort=sort_by, dir=direction, search=search) }}"
+           class="px-4 py-2 border rounded-lg hover:bg-gray-100 transition">Next →</a>
+      {% else %}
+        <span class="px-4 py-2 text-gray-400 border rounded-lg">Next →</span>
+      {% endif %}
+    </div>
   </div>
+  {% endif %}
 </div>
 {% endblock %}
