@@ -6,6 +6,10 @@
     <label class="block">Email</label>
     <input type="email" name="email" value="{{ user.email }}" class="border p-2 w-full" required>
   </div>
+  <div>
+    <label class="block">Password (leave blank to keep current)</label>
+    <input type="password" name="password" class="border p-2 w-full">
+  </div>
   <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
 </form>
 {% endblock %}

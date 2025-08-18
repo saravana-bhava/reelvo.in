@@ -85,12 +85,17 @@ def users_list():
 @admin_bp.route("/users/add", methods=["GET", "POST"])
 @admin_required
 def add_user():
-    """Add new user by email."""
+    """Add new user by email + password."""
     if request.method == "POST":
         email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
 
         if not email:
             flash("⚠️ Email is required", "warning")
+            return redirect(url_for("admin.add_user"))
+
+        if not password:
+            flash("⚠️ Password is required", "warning")
             return redirect(url_for("admin.add_user"))
 
         if User.query.filter_by(email=email).first():
@@ -98,6 +103,7 @@ def add_user():
             return redirect(url_for("admin.add_user"))
 
         new_user = User(email=email)
+        new_user.set_password(password)   # ✅ hash password
         db.session.add(new_user)
         db.session.commit()
 
@@ -110,11 +116,11 @@ def add_user():
 @admin_bp.route("/users/edit/<int:user_id>", methods=["GET", "POST"])
 @admin_required
 def edit_user(user_id):
-    """Edit user details."""
     user = User.query.get_or_404(user_id)
 
     if request.method == "POST":
         new_email = request.form.get("email", "").strip()
+        new_password = request.form.get("password", "").strip()
 
         if not new_email:
             flash("⚠️ Email is required", "warning")
@@ -125,8 +131,10 @@ def edit_user(user_id):
             return redirect(url_for("admin.edit_user", user_id=user.id))
 
         user.email = new_email
-        db.session.commit()
+        if new_password:
+            user.set_password(new_password)
 
+        db.session.commit()
         flash("✅ User updated successfully", "success")
         return redirect(url_for("admin.users_list"))
 

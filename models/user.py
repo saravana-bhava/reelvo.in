@@ -11,6 +11,7 @@
 from models import db
 from models.base import TimestampMixin
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model, TimestampMixin):
     __tablename__ = 'users'
@@ -30,3 +31,11 @@ class User(db.Model, TimestampMixin):
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}')>"
+
+    def set_password(self, password: str):
+        """Hash and store the password."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """Verify a plain-text password against the stored hash."""
+        return check_password_hash(self.password_hash, password)

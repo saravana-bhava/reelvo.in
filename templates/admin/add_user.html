@@ -1,4 +1,14 @@
 {% extends "base.html" %}
+{% block title %}Add User | Reelvo{% endblock %}
+
+{% block heading %}
+<div class="flex">
+  <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+    ➕ Add User
+  </span>
+</div>
+{% endblock %}
+
 {% block content %}
 <h1 class="text-xl font-bold mb-4">Add User</h1>
 <form method="post" class="space-y-4">
@@ -6,6 +16,10 @@
     <label class="block">Email</label>
     <input type="email" name="email" class="border p-2 w-full" required>
   </div>
-  <button type="submit" class="bg-green-600 text-white px-4 py-2">Save</button>
+  <div>
+    <label class="block">Password</label>
+    <input type="password" name="password" class="border p-2 w-full" required>
+  </div>
+  <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Save</button>
 </form>
 {% endblock %}
