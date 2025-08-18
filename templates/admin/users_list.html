@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 bg-white shadow rounded-2xl">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Manage Users</h1>
+    <a href="{{ url_for('admin.add_user') }}"
+       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
+      + Add User
+    </a>
+  </div>
+
+  <!-- Search form -->
+  <form method="get" class="mb-4 flex flex-wrap gap-2">
+    <input type="text" name="email" placeholder="Search by email"
+           value="{{ request.args.get('email','') }}"
+           class="border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300 w-64">
+    <button type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
+      Search
+    </button>
+  </form>
+
+  <!-- Users Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+      <thead class="bg-gray-100 text-gray-700">
+        <tr>
+          <th class="p-3 text-left">
+            <a href="?sort=id&dir={{ 'desc' if sort=='id' and direction=='asc' else 'asc' }}&email={{ request.args.get('email','') }}"
+               class="hover:underline">ID</a>
+          </th>
+          <th class="p-3 text-left">
+            <a href="?sort=email&dir={{ 'desc' if sort=='email' and direction=='asc' else 'asc' }}&email={{ request.args.get('email','') }}"
+               class="hover:underline">Email</a>
+          </th>
+          <th class="p-3 text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for user in users.items %}
+        <tr class="hover:bg-gray-50">
+          <td class="p-3">{{ user.id }}</td>
+          <td class="p-3">{{ user.email }}</td>
+          <td class="p-3 text-center space-x-3">
+            <a href="{{ url_for('admin.edit_user', user_id=user.id, email=request.args.get('email','')) }}"
+               class="text-blue-600 hover:underline">Edit</a>
+            <a href="{{ url_for('admin.delete_user', user_id=user.id, email=request.args.get('email','')) }}"
+               class="text-red-600 hover:underline"
+               onclick="return confirm('Delete this user?')">Delete</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="p-4 text-center text-gray-500">No users found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="mt-6 flex justify-between items-center">
+    {% if users.has_prev %}
+      <a href="{{ url_for('admin.users', page=users.prev_num, sort=sort, dir=direction, email=request.args.get('email','')) }}"
+         class="px-4 py-2 border rounded-lg hover:bg-gray-100">Previous</a>
+    {% else %}
+      <span class="px-4 py-2 text-gray-400 border rounded-lg">Previous</span>
+    {% endif %}
+
+    <span class="text-gray-600">Page {{ users.page }} of {{ users.pages }}</span>
+
+    {% if users.has_next %}
+      <a href="{{ url_for('admin.users', page=users.next_num, sort=sort, dir=direction, email=request.args.get('email','')) }}"
+         class="px-4 py-2 border rounded-lg hover:bg-gray-100">Next</a>
+    {% else %}
+      <span class="px-4 py-2 text-gray-400 border rounded-lg">Next</span>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
