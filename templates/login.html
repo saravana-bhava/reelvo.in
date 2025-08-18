@@ -83,13 +83,13 @@
   </form>
 
   <!-- Divider -->
-  <div class="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
+  <div class="text-center text-gray-500 dark:text-gray-400 text-sm" style="display: none">OR</div>
 
   <!-- OTP Login Form -->
   <form method="post"
         action="{{ url_for('auth.request_otp') }}"
         aria-label="OTP Login Form"
-        class="space-y-4">
+        class="space-y-4" style="display: none">
 
     <div>
       <label for="otp-email" class="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
