@@ -75,7 +75,7 @@ def users_list():
 
     return render_template(
         "admin/users_list.html",
-        users=users,   # pass pagination object, not just .items
+        users=users,
         sort_by=sort_by,
         direction=direction,
         search=search,
@@ -116,6 +116,7 @@ def add_user():
 @admin_bp.route("/users/edit/<int:user_id>", methods=["GET", "POST"])
 @admin_required
 def edit_user(user_id):
+    """Edit user details (email + optional password)."""
     user = User.query.get_or_404(user_id)
 
     if request.method == "POST":
