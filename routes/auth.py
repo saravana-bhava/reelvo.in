@@ -28,6 +28,11 @@ from utils.image_utils import download_and_save_image
 
 auth_bp = Blueprint("auth", __name__)
 
+# ─────────────────────────────────────────────
+# BASE DIRECTORY
+# ─────────────────────────────────────────────
+BASE_DIR = os.getenv("BASE_DIR", "/var/www/html")
+
 # -----------------------------
 # Google OAuth Setup
 # -----------------------------
@@ -48,7 +53,7 @@ def update_instagram_session(email):
 
     session["connected"] = bool(access_token and platform_user_id)
     session["platform_user_id"] = platform_user_id
-    logo_path = f"output/{email}/watermark/logo.png"
+    logo_path = os.path.join(BASE_DIR, "output", email, "watermark", "logo.png") if email else ""
     session["instagram_profile_picture"] = logo_path if os.path.exists(logo_path) else None
 
 @auth_bp.route("/")
@@ -320,7 +325,7 @@ def google_callback():
 
     session["user"] = {"id": user.id, "email": user.email}
 
-    logo_path = f"output/{email}/watermark/logo.png"
+    logo_path = os.path.join(BASE_DIR, "output", email, "watermark", "logo.png") if email else ""
     if profile_url and not os.path.exists(logo_path):
         try:
             download_and_save_image(profile_url, logo_path)
