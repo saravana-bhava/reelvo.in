@@ -23,6 +23,7 @@ from werkzeug.exceptions import Unauthorized
 
 instagram_bp = Blueprint("instagram", __name__)
 
+BASE_DIR = os.getenv("BASE_DIR", "/var/www/html")
 INSTAGRAM_APP_ID = os.getenv("FB_APP_ID", "")
 INSTAGRAM_APP_SECRET = os.getenv("FB_APP_SECRET", "")
 REDIRECT_URI = os.getenv(
