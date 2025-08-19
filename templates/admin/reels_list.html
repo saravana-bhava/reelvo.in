@@ -12,19 +12,6 @@
 {% block content %}
 <div class="p-8 bg-white shadow-lg rounded-2xl border border-gray-200 mt-6">
 
-  <!-- Header -->
-  <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-    <a href="{{ url_for('admin.add_reel') }}"
-       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-xl shadow transition duration-200">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-           stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 4v16m8-8H4"/>
-      </svg>
-      Add Reel
-    </a>
-  </div>
-
   <!-- Search + User Filter -->
   <form method="get" class="mb-6 flex flex-wrap gap-3">
     <input type="text" name="search" placeholder="Search by title, status or ID..."
