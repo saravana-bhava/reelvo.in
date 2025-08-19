@@ -161,8 +161,13 @@ def reels_list():
     sort_by = request.args.get("sort", "id")
     direction = request.args.get("dir", "asc")
     search = request.args.get("search", "")
+    user_id = request.args.get("user_id", type=int)
 
     query = Reel.query
+
+    # Filter by user
+    if user_id:
+        query = query.filter(Reel.user_id == user_id)
 
     # Search filter
     if search:
@@ -178,6 +183,7 @@ def reels_list():
         query = query.order_by(order(getattr(Reel, sort_by)))
 
     reels = query.paginate(page=page, per_page=PER_PAGE, error_out=False)
+    users = User.query.order_by(User.email.asc()).all()
 
     return render_template(
         "admin/reels_list.html",
@@ -185,6 +191,8 @@ def reels_list():
         sort_by=sort_by,
         direction=direction,
         search=search,
+        users=users,
+        selected_user=user_id,
     )
 
 
