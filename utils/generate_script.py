@@ -159,7 +159,7 @@ def generate_script_for_user(
 
     update_progress(folder_name, "generating_script", 25)
 
-    output_dir = os.path.join("output", user_email, folder_name)
+    output_dir = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "output", user_email, folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     script_path = os.path.join(output_dir, f"{theme_name}_{language}_text.txt")

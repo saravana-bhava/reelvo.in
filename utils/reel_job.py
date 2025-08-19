@@ -75,7 +75,7 @@ class SuppressProgressLogs(logging.Filter):
 
 
 def setup_user_logger(user_email):
-    log_dir = os.path.join("output", user_email, "logs")
+    log_dir = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "output", user_email, "logs")
     os.makedirs(log_dir, exist_ok=True)
     log_filename = datetime.now().strftime("reel_%Y%m%d_%H%M%S.log")
     log_path = os.path.join(log_dir, log_filename)
@@ -158,7 +158,7 @@ def process_reel_job(
                 finish_progress(task_id, "❌ No script generated. Skipping reel.", 0)
                 return
 
-            output_dir = os.path.join("output", user_email)
+            output_dir = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "output", user_email)
             scripts_dir = os.path.join(output_dir, "scripts")
             images_dir = os.path.join(output_dir, "images")
             tts_dir = os.path.join(output_dir, "tts")

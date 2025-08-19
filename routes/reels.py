@@ -36,7 +36,7 @@ if not logger.handlers:
     logging.basicConfig(level=logging.INFO)
 
 def get_output_dir(user_email):
-    return os.path.join(current_app.config.get("OUTPUT_DIR", "output"), user_email)
+    return os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "output", user_email)
 
 def get_available_themes():
     try:

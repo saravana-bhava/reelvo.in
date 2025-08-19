@@ -49,9 +49,8 @@ if missing_vars:
 # ---------------------
 # Paths and Constants
 # ---------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
+BASE_DIR = os.getenv("BASE_DIR", "/var/www/html")
+OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 EMAIL_TEMPLATE = os.path.join(BASE_DIR, "templates", "email_alert_template.txt")
 
 log_date = datetime.now()

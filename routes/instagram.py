@@ -57,8 +57,8 @@ def connect_instagram():
         f"https://www.facebook.com/v19.0/dialog/oauth"
         f"?client_id={INSTAGRAM_APP_ID}"
         f"&redirect_uri={REDIRECT_URI}"
-        f"&scope=pages_show_list,pages_read_engagement,pages_manage_metadata,"
-        f"instagram_basic,instagram_content_publish,business_management"
+#        f"&scope=business_management,pages_manage_metadata,pages_read_engagement"
+        f"&scope=instagram_basic,instagram_content_publish,pages_show_list"
         f"&auth_type=rerequest"
     )
     return redirect(auth_url)
@@ -154,7 +154,7 @@ def instagram_callback():
 
         if user_id:
             if profile_url and user_email:
-                logo_path = f"output/{user_email}/watermark/logo.png"
+                logo_path = os.path.join(BASE_DIR, "output", user_email, "watermark", "logo.png") if user_email else ""
                 if download_and_save_image(profile_url, logo_path):
                     session["instagram_profile_picture"] = logo_path
                 else:
@@ -233,4 +233,4 @@ def api_post_reel():
 
 @instagram_bp.route("/watermark/<user_email>/logo.png")
 def serve_watermark(user_email):
-    return send_from_directory(os.path.join("output", user_email, "watermark"), "logo.png")
+    return send_from_directory(os.path.join(BASE_DIR, "output", user_email, "watermark"), "logo.png")

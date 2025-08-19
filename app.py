@@ -11,7 +11,6 @@
 import os
 import logging
 from threading import Thread
-
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
@@ -28,6 +27,11 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("reelvo")
+
+# ─────────────────────────────────────────────
+# BASE DIRECTORY
+# ─────────────────────────────────────────────
+BASE_DIR = os.getenv("BASE_DIR", "/var/www/html")
 
 # ─────────────────────────────────────────────
 # CREATE FLASK APP FUNCTION
@@ -109,9 +113,12 @@ def create_app():
         from flask import session
         user = session.get("user", {})
         email = user.get("email", "")
-        logo_real_path = f"output/{email}/watermark/logo.png" if email else ""
-        logo_path = f"watermark/{email}/logo.png" if email else ""
-        has_logo = os.path.exists(logo_real_path)
+
+        logo_real_path = os.path.join(BASE_DIR, "output", email, "watermark", "logo.png") if email else ""
+        logo_path = os.path.join("watermark", email, "logo.png") if email else ""
+
+        has_logo = os.path.exists(logo_real_path) if email else False
+
         return {
             "user_email": email,
             "logo_path": logo_path,
@@ -138,7 +145,7 @@ def start_background_tasks():
 # ─────────────────────────────────────────────
 def run():
     """Main entry point for running the Flask app."""
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(os.path.join(BASE_DIR, "output"), exist_ok=True)
 
     # Optional: enable background task runner in production
     if os.getenv("ENABLE_BG_TASKS", "false").lower() == "true":
