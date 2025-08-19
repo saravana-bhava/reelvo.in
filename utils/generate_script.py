@@ -147,12 +147,15 @@ def generate_script_for_user(
     theme_name: str,
     language: str = "en",
     prompt: str = ""
-) -> str:
+) -> Optional[str]:
     """
     Wrapper to generate and store a script for a user.
-    Ensures a script file is always written.
+    Ensures a script file is always written if possible.
     """
-    logger.info(f"[📝] Generating script → User: '{user_email}', Folder: '{folder_name}', Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'")
+    logger.info(
+        f"[📝] Generating script → User: '{user_email}', Folder: '{folder_name}', "
+        f"Theme: '{theme_name}', Language: '{language}', Prompt: '{prompt}'"
+    )
 
     update_progress(folder_name, "generating_script", 25)
 
@@ -166,8 +169,17 @@ def generate_script_for_user(
         logger.error(f"[❌] Script generation failed for '{theme_name}' — no file created.")
         return None
 
-    with open(script_path, "w", encoding="utf-8") as f:
-        f.write(dedent(script).strip())
+    try:
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(dedent(script).strip())
+    except Exception as e:
+        logger.error(f"[❌] Error writing script to file: {e}")
+        return None
+
+    # Verify file exists and not empty
+    if not os.path.exists(script_path) or os.path.getsize(script_path) == 0:
+        logger.error(f"[❌] Failed to save script → {script_path}")
+        return None
 
     update_progress(folder_name, "script_generated", 30)
     logger.info(f"[📄] Script saved → {script_path}")
@@ -194,4 +206,7 @@ if __name__ == "__main__":
         prompt=prompt
     )
 
-    print(f"✅ Saved: {result_path}")
+    if result_path:
+        print(f"✅ Saved: {result_path}")
+    else:
+        print("❌ Script generation failed.")
