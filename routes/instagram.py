@@ -57,8 +57,8 @@ def connect_instagram():
         f"https://www.facebook.com/v19.0/dialog/oauth"
         f"?client_id={INSTAGRAM_APP_ID}"
         f"&redirect_uri={REDIRECT_URI}"
-        f"&scope=pages_show_list,pages_read_engagement,pages_manage_metadata,"
-        f"instagram_basic,instagram_content_publish,business_management"
+        #f"&scope=business_management,pages_read_engagement,pages_manage_metadata,"
+        f"&scope=instagram_basic,instagram_content_publish,pages_show_list"
         f"&auth_type=rerequest"
     )
     return redirect(auth_url)
