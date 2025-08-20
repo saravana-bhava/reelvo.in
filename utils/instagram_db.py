@@ -66,15 +66,11 @@ def update_instagram_tokens(user_id, access_token, refresh_token="", expires_in=
     db.session.commit()
 
 
-def delete_instagram_token(user_email):
+def delete_instagram_token(user_id):
     """
     Delete stored Instagram token for a given user.
     """
-    user = User.query.filter_by(email=user_email).first()
-    if not user:
-        return
-
-    token = UserToken.query.filter_by(user_id=user.id, platform='instagram').first()
+    token = UserToken.query.filter_by(user_id=user_id, platform='instagram').first()
     if token:
         db.session.delete(token)
         db.session.commit()
