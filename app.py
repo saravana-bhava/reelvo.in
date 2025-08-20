@@ -73,6 +73,7 @@ def create_app():
 
     # ──────── SMTP Config ────────
     app.config.update(
+        ADMIN_EMAILS=[email.strip() for email in os.getenv("ADMIN_EMAILS", "").split(",") if email.strip()],
         ADMIN_MASTER_PASSWORD=os.getenv("ADMIN_MASTER_PASSWORD"),
         SMTP_HOST=os.getenv("SMTP_HOST"),
         SMTP_PORT=int(os.getenv("SMTP_PORT", 587)),
@@ -124,6 +125,10 @@ def create_app():
             "logo_path": logo_path,
             "has_profile_pic": has_logo,
         }
+
+    @app.context_processor
+    def inject_admin_emails():
+        return {"ADMIN_EMAILS": app.config.get("ADMIN_EMAILS", [])}
 
     return app
 

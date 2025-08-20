@@ -57,6 +57,23 @@
       </a>
     {% endfor %}
 
+    {% if user_email|lower in ADMIN_EMAILS %}
+      <hr class="my-4 border-gray-300 dark:border-gray-600" />
+      <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">Admin</div>
+
+      <a href="{{ url_for('admin.users_list') }}"
+         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
+           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if request.endpoint == 'admin.users_list' else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
+        👤 <span>Manage Users</span>
+      </a>
+
+      <a href="{{ url_for('admin.reels_list') }}"
+         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
+           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if request.endpoint == 'admin.reels_list' else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
+        🎞️ <span>Manage Reels</span>
+      </a>
+    {% endif %}
+
     <hr class="my-4 border-gray-300 dark:border-gray-600" />
 
     <a href="mailto:support@reelvo.in"

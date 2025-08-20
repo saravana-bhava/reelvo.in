@@ -8,6 +8,7 @@
 # Author URL:   https://SazM.in
 # ================================================
 
+import os
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from models.user import User
 from models.reel import Reel
@@ -18,16 +19,21 @@ from utils.auth_utils import get_user_email
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 # --- Config ---
-ADMIN_EMAIL = "sabajobs@gmail.com"
+ADMIN_EMAILS = [
+    email.strip().lower()
+    for email in os.getenv("ADMIN_EMAILS", "").split(",")
+    if email.strip()
+]
 PER_PAGE = 10
 
 
 # --- Decorators ---
 def admin_required(f):
-    """Restrict route access to admin user (simple email-based check)."""
+    """Restrict route access to admin users (email-based check)."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        if get_user_email() != ADMIN_EMAIL:
+        user_email = (get_user_email() or "").lower()
+        if user_email not in ADMIN_EMAILS:
             flash("❌ Unauthorized access", "danger")
             return redirect(url_for("auth.index"))
         return f(*args, **kwargs)
