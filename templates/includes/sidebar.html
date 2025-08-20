@@ -8,27 +8,28 @@
   Author URL:   https://SazM.in
 -->
 <aside class="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 px-4 py-6 min-h-screen shadow-lg">
+
   <!-- Profile Section -->
   <section class="flex flex-col items-center text-center space-y-3 mb-8" aria-label="User Profile">
     <img
       src="/{{ logo_path if has_profile_pic else 'static/images/avatar.png' }}"
       alt="{{ 'User Logo' if has_profile_pic else 'Default Avatar' }}"
       title="{{ 'Custom logo detected' if has_profile_pic else 'Using default avatar' }}"
-      class="w-24 h-24 rounded-full shadow-lg object-cover ring-4 ring-primary transition"
+      class="w-24 h-24 rounded-full shadow-lg object-cover ring-4 ring-primary transition duration-300"
       loading="lazy"
     />
 
     <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 break-words max-w-full">
-        {% if session.get("connected") and session.get("platform_user_id") %}
-          IG: {{ session.get("platform_user_id") }}
-        {% else %}
-          {{ user_email }}
-        {% endif %}
+      {% if session.get("connected") and session.get("platform_user_id") %}
+        IG: {{ session.get("platform_user_id") }}
+      {% else %}
+        {{ user_email }}
+      {% endif %}
     </div>
 
     {% if not session.get("connected") %}
       <a href="{{ url_for('instagram.connect_instagram') }}"
-         class="inline-block text-white bg-blue-600 hover:bg-blue-700 transition text-sm font-medium px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500">
+         class="inline-block text-white bg-blue-600 hover:bg-blue-700 transition duration-300 text-sm font-medium px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500">
         🔗 Connect Instagram
       </a>
     {% endif %}
@@ -36,61 +37,123 @@
 
   <!-- Navigation -->
   <nav class="space-y-1 text-sm" role="navigation" aria-label="Main Navigation">
-    {% set nav_links = [
-      ('🏠', 'Dashboard', 'dashboard.dashboard', None),
-      ('🎬', 'Create Reel', 'reels.create_reel', None),
-      ('📤', 'Manual Upload', 'reels.manual_upload', None),
-      ('📂', 'Reel History', 'reels.list_reels', None),
-      ('🗓️', 'Scheduled Reels', 'schedule.list_scheduled_jobs_view', None),
-      ('📊', 'Analytics', 'coming_soon.show_coming', 'analytics'),
-      ('🤝', 'Refer & Earn', 'coming_soon.show_coming', 'refer'),
-      ('💳', 'Upgrade Plan', 'coming_soon.show_coming', 'upgrade')
-    ] %}
 
-    {% for icon, label, endpoint, feature in nav_links %}
-      {% set active = request.endpoint == endpoint and (feature is none or request.view_args and request.view_args.get('feature') == feature) %}
-      <a href="{{ url_for(endpoint, feature=feature) if feature else url_for(endpoint) }}"
-         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
-           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if active else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
-        <span class="text-lg">{{ icon }}</span>
-        <span>{{ label }}</span>
-      </a>
-    {% endfor %}
+    <!-- Dashboard Section -->
+    <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1">
+      Main
+    </div>
+    <a href="{{ url_for('dashboard.dashboard') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'dashboard.dashboard' else 'text-gray-700 dark:text-gray-300' }}">
+      🏠 <span>Dashboard</span>
+    </a>
+
+    <hr class="my-3 border-gray-300 dark:border-gray-600" />
+
+    <!-- Reels Section -->
+    <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1">
+      Reels
+    </div>
+    <a href="{{ url_for('reels.create_reel') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'reels.create_reel' else 'text-gray-700 dark:text-gray-300' }}">
+      🎥 <span>Create Reel</span>
+    </a>
+    <a href="{{ url_for('reels.manual_upload') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'reels.manual_upload' else 'text-gray-700 dark:text-gray-300' }}">
+      📤 <span>Manual Upload</span>
+    </a>
+    <a href="{{ url_for('reels.list_reels') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'reels.list_reels' else 'text-gray-700 dark:text-gray-300' }}">
+      📂 <span>Reel History</span>
+    </a>
+    <a href="{{ url_for('schedule.list_scheduled_jobs_view') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'schedule.list_scheduled_jobs_view' else 'text-gray-700 dark:text-gray-300' }}">
+      🗓️ <span>Scheduled Reels</span>
+    </a>
+
+    <hr class="my-3 border-gray-300 dark:border-gray-600" />
+
+    <!-- Stories Section -->
+    <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1">
+      Stories
+    </div>
+    <a href="{{ url_for('stories.manual_story_upload') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'stories.manual_story_upload' else 'text-gray-700 dark:text-gray-300' }}">
+      ✍️ <span>Story Upload</span>
+    </a>
+    <a href="{{ url_for('stories.list_stories') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'stories.list_stories' else 'text-gray-700 dark:text-gray-300' }}">
+      📜 <span>Story History</span>
+    </a>
+    <a href="{{ url_for('story_schedule.list_scheduled_story_jobs_view') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'stories.list_scheduled_stories' else 'text-gray-700 dark:text-gray-300' }}">
+      🗓️ <span>Scheduled Stories</span>
+    </a>
+
+    <hr class="my-3 border-gray-300 dark:border-gray-600" />
+
+    <!-- Other Features Section -->
+    <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1">
+      Other Features
+    </div>
+    <a href="{{ url_for('coming_soon.show_coming', feature='analytics') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'coming_soon.show_coming' and request.view_args.get('feature') == 'analytics' else 'text-gray-700 dark:text-gray-300' }}">
+      📊 <span>Analytics</span>
+    </a>
+    <a href="{{ url_for('coming_soon.show_coming', feature='refer') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'coming_soon.show_coming' and request.view_args.get('feature') == 'refer' else 'text-gray-700 dark:text-gray-300' }}">
+      🤝 <span>Refer & Earn</span>
+    </a>
+    <a href="{{ url_for('coming_soon.show_coming', feature='upgrade') }}"
+       class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+       {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'coming_soon.show_coming' and request.view_args.get('feature') == 'upgrade' else 'text-gray-700 dark:text-gray-300' }}">
+      💳 <span>Upgrade Plan</span>
+    </a>
 
     {% if user_email|lower in ADMIN_EMAILS %}
-      <hr class="my-4 border-gray-300 dark:border-gray-600" />
-      <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">Admin</div>
-
+      <hr class="my-3 border-gray-300 dark:border-gray-600" />
+      <div class="px-4 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1">
+        Admin
+      </div>
       <a href="{{ url_for('admin.users_list') }}"
-         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
-           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if request.endpoint == 'admin.users_list' else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
+         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+         {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'admin.users_list' else 'text-gray-700 dark:text-gray-300' }}">
         👤 <span>Manage Users</span>
       </a>
-
       <a href="{{ url_for('admin.reels_list') }}"
-         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
-           {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white' if request.endpoint == 'admin.reels_list' else 'text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700' }}">
+         class="flex items-center gap-3 px-4 py-2 rounded-md font-medium transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1
+         {{ 'bg-blue-100 dark:bg-gray-700 text-blue-800 dark:text-white font-bold' if request.endpoint == 'admin.reels_list' else 'text-gray-700 dark:text-gray-300' }}">
         🎞️ <span>Manage Reels</span>
       </a>
     {% endif %}
 
-    <hr class="my-4 border-gray-300 dark:border-gray-600" />
+    <hr class="my-3 border-gray-300 dark:border-gray-600" />
 
     <a href="mailto:support@reelvo.in"
-       class="flex items-center gap-3 px-4 py-2 rounded-md transition text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700">
+       class="flex items-center gap-3 px-4 py-2 rounded-md transition duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-1 text-gray-700 dark:text-gray-300">
       🆘 <span>Help Center</span>
     </a>
 
     <a href="{{ url_for('auth.logout') }}"
-       class="flex items-center gap-3 px-4 py-2 rounded-md transition text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900">
+       class="flex items-center gap-3 px-4 py-2 rounded-md transition duration-300 hover:bg-red-100 dark:hover:bg-red-900 hover:translate-x-1 text-red-600 dark:text-red-400">
       🚪 <span>Logout</span>
     </a>
+
   </nav>
 
   <!-- Theme Toggle -->
   <form method="POST" action="{{ url_for('auth.toggle_theme') }}" class="mt-8" aria-label="Theme Toggle">
     <button type="submit"
-            class="w-full py-2 px-4 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-semibold text-gray-800 dark:text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
+            class="w-full py-2 px-4 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-semibold text-gray-800 dark:text-gray-100 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
       {% if session.get('theme') == 'dark' %}
         ☀️ Light Mode
       {% else %}
@@ -98,4 +161,5 @@
       {% endif %}
     </button>
   </form>
+
 </aside>
