@@ -38,8 +38,8 @@ if not logger.hasHandlers():
     logger.addHandler(handler)
 
 # Constants
-CACHE_DIR = os.path.join("cache", "videos")
-os.makedirs(CACHE_DIR, exist_ok=True)
+VIDEOS_DIR = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "cache", "videos")
+os.makedirs(VIDEOS_DIR, exist_ok=True)
 
 
 def get_video_duration(filepath: str) -> Optional[float]:
@@ -113,7 +113,7 @@ def download_video(
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         hashed = hashlib.md5(url.encode()).hexdigest()
-        cached_path = os.path.join(CACHE_DIR, f"{hashed}.mp4")
+        cached_path = os.path.join(VIDEOS_DIR, f"{hashed}.mp4")
 
         # Use cache if available and valid
         if not DISABLE_CACHE and os.path.exists(cached_path):

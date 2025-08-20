@@ -95,10 +95,11 @@ def search_freesound(query: str, language: str = "en") -> Optional[str]:
             logger.warning("[⚠️] No MP3 preview available in top result.")
             return None
 
-        os.makedirs("cache/bgm", exist_ok=True)
+        bgm_dir = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "cache", "bgm")
+        os.makedirs(bgm_dir, exist_ok=True)
         base_name = sanitize_filename(query)
         filename = f"{base_name}_{language}.mp3"
-        dest_path = os.path.join("cache/bgm", filename)
+        dest_path = os.path.join(bgm_dir, filename)
 
         if os.path.exists(dest_path):
             logger.info(f"[📦] Using cached BGM: {dest_path}")

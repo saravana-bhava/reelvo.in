@@ -31,9 +31,8 @@ if not logger.hasHandlers():
     logging.basicConfig(level=logging.INFO)
 
 # Directories
-CACHE_ROOT = Path(os.getenv("CACHE_DIR", "cache"))
-CACHE_DIR = CACHE_ROOT / "bgm"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
+BGM_DIR = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "cache", "bgm")
+os.makedirs(BGM_DIR, exist_ok=True)
 
 ASSETS_DIR = Path("assets/music")
 DEFAULT_BGM = ASSETS_DIR / "default.mp3"
@@ -122,7 +121,7 @@ def fetch_bgm(
 
     suffix = "_hi" if language == "hi" else "_en"
     cache_filename = f"{safe_keyword}{suffix}.mp3"
-    cached_path = CACHE_DIR / cache_filename
+    cached_path = os.path.join(BGM_DIR, cache_filename)
 
     if cached_path.exists() and not force_download:
         logger.info(f"[💾] Using cached BGM: {cached_path}")
