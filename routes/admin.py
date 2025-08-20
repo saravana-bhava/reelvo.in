@@ -1,9 +1,9 @@
 # ================================================
 # File:         routes/admin.py
-# Description:  Admin routes for managing Users and Reels
+# Description:  Admin routes for managing users and reels
 # Framework:    Flask + TailwindCSS
 # Version:      1.0.0
-# Last Updated: 18 August 2025
+# Last Updated: 20 August 2025
 # Author:       Saravana Bhava
 # Author URL:   https://SazM.in
 # ================================================
