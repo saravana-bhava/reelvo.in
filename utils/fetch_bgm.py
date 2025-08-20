@@ -30,11 +30,14 @@ logger = logging.getLogger("bgm_fetcher")
 if not logger.hasHandlers():
     logging.basicConfig(level=logging.INFO)
 
-# Directories
-BGM_DIR = os.path.join(os.getenv("BASE_DIR", "/var/www/html"), "cache", "bgm")
-os.makedirs(BGM_DIR, exist_ok=True)
+# Base directory (from environment)
+BASE_DIR = Path(os.getenv("BASE_DIR", str(ROOT_DIR))).resolve()
 
-ASSETS_DIR = Path("assets/music")
+# Directories
+BGM_DIR = BASE_DIR / "cache" / "bgm"
+BGM_DIR.mkdir(parents=True, exist_ok=True)
+
+ASSETS_DIR = BASE_DIR / "assets" / "music"
 DEFAULT_BGM = ASSETS_DIR / "default.mp3"
 MAX_BGM_SIZE_MB = 20
 
@@ -64,7 +67,7 @@ def download_bgm_from_url(url: str, dest_path: Path, task_id: Optional[str] = No
             logger.warning(f"[⚠️] BGM file too large ({content_length} bytes), skipping.")
             return None
 
-        with open(dest_path, 'wb') as f:
+        with dest_path.open('wb') as f:
             for chunk in response.iter_content(1024 * 64):
                 if chunk:
                     f.write(chunk)
@@ -121,7 +124,7 @@ def fetch_bgm(
 
     suffix = "_hi" if language == "hi" else "_en"
     cache_filename = f"{safe_keyword}{suffix}.mp3"
-    cached_path = os.path.join(BGM_DIR, cache_filename)
+    cached_path = BGM_DIR / cache_filename
 
     if cached_path.exists() and not force_download:
         logger.info(f"[💾] Using cached BGM: {cached_path}")
