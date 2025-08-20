@@ -1,0 +1,79 @@
+<!--
+  File:         templates/manual_story_upload.html
+  Description:  Form to upload and schedule a manual Instagram Story
+  Framework:    Flask + TailwindCSS
+  Version:      1.0.0
+  Last Updated: 20 August 2025
+  Author:       Saravana Bhava
+  Author URL:   https://SazM.in
+-->
+{% extends "base.html" %}
+{% block title %}Manual Story Upload{% endblock %}
+
+{% block heading %}
+<div class="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white">
+  📤 Manual Story Upload
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 w-full animate-fade-in">
+  <div class="text-sm text-gray-600 dark:text-gray-600">
+    Logged in as: <strong>{{ user }}</strong>
+  </div>
+
+  <form method="POST"
+        action="{{ url_for('stories.manual_story_upload') }}"
+        enctype="multipart/form-data"
+        onsubmit="disableForm()"
+        class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Video Upload -->
+    <div class="col-span-1 md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">🎥 Upload Story Video</h2>
+      <input type="file"
+             name="video"
+             accept="video/mp4,video/mov,video/webm"
+             required
+             class="w-full text-sm dark:bg-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-600 file:text-white hover:file:bg-green-700 transition" />
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Supported: MP4, MOV, WEBM. Max length: 15 seconds.</p>
+    </div>
+
+    <!-- Caption -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">📝 Caption (Optional)</h2>
+      <textarea name="caption"
+                rows="4"
+                maxlength="2200"
+                placeholder="Add text or hashtags for your story (optional)..."
+                class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition resize-y"></textarea>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Max 2200 characters.</p>
+    </div>
+
+    <!-- Schedule -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">📅 Schedule</h2>
+      <input type="datetime-local"
+             name="schedule_time"
+             class="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition" />
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Optional: Set when to publish the story.</p>
+    </div>
+
+    <!-- Submit -->
+    <div class="col-span-1 md:col-span-2 text-center">
+      <button type="submit"
+              class="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+        🚀 Upload Story
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function disableForm() {
+  const btn = document.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.innerText = "⏳ Uploading...";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+<!--
+  File:         templates/scheduled_stories.html
+  Description:  Manage scheduled stories for future posting
+  Framework:    Flask + TailwindCSS
+  Version:      1.0.0
+  Last Updated: 20 August 2025
+  Author:       Saravana Bhava
+  Author URL:   https://SazM.in
+-->
+{% extends "base.html" %}
+{% block title %}Schedule Stories | Reelvo{% endblock %}
+
+{% block heading %}
+<span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
+  🗓️ Scheduled Stories
+</span>
+{% endblock %}
+
+{% block content %}
+<section class="space-y-8" role="region" aria-label="Scheduled Stories Section">
+  {% if scheduled and scheduled|length > 0 %}
+  <form method="post"
+        action="{{ url_for('story_schedule.update_story_schedule') }}"
+        aria-label="Scheduled Stories Management Form">
+
+    <!-- Table Container -->
+    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm text-gray-900 dark:text-gray-100">
+        <thead class="bg-gray-100 dark:bg-gray-800">
+          <tr class="text-left">
+            <th class="px-4 py-3 font-semibold">📖 Story</th>
+            <th class="px-4 py-3 font-semibold">📅 Scheduled Date</th>
+            <th class="px-4 py-3 font-semibold text-center">📌 Status</th>
+            <th class="px-4 py-3 font-semibold text-center">✏️ Reschedule</th>
+            <th class="px-4 py-3 font-semibold text-center">🗑️ Delete</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+          {% for item in scheduled %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <!-- Story Title -->
+            <td class="px-4 py-3 max-w-xs truncate" title="{{ item.title }}">
+              <span class="text-blue-600 dark:text-blue-400 font-medium">{{ item.title }}</span>
+            </td>
+
+            <!-- Scheduled Date -->
+            <td class="px-4 py-3">
+              {% if item.scheduled_for %}
+                {{ item.scheduled_for.strftime('%B %d, %Y — %I:%M %p') }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <!-- Status -->
+            <td class="px-4 py-3 text-center">
+              {% if item.status == 'posted' %}
+                <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                  ✅ Posted
+                </span>
+              {% elif item.status == 'failed' %}
+                <span class="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                  ❌ Failed
+                </span>
+              {% elif item.status == 'processing' %}
+                <span class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                  🔄 Processing
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium">
+                  ⏳ Pending
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Reschedule -->
+            <td class="px-4 py-3 text-center">
+              {% if item.status != 'posted' %}
+              <label for="reschedule_{{ item.id }}" class="sr-only">Reschedule {{ item.title }}</label>
+              <input type="datetime-local"
+                     id="reschedule_{{ item.id }}"
+                     name="reschedule_{{ item.id }}"
+                     value="{{ item.scheduled_for.strftime('%Y-%m-%dT%H:%M') if item.scheduled_for else '' }}"
+                     class="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+              {% else %}
+              <span class="text-gray-400 dark:text-gray-500">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Delete -->
+            <td class="px-4 py-3 text-center">
+              {% if item.status != 'posted' %}
+              <input type="checkbox"
+                     id="delete_{{ item.id }}"
+                     name="delete_{{ item.id }}"
+                     class="accent-red-600 rounded border-gray-300 dark:border-gray-600 focus:ring-red-500"
+                     aria-label="Delete {{ item.title }}">
+              {% else %}
+              <span class="text-gray-400 dark:text-gray-500">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Save Button -->
+    <div class="mt-6 flex justify-end">
+      <button type="submit"
+              class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+        💾 Save Changes
+      </button>
+    </div>
+  </form>
+
+  {% else %}
+    <div class="text-center text-gray-600 dark:text-gray-400 text-lg mt-8">
+      ⚠️ You don’t have any scheduled stories.
+    </div>
+  {% endif %}
+
+  <!-- Back to Dashboard -->
+  <div class="mt-12 text-center">
+    <a href="{{ url_for('dashboard.dashboard') }}"
+       class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition"
+       aria-label="Back to Dashboard">
+      ⬅️ Back to Dashboard
+    </a>
+  </div>
+</section>
+
+<!-- Prevent selecting past datetime -->
+<script>
+  document.querySelectorAll("input[type='datetime-local']").forEach(input => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    input.min = new Date(now - tzOffset).toISOString().slice(0, 16);
+  });
+</script>
+{% endblock %}
