@@ -29,6 +29,7 @@ def schedule_reel(reel_id):
         flash("❌ Authentication required.", "error")
         return redirect(url_for("auth.login"))
 
+    # Create placeholder schedule with no date
     schedule_entry = Schedule(
         user_id=user_id,
         reel_id=reel_id,
@@ -36,11 +37,10 @@ def schedule_reel(reel_id):
         timezone="Asia/Kolkata",
         status="pending"
     )
-
     db.session.add(schedule_entry)
     db.session.commit()
 
-    flash("✅ Reel scheduled successfully.", "success")
+    flash("✅ Reel scheduled entry created. Please set a date.", "success")
     return redirect(url_for("schedule.list_scheduled_jobs_view"))
 
 
@@ -74,12 +74,12 @@ def list_scheduled_jobs_view():
 
 
 # ------------------------
-# POST: /schedule
+# POST: /schedule (set or update date, delete job)
 # ------------------------
 
 @schedule_bp.route("/schedule", methods=["POST"])
 def update_schedule():
-    """Handle rescheduling or deletion of jobs for the current user."""
+    """Handle rescheduling (date assignment) or deletion of jobs for the current user."""
     user_id = get_user_id()
     if not user_id:
         return redirect(url_for("auth.login"))
@@ -98,6 +98,11 @@ def update_schedule():
 
         # Handle deletion
         if delete_key in request.form:
+            reel = Reel.query.get(item.reel_id)
+            if reel:
+                reel.is_scheduled = False
+                reel.scheduled_at = None
+                reel.status = "draft"
             db.session.delete(item)
             deleted_count += 1
             current_app.logger.info(
@@ -105,12 +110,20 @@ def update_schedule():
             )
             continue
 
-        # Handle rescheduling
+        # Handle rescheduling (this is where date is set)
         new_date_str = request.form.get(date_key, "").strip()
         if new_date_str:
             try:
                 new_date = datetime.strptime(new_date_str, "%Y-%m-%dT%H:%M")
                 item.scheduled_for = new_date
+
+                # Update reel because now we have a valid date
+                reel = Reel.query.get(item.reel_id)
+                if reel:
+                    reel.is_scheduled = True
+                    reel.scheduled_at = new_date
+                    reel.status = "scheduled"
+
                 updated_count += 1
                 current_app.logger.info(
                     f"[Schedule] user_id={user_id} rescheduled schedule_id={item.id} → {new_date}"
