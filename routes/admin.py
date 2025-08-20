@@ -153,7 +153,7 @@ def delete_user(user_id):
     return redirect(url_for("admin.users_list"))
 
 
-# --- Reels CRUD ---
+# --- Reels Management (List + Delete only) ---
 @admin_bp.route("/reels")
 @admin_required
 def reels_list():
@@ -194,45 +194,6 @@ def reels_list():
         users=users,
         selected_user=user_id,
     )
-
-
-@admin_bp.route("/reels/add", methods=["GET", "POST"])
-@admin_required
-def add_reel():
-    """Add a new reel (basic fields)."""
-    if request.method == "POST":
-        title = request.form.get("title", "").strip()
-        status = request.form.get("status", "").strip()
-
-        if not title:
-            flash("⚠️ Title is required", "warning")
-            return redirect(url_for("admin.add_reel"))
-
-        new_reel = Reel(title=title, status=status or "draft")
-        db.session.add(new_reel)
-        db.session.commit()
-
-        flash("✅ Reel added successfully", "success")
-        return redirect(url_for("admin.reels_list"))
-
-    return render_template("admin/add_reel.html")
-
-
-@admin_bp.route("/reels/edit/<int:reel_id>", methods=["GET", "POST"])
-@admin_required
-def edit_reel(reel_id):
-    """Edit reel details."""
-    reel = Reel.query.get_or_404(reel_id)
-
-    if request.method == "POST":
-        reel.title = request.form.get("title", "").strip()
-        reel.status = request.form.get("status", "").strip() or "draft"
-        db.session.commit()
-
-        flash("✅ Reel updated successfully", "success")
-        return redirect(url_for("admin.reels_list"))
-
-    return render_template("admin/edit_reel.html", reel=reel)
 
 
 @admin_bp.route("/reels/delete/<int:reel_id>", methods=["POST"])
