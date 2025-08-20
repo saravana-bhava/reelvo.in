@@ -17,6 +17,9 @@ class Reel(db.Model, TimestampMixin):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+    # 🔑 Relationship
+    user = db.relationship("User", backref="reels", lazy="joined")
+
     title = db.Column(db.Text)
     script = db.Column(db.Text, nullable=False)
     caption = db.Column(db.Text, nullable=False)
