@@ -24,14 +24,20 @@
     {% for story in stories %}
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 transition hover:shadow-xl">
 
-        <!-- Video Player -->
+        <!-- Media Preview -->
         <div class="relative">
-          <video controls
-                 class="w-full aspect-video bg-black rounded-t-2xl"
-                 aria-label="Story video {{ story.id }}">
-            <source src="{{ url_for('stories.serve_story', user_email=user, filename=story.file_path) }}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
+          {% if story.media_type == "video" %}
+            <video controls
+                   class="w-full aspect-video bg-black rounded-t-2xl"
+                   aria-label="Story video {{ story.id }}">
+              <source src="{{ url_for('stories.serve_story', user_email=user, filename=story.filename) }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          {% else %}
+            <img src="{{ url_for('stories.serve_story', user_email=user, filename=story.filename) }}"
+                 alt="Story image {{ story.id }}"
+                 class="w-full aspect-video object-cover bg-gray-100 rounded-t-2xl">
+          {% endif %}
         </div>
 
         <!-- Story Info -->
@@ -42,16 +48,27 @@
             <h3 class="text-base font-medium text-gray-900 dark:text-gray-100 truncate" title="{{ story.caption }}">
               📝 {{ story.caption or "No caption" }}
             </h3>
-            {% if story.scheduled_at %}
-              <span class="text-xs text-gray-500 dark:text-gray-400">
-                🗓️ {{ story.scheduled_at }}
-              </span>
-            {% endif %}
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ story.created_at }}
+            </span>
           </div>
+
+          <!-- Scheduled time if applicable -->
+          {% if story.scheduled_at %}
+            <p class="text-xs text-blue-600 dark:text-blue-400">
+              🗓️ Scheduled: {{ story.scheduled_at }}
+            </p>
+          {% endif %}
+
+          <!-- Status -->
+          <p class="text-xs font-medium
+                     {% if story.status == 'posted' %}text-green-600{% elif story.status == 'failed' %}text-red-600{% elif story.status == 'scheduled' %}text-blue-600{% else %}text-gray-500{% endif %}">
+            Status: {{ story.status }}
+          </p>
 
           <!-- Actions -->
           <div class="flex flex-col gap-2">
-            <form method="post" action="{{ url_for('schedule.schedule_story', story_id=story.id) }}">
+            <form method="post" action="{{ url_for('story_schedule.schedule_story', story_id=story.id) }}">
               <button type="submit"
                       class="w-full inline-flex items-center justify-center py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition focus:outline-none focus:ring-2 focus:ring-green-500"
                       aria-label="Schedule Story {{ story.id }}">

@@ -28,15 +28,17 @@
         onsubmit="disableForm()"
         class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-    <!-- Video Upload -->
+    <!-- Media Upload (Image or Video) -->
     <div class="col-span-1 md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-6">
-      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">🎥 Upload Story Video</h2>
+      <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">🖼️/🎥 Upload Story</h2>
       <input type="file"
-             name="video"
-             accept="video/mp4,video/mov,video/webm"
+             name="media"
+             accept="image/jpeg,image/png,image/webp,video/mp4,video/mov,video/webm"
              required
              class="w-full text-sm dark:bg-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-600 file:text-white hover:file:bg-green-700 transition" />
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Supported: MP4, MOV, WEBM. Max length: 15 seconds.</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+        Supported: Images (JPG, PNG, WEBP), Videos (MP4, MOV, WEBM, ≤15s)
+      </p>
     </div>
 
     <!-- Caption -->

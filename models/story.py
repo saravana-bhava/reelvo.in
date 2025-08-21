@@ -20,9 +20,12 @@ class Story(db.Model, TimestampMixin):
     # 🔑 Relationship
     user = db.relationship("User", backref="stories", lazy="joined")
 
-    caption = db.Column(db.Text)  # stories may or may not have text
-    video_path = db.Column(db.Text, nullable=False)  # must be ≤15s video
-    thumbnail_path = db.Column(db.Text)
+    caption = db.Column(db.Text)  # optional text
+    video_path = db.Column(db.Text)       # for video stories (≤15s)
+    image_path = db.Column(db.Text)   # for image stories
+
+    media_type = db.Column(db.String(10), nullable=False, default='video')
+    # Values: video / image
 
     lang = db.Column(db.String(10), default='en', nullable=False)
 
@@ -38,10 +41,11 @@ class Story(db.Model, TimestampMixin):
 
     __table_args__ = (
         db.CheckConstraint("status IN ('draft', 'scheduled', 'posted', 'failed')"),
+        db.CheckConstraint("media_type IN ('video', 'image')"),
         db.Index('idx_stories_user', 'user_id'),
         db.Index('idx_stories_schedule', 'is_scheduled', 'scheduled_at'),
         db.Index('idx_stories_status', 'status'),
     )
 
     def __repr__(self):
-        return f"<Story(id={self.id}, status='{self.status}')>"
+        return f"<Story(id={self.id}, type='{self.media_type}', status='{self.status}')>"
