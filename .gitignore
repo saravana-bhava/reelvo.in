@@ -32,7 +32,6 @@ env/
 .env
 *.env
 secure/
-user_tokens/
 *.pem
 *.key
 
@@ -47,7 +46,6 @@ user_tokens/
 # ─────────────────────────────────────────────
 # GENERATED MEDIA & OUTPUT FILES
 # ─────────────────────────────────────────────
-output_/
 *.mp4
 *.mov
 *.avi
@@ -68,8 +66,8 @@ output_/
 # ─────────────────────────────────────────────
 # DATABASE & LOG FILES
 # ─────────────────────────────────────────────
-db_/
-db_/reel_logs/
+_db/
+_seeders/
 scripts/logs/
 *.log
 *.tmp
