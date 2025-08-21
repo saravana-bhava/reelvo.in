@@ -43,7 +43,7 @@ SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 CREDENTIALS_PATH = os.getenv("GOOGLE_OAUTH_CREDENTIALS", "credentials.json")
 SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "credentials.json")
 USE_SERVICE_ACCOUNT = os.getenv("USE_SERVICE_ACCOUNT", "false").lower() == "true"
-TOKEN_PATH = "token.json"
+TOKEN_PATH = "secure/token.json"
 REELVO_ROOT_FOLDER = "reels"
 PARENT_SHARED_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID")
 USE_SHARED_DRIVE = os.getenv("GOOGLE_USE_SHARED_DRIVE", "false").lower() == "true"
