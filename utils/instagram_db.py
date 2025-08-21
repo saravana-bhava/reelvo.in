@@ -13,6 +13,7 @@ from models import db
 from models.user import User
 from models.token import UserToken
 from models.reel import Reel
+from models.story import Story
 
 
 def get_instagram_credentials(user_email):
@@ -87,5 +88,21 @@ def log_post_to_db(reel_id, permalink):
     reel.status = 'posted'
     reel.posted_at = datetime.utcnow()
     reel.error_log = f"Posted to IG: {permalink}"
+
+    db.session.commit()
+
+
+def log_story_to_db(story_id, permalink):
+    """
+    Mark a Story as posted and log the Instagram permalink.
+    """
+    story = Story.query.get(story_id)
+    if not story:
+        raise ValueError(f"Story with ID {story_id} not found")
+
+    story.status = 'posted'
+    story.posted_at = datetime.utcnow()
+    story.error_log = f"Posted to IG: {permalink}"
+    story.permalink = permalink   # 👈 optional if you store it
 
     db.session.commit()

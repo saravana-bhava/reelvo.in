@@ -16,7 +16,7 @@ Supports video URL upload, publishing, and logging.
 import os
 import time
 import requests
-from utils.instagram_db import get_instagram_credentials, log_post_to_db
+from utils.instagram_db import get_instagram_credentials, log_post_to_db, log_story_to_db
 from utils.google_drive import upload_to_google_drive
 
 # Constants
@@ -264,8 +264,10 @@ def post_story_to_instagram(
                 else:
                     print(f"[WARN] ⚠️ Failed to fetch permalink: {r3.text}")
 
-            # Optional: log to DB like reels (use a separate logger if you have one)
-            log_post_to_db(reel_id=None, permalink=permalink)  # or create story log variant
+            log_story_to_db(
+                story_id=story_id,
+                permalink=permalink
+            )
 
             if permalink.startswith("http"):
                 return f"📤 Story posted successfully (as Feed Photo): <a href='{permalink}' target='_blank'>View</a>"
@@ -336,7 +338,10 @@ def post_story_to_instagram(
                 else:
                     print(f"[WARN] ⚠️ Failed to fetch permalink: {r3.text}")
 
-            log_post_to_db(reel_id=None, permalink=permalink)  # or create story log variant
+            log_story_to_db(
+                story_id=story_id,
+                permalink=permalink
+            )
 
             if permalink.startswith("http"):
                 return f"📤 Story posted successfully (as Reel): <a href='{permalink}' target='_blank'>View</a>"
