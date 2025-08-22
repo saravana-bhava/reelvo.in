@@ -11,12 +11,16 @@
 {% block title %}Manage Users | Reelvo{% endblock %}
 
 {% block heading %}
-<div class="flex">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full">
   <span class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-600">
     👥 Manage Users
   </span>
+  <span class="mt-2 sm:mt-0 text-gray-600 dark:text-gray-400 text-sm font-medium">
+    Total Users: <strong>{{ users.total }}</strong>
+  </span>
 </div>
 {% endblock %}
+
 
 {% block content %}
 <div class="p-8 bg-white shadow-lg rounded-2xl border border-gray-200 mt-6">
