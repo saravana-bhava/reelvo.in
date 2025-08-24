@@ -67,6 +67,7 @@ def create_video(
         "-b:v", "10M", "-minrate", "8M", "-maxrate", "12M", "-bufsize", "12M",
         "-c:a", "aac", "-ar", "44100", "-b:a", "256k", "-ac", "2",
         "-movflags", "+faststart", "-pix_fmt", "yuv420p", "-r", "30",
+        "-avoid_negative_ts", "make_zero",
         "-y", video_path
     ]
 

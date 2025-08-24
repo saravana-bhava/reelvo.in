@@ -289,7 +289,8 @@ def process_reel_job(
             filters = [
                 f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
                 f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,"
-                f"fade=t=in:st=0:d=1,fade=t=out:st={max(audio_duration - 1, 1)}:d=1[bg]"
+                f"fade=t=out:st={max(audio_duration - 1, 1)}:d=1,"
+                f"setpts=PTS-STARTPTS,trim=start_frame=1,setpts=PTS-STARTPTS[bg]"
             ]
             base = "[bg]"
 
