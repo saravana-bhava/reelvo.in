@@ -36,12 +36,12 @@ class Reel(db.Model, TimestampMixin):
     posted_at = db.Column(db.DateTime)
 
     platform = db.Column(db.String(20), default='instagram', nullable=False)
-    status = db.Column(db.String(20), default='draft', nullable=False)  # Values: draft/scheduled/posted/failed
+    status = db.Column(db.String(20), default='draft', nullable=False)  # Values: deleted/draft/scheduled/posted/failed
 
     error_log = db.Column(db.Text)
 
     __table_args__ = (
-        db.CheckConstraint("status IN ('draft', 'scheduled', 'posted', 'failed')"),
+        db.CheckConstraint("status IN ('deleted', 'draft', 'scheduled', 'posted', 'failed')"),
         db.Index('idx_reels_user', 'user_id'),
         db.Index('idx_reels_schedule', 'is_scheduled', 'scheduled_at'),
         db.Index('idx_reels_status', 'status'),

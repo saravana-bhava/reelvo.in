@@ -78,7 +78,8 @@
           </td>
           <td class="p-4">
             <span class="px-2 py-1 rounded-lg text-xs font-semibold
-              {% if reel.status == 'draft' %}bg-gray-200 text-gray-700
+              {% if reel.status == 'deleted' %}bg-black-200 text-black-700
+              {% elif reel.status == 'draft' %}bg-gray-200 text-gray-700
               {% elif reel.status == 'scheduled' %}bg-yellow-200 text-yellow-800
               {% elif reel.status == 'posted' %}bg-green-200 text-green-800
               {% elif reel.status == 'failed' %}bg-red-200 text-red-800

@@ -10,6 +10,7 @@
 
 """
 Generates short Instagram reel scripts using OpenAI.
+Automatically adds a suspenseful hook for the first 3 seconds.
 Saves output to: output/{user_email}/scripts/{theme_name}_{language}_text.txt
 Supports: English and Hindi
 """
@@ -114,18 +115,21 @@ def fallback_script(prompt_norm: str, language_norm: str) -> str:
 def generate_script(prompt: str, language: str = "en") -> str:
     """
     Generate a 30-second Instagram script using OpenAI or static fallback.
+    Automatically adds a suspenseful hook in the first 3 seconds.
     Guarantees a non-empty script.
     """
     prompt_norm = prompt.strip().lower()
     language_norm = language.strip().lower()
-
     variation_seed = str(uuid.uuid4())[:8]
 
+    # Enhanced prompt with 3-second hook
     chat_prompt = (
         f"Write a short, original voiceover script for an Instagram Reel. "
         f"The theme is '{prompt_norm}', "
         f"language: {'Hindi' if language_norm == 'hi' else 'English'}. "
-        f"The script should be under 30 seconds, energetic, emotional, and impactful. "
+        f"The script should start with a suspenseful or attention-grabbing hook for the first 3 seconds, "
+        f"then continue with the rest of the script naturally. "
+        f"Keep it under 30 seconds, energetic, emotional, and impactful. "
         f"Output only the script text itself — do not include any labels like 'Script:', 'Voiceover:', 'Narration:', or similar. "
         f"Add subtle variation. Seed: {variation_seed}"
     )
@@ -133,7 +137,7 @@ def generate_script(prompt: str, language: str = "en") -> str:
     if USE_OPENAI:
         script = generate_script_via_api(chat_prompt)
         if script:
-            logger.info(f"[✅] Script generated for '{prompt}' ({language})")
+            logger.info(f"[✅] Script with hook generated for '{prompt}' ({language})")
             return script
         else:
             logger.warning(f"[⚠️] API failed, falling back for '{prompt}' ({language})")

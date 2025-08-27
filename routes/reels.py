@@ -61,7 +61,7 @@ def create_reel():
     os.makedirs(videos_dir, exist_ok=True)
     os.makedirs(scripts_dir, exist_ok=True)
 
-    reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
+    reels = Reel.query.filter_by(user_id=user_id).filter(Reel.status != "deleted").order_by(Reel.created_at.desc()).all()
     videos = [r.video_path for r in reels]
     scripts = sorted([f for f in os.listdir(scripts_dir) if f.endswith(".txt")], reverse=True)
     themes = get_available_themes()
@@ -335,7 +335,7 @@ def list_reels():
     user_email = get_user_email()
     user_id = get_user_id()
 
-    reels = Reel.query.filter_by(user_id=user_id).order_by(Reel.created_at.desc()).all()
+    reels = Reel.query.filter_by(user_id=user_id).filter(Reel.status != "deleted").order_by(Reel.created_at.desc()).all()
 
     videos = []
     scripts = {}
